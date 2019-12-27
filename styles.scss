@@ -1,0 +1,13 @@
+body {
+    background: rebeccapurple;
+    color: #fff;
+}
+
+#canvas-container {
+    width: 700px;
+    height: 450px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
