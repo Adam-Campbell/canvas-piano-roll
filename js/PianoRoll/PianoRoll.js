@@ -2,15 +2,18 @@ import { Stage } from 'konva';
 import { 
     STAGE_WIDTH, 
     STAGE_HEIGHT,
-    DRAG_MODE_ADJUST_NEW_NOTE_SIZE,
-    DRAG_MODE_ADJUST_NOTE_SIZE
+    DRAG_MODE_ADJUST_NOTE_SIZE,
+    DRAG_MODE_ADJUST_NOTE_POSITION,
+    DRAG_MODE_ADJUST_SELECTION
 } from '../constants';
 import GridLayer from '../GridLayer';
 import NoteLayer from '../NoteLayer';
 import PianoKeyLayer from '../PianoKeyLayer';
 import ScrollbarLayer from '../ScrollbarLayer';
 import ConversionManager from '../ConversionManager';
-
+import AudioReconciler from '../AudioReconciler';
+import NoteSelection from '../NoteSelection';
+import KeyboardStateManager from '../KeyboardStateManager';
 
 export default class PianoRoll {
     constructor(containerId, width = STAGE_WIDTH, height = STAGE_HEIGHT) {
@@ -21,9 +24,24 @@ export default class PianoRoll {
             width,
             height
         });
+        this._keyboardStateManager = new KeyboardStateManager(this._stage.container());
         this._conversionManager = new ConversionManager();
-        this._gridLayer = new GridLayer(4, '16n', this.setDragMode, this._conversionManager);
-        this._noteLayer = new NoteLayer(this._conversionManager, this.setDragMode);
+        this._audioReconciler = new AudioReconciler(this._conversionManager);
+        this._noteSelection = new NoteSelection();
+        this._gridLayer = new GridLayer(
+            4, 
+            '16n', 
+            this.setDragMode, 
+            this._conversionManager,
+            this._noteSelection
+        );
+        this._noteLayer = new NoteLayer(
+            this._conversionManager, 
+            this.setDragMode, 
+            this._audioReconciler,
+            this._noteSelection,
+            this._keyboardStateManager
+        );
         this._pianoKeyLayer = new PianoKeyLayer();
         this._scrollbarLayer = new ScrollbarLayer(
             this._gridLayer,
@@ -59,12 +77,13 @@ export default class PianoRoll {
 
     handleMouseMove(e) {
         switch (this._dragMode) {
-            case DRAG_MODE_ADJUST_NEW_NOTE_SIZE:
-                this.handleAdjustNoteSizeMouseMove(e);
-                break;
             case DRAG_MODE_ADJUST_NOTE_SIZE:
                 this.handleAdjustNoteSizeMouseMove(e);
                 break;
+            case DRAG_MODE_ADJUST_NOTE_POSITION:
+                this.handleAdjustNotePositionMouseMove(e);
+            case DRAG_MODE_ADJUST_SELECTION:
+                this.handleAdjustSelectionMouseMove(e);
             default:
                 return;
         }
@@ -74,28 +93,45 @@ export default class PianoRoll {
         //console.log('handleAdjustNoteSizeMouseMove was called')
         const { offsetX } = e.evt;
         const x = offsetX - this._gridLayer.layer.x();
-        this._noteLayer.updateNoteDuration(x);
+        this._noteLayer.updateNoteDurations(x);
+    }
+
+    handleAdjustNotePositionMouseMove(e) {
+        //console.log('handle adjust note position mouse move called');
+        this._noteLayer.repositionSelectedNotes(e);
+    }
+
+    handleAdjustSelectionMouseMove(e) {
+        console.log('handle adjust selection mouse move called');
     }
 
     handleMouseUp(e) {
         switch (this._dragMode) {
-            case DRAG_MODE_ADJUST_NEW_NOTE_SIZE:
-                this.handleAdjustNewNoteSizeMouseUp(e);
-                break;
             case DRAG_MODE_ADJUST_NOTE_SIZE:
                 this.handleAdjustNoteSizeMouseUp(e);
                 break;
+            case DRAG_MODE_ADJUST_NOTE_POSITION:
+                this.handleAdjustNotePositionMouseUp(e);
+            case DRAG_MODE_ADJUST_SELECTION:
+                this.handleAdjustSelectionMouseUp(e);
             default:
                 return;
         }
     }
 
-    handleAdjustNewNoteSizeMouseUp(e) {
+    handleAdjustNoteSizeMouseUp(e) {
         this.setDragMode(null);
-        this._noteLayer.confirmNote();
+        this._noteLayer.confirmNotes();
     }
 
-    handleAdjustNoteSizeMouseUp(e) {
+    handleAdjustNotePositionMouseUp(e) {
+        //console.log('handle adjust note position mouse up called');
+        this._noteLayer.deselectIfNeeded(e);
+        this.setDragMode(null);
+    }
+
+    handleAdjustSelectionMouseUp(e) {
+        console.log('handle adjust selection mouse up called');
         this.setDragMode(null);
     }
 

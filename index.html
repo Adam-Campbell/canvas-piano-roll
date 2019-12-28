@@ -9,6 +9,8 @@
 </head>
 <body>
     <h1 id="page-heading">Content here</h1>
+
+    <label for="quantize-select">Quantize value</label>
     <select id="quantize-select">
         <option value="32t">32t</option>
         <option value="32n">32n</option>
@@ -22,6 +24,8 @@
         <option value="2n">2n</option>
         <option value="1m">1m</option>
     </select>
+
+    <label for="note-duration-select">Note duration</label>
     <select id="note-duration-select">
         <option value="32t">32t</option>
         <option value="32n">32n</option>
@@ -35,7 +39,16 @@
         <option value="2n">2n</option>
         <option value="1m">1m</option>
     </select>
-    <div id="canvas-container"></div>
+
+    <label for="tool-type-cursor">Cursor</label>
+    <input id="tool-type-cursor" type="radio" name="tool-type" value="cursor" checked />
+    <label for="tool-type-pencil">Pencil</label>
+    <input id="tool-type-pencil" type="radio" name="tool-type" value="pencil" />
+    <label for="tool-type-marquee">Marquee</label>
+    <input id="tool-type-marquee" type="radio" name="tool-type" value="marquee" />
+
+    <div id="canvas-container" tabindex="0"></div>
+
     <script type="text/javascript" src="./js/index.js"></script>
 </body>
 </html>

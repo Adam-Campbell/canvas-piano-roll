@@ -18,12 +18,13 @@ import {
 
 export default class GridLayer {
     
-    constructor(numBars = 4, initialQuantize = '16n', setDragMode, conversionManager) {
+    constructor(numBars = 4, initialQuantize = '16n', setDragMode, conversionManager, noteSelection) {
         this.layer = new Layer({ x: 120 });
         this._conversionManager = conversionManager;
         this._numBars = numBars;
         this._quantize = initialQuantize;
         this._setDragMode = setDragMode;
+        this._noteSelection = noteSelection;
         this.unsubscribe1 = emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
             this._quantize = qVal;
             this.draw();
@@ -83,8 +84,9 @@ export default class GridLayer {
         const { x, y } = this.getAbsoluteCoords(offsetX, offsetY);
         const roundedX = this._conversionManager.roundDownToGridCol(x);
         const roundedY = this._conversionManager.roundDownToGridRow(y);
+        this._noteSelection.clear();
         emitter.broadcast(ADD_NOTE, roundedX, roundedY);
-        this._setDragMode(DRAG_MODE_ADJUST_NEW_NOTE_SIZE);
+        this._setDragMode(DRAG_MODE_ADJUST_NOTE_SIZE);
     }
 
 }

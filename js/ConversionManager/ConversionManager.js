@@ -7,6 +7,7 @@ import {
     QUANTIZE_VALUE_UPDATE,
     NOTE_DURATION_UPDATE
 } from '../events';
+import { pitchesArray } from '../pitches';
 
 const TICKS_PER_BAR = 768;
 
@@ -73,6 +74,12 @@ export default class ConversionManager {
         return this._round(x, this.colWidth);
     }
 
-
-
+    convertPxToTicks(px) {
+        return px / this._tickToPxRatio;
+    }
+    
+    derivePitchFromY(y) {
+        const idx = y / ROW_HEIGHT;
+        return pitchesArray[idx];
+    }
 }
