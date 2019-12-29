@@ -40,4 +40,5 @@ export default class NoteSelection {
     toArray() {
         return Object.values(this._cache);
     }
+
 }

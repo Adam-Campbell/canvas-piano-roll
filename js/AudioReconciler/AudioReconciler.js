@@ -38,4 +38,13 @@ export default class AudioReconciler {
             this._cache[note.id] = note;
         });
     }
+
+    removeNotes(noteRectsArray) {
+        noteRectsArray.forEach(noteRect => {
+            if (this._cache[noteRect.attrs.id]) {
+                this._removeNoteFromEngine(this._cache[noteRect.attrs.id]);
+                delete this._cache[noteRect.attrs.id];
+            }
+        });
+    }
 }

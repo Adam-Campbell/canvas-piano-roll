@@ -62,12 +62,20 @@ export default class ConversionManager {
         return ROW_HEIGHT;
     }
 
+    get gridHeight() {
+        return this.rowHeight * pitchesArray.length;
+    }
+
     roundDownToGridRow(y) {
         return this._roundDown(y, ROW_HEIGHT);
     }
 
     roundDownToGridCol(x) {
         return this._roundDown(x, this.colWidth);
+    }
+
+    roundToGridRow(y) {
+        return this._round(y, ROW_HEIGHT);
     }
 
     roundToGridCol(x) {

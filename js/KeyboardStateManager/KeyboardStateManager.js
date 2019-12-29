@@ -13,6 +13,7 @@ Key Names:
 Shift
 Control
 Alt
+Delete
 
 
 
@@ -25,9 +26,12 @@ export default class KeyboardStateManager {
         this._shiftKey = false;
         this._ctrlKey = false;
         this._altKey = false;
+        this._keyListeners = {};
         this._stageContainer.addEventListener('keydown', e => {
             const { key, code, ctrlKey, shiftKey, altKey, metaKey } = e;
+            console.log(key);
             this._updateKeyState(key, true);
+            this._triggerKeyListeners(key);
         });
         this._stageContainer.addEventListener('keyup', e => {
             const { key, code, ctrlKey, shiftKey, altKey, metaKey } = e;
@@ -59,6 +63,24 @@ export default class KeyboardStateManager {
 
     get altKey() {
         return this._altKey;
+    }
+
+    addKeyListener(key, cb) {
+        if (!this._keyListeners[key]) {
+            this._keyListeners[key] = [];
+        }
+        this._keyListeners[key].push(cb);
+        return () => {
+            if (this._keyListeners[key]) {
+                this._keyListeners[key] = this._keyListeners[key].filter(func => func !== cb);
+            }
+        }
+    }
+
+    _triggerKeyListeners(key) {
+        if (this._keyListeners[key]) {
+            this._keyListeners[key].forEach(cb => cb());
+        }
     }
 
 } 
