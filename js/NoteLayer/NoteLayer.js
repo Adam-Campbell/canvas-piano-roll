@@ -12,7 +12,13 @@ import emitter from '../EventEmitter';
 import { ADD_NOTE, QUANTIZE_VALUE_UPDATE, NOTE_DURATION_UPDATE } from '../events';
 import { pitchesArray } from '../pitches';
 import { genId } from '../genId';
-import { doesOverlap } from './utils';
+import { 
+    doesOverlap,
+    canShiftUp,
+    canShiftDown,
+    canShiftLeft,
+    canShiftRight 
+} from './utils';
 
 /*
 
@@ -75,17 +81,19 @@ export default class NoteLayer {
         });
         this._keyboardStateManager.addKeyListener('ArrowUp', () => {
             console.log('ArrowUp key pressed');
-            this._shiftSelectionPitch(true);
+            this._shiftSelectionPitchUp();
         });
         this._keyboardStateManager.addKeyListener('ArrowDown', () => {
             console.log('ArrowDown key pressed');
-            this._shiftSelectionPitch(false);
+            this._shiftSelectionPitchDown();
         });
         this._keyboardStateManager.addKeyListener('ArrowLeft', () => {
             console.log('ArrowLeft key pressed');
+            this._shiftSelectionTimeBackwards();
         });
         this._keyboardStateManager.addKeyListener('ArrowRight', () => {
             console.log('ArrowRight key pressed');
+            this._shiftSelectionTimeForwards();
         });
     }
 
@@ -298,6 +306,63 @@ export default class NoteLayer {
         this.layer.batchDraw();
         this.confirmNotes();
     }
+
+    _shiftSelectionPitchUp() {
+        const notes = this._noteSelection.toArray();
+        if (!canShiftUp(notes)) {
+            return;
+        }
+        notes.forEach(note => {
+            note.y(
+                note.y() - this._conversionManager.rowHeight
+            );
+        });
+        this.layer.batchDraw();
+        this.confirmNotes();
+    }
+
+    _shiftSelectionPitchDown() {
+        const notes = this._noteSelection.toArray();
+        if (!canShiftDown(notes, this._conversionManager.gridHeight)) {
+            return;
+        }
+        notes.forEach(note => {
+            note.y(
+                note.y() + this._conversionManager.rowHeight
+            );
+        });
+        this.layer.batchDraw();
+        this.confirmNotes();
+    }
+
+    _shiftSelectionTimeBackwards() {
+        const notes = this._noteSelection.toArray();
+        if (!canShiftLeft(notes)) {
+            return;
+        }
+        notes.forEach(note => {
+            note.x(
+                note.x() - this._conversionManager.colWidth
+            );
+        });
+        this.layer.batchDraw();
+        this.confirmNotes();
+    }
+
+    _shiftSelectionTimeForwards() {
+        const notes = this._noteSelection.toArray();
+        if (!canShiftRight(notes, this._conversionManager.gridWidth)) {
+            return;
+        }
+        notes.forEach(note => {
+            note.x(
+                note.x() + this._conversionManager.colWidth
+            );
+        });
+        this.layer.batchDraw();
+        this.confirmNotes();
+    }
+
 
     _handleMouseDown(e) {
         e.cancelBubble = true;

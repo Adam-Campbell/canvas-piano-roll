@@ -26,10 +26,11 @@ const noteDurationsMappedToTicks = {
 };
 
 export default class ConversionManager {
-    constructor(initialQuantize = '16n', initialNoteDuration = '16n') {
+    constructor(initialQuantize = '16n', initialNoteDuration = '16n', numBars = 4) {
         this._quantize = initialQuantize;
         this._noteDuration = initialNoteDuration;
         this._tickToPxRatio = BAR_WIDTH / TICKS_PER_BAR;
+        this._numBars = numBars;
         this.unsubscribe1 = emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
             this._quantize = qVal;
         });
@@ -64,6 +65,10 @@ export default class ConversionManager {
 
     get gridHeight() {
         return this.rowHeight * pitchesArray.length;
+    }
+
+    get gridWidth() {
+        return this._numBars * BAR_WIDTH
     }
 
     roundDownToGridRow(y) {
