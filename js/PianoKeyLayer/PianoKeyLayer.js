@@ -10,7 +10,8 @@ import {
 export default class PianoKeyLayer {
     constructor() {
         this.layer = new Layer();
-        this.layer.on('click', e => {
+        this.layer.on('mousedown', e => {
+            e.cancelBubble = true;
             const { target } = e;
             if (target instanceof Rect && target.attrs.pitch) {
                 console.log(`${target.attrs.pitch} key clicked`);

@@ -61,40 +61,12 @@ marquee tool
 
 export default class NoteLayer {
 
-    constructor(conversionManager, setDragMode, audioReconciler, noteSelection, keyboardStateManager, mouseStateManager) {
+    constructor(conversionManager, audioReconciler, noteSelection, mouseStateManager) {
         this.layer = new Layer({ x: 120 });
         this._conversionManager = conversionManager;
         this._audioReconciler = audioReconciler;
-        this._setDragMode = setDragMode;
         this._noteSelection = noteSelection;
-        this._keyboardStateManager = keyboardStateManager;
         this._mouseStateManager = mouseStateManager;
-        this.unsubscribe = emitter.subscribe(ADD_NOTE, (x, y) => {
-            this.addNewNote(x, y);
-        });
-        this.layer.on('mousedown', e => {
-            this._handleMouseDown(e);
-        });
-        this._keyboardStateManager.addKeyListener('Delete', () => {
-            console.log('Delete key triggered');
-            this._deleteSelectedNotes();
-        });
-        this._keyboardStateManager.addKeyListener('ArrowUp', () => {
-            console.log('ArrowUp key pressed');
-            this._shiftSelectionPitchUp();
-        });
-        this._keyboardStateManager.addKeyListener('ArrowDown', () => {
-            console.log('ArrowDown key pressed');
-            this._shiftSelectionPitchDown();
-        });
-        this._keyboardStateManager.addKeyListener('ArrowLeft', () => {
-            console.log('ArrowLeft key pressed');
-            this._shiftSelectionTimeBackwards();
-        });
-        this._keyboardStateManager.addKeyListener('ArrowRight', () => {
-            console.log('ArrowRight key pressed');
-            this._shiftSelectionTimeForwards();
-        });
     }
 
     updateX(x) {
@@ -120,7 +92,8 @@ export default class NoteLayer {
             id: genId(),
             cachedWidth: this._conversionManager.noteWidth,
             cachedX: x,
-            cachedY: y
+            cachedY: y,
+            isNoteRect: true
         });
         this.layer.add(newNote);
         this._noteSelection.add(newNote);
@@ -154,6 +127,11 @@ export default class NoteLayer {
             note.setAttr('cachedY', note.attrs.y);
         });
         this._audioReconciler.addNotes(notes);
+        const allNoteRects = this.layer.find('Rect');
+        const asNotes = allNoteRects.map(noteRect => {
+            return this._audioReconciler._deriveNoteFromRect(noteRect);
+        });
+        console.log(asNotes);
     }
 
     draw() {
@@ -187,16 +165,6 @@ export default class NoteLayer {
             note.y(newY);
         });
         this.layer.batchDraw();
-    }
-
-    deselectIfNeeded(e) {
-        console.log('deselectIfNeeded called');
-        const now = Date.now();
-        if (now - this._mouseStateManager.mouseDownTimestamp < 250) {
-            console.log('and threshold met');
-            this._noteSelection.clear();
-            this.layer.batchDraw();
-        }
     }
 
     _reconcileSelectionWithMarquee(selectionX1, selectionX2, selectionY1, selectionY2) {
@@ -273,38 +241,9 @@ export default class NoteLayer {
     clearSelectionMarquee() {
         const marquee = this.layer.findOne('#MARQUEE');
         if (marquee) {
-            //this.layer.remove(marquee);
             marquee.destroy();
             this.layer.batchDraw();
         }
-    }
-
-    _deleteSelectedNotes() {
-        const notes = this._noteSelection.toArray();
-        notes.forEach(note => {
-            note.destroy();
-        });
-        this.layer.batchDraw();
-        this._audioReconciler.removeNotes(notes);
-    }
-
-    _shiftSelectionPitch(shouldShiftPitchUp) {
-        const directionModifier = shouldShiftPitchUp ? 1 : -1;
-        const notes = this._noteSelection.toArray();
-        notes.forEach(note => {
-            const currentY = note.y();
-            const newY = currentY - this._conversionManager.rowHeight * directionModifier;
-            const clampedNewY = Math.max(
-                Math.min(
-                    newY,
-                    this._conversionManager.gridHeight - this._conversionManager.rowHeight
-                ),
-                0
-            );
-            note.y(clampedNewY);
-        });
-        this.layer.batchDraw();
-        this.confirmNotes();
     }
 
     _shiftSelectionPitchUp() {
@@ -361,37 +300,6 @@ export default class NoteLayer {
         });
         this.layer.batchDraw();
         this.confirmNotes();
-    }
-
-
-    _handleMouseDown(e) {
-        e.cancelBubble = true;
-        const timestamp = Date.now();
-        const { evt, target: note } = e;
-        const { id, width: rectWidth, x: rectX } = note.attrs;
-        const evtX = evt.offsetX - this.layer.x();
-        const evtY = evt.offsetY - this.layer.y();
-        const isEdgeClick = rectWidth + rectX - evtX < 10;
-        const isSelected = this._noteSelection.has(note);
-        this._mouseStateManager.addMouseDownEvent(evtX, evtY, timestamp);
-        if (isEdgeClick) {
-            if (!isSelected) {
-                this._noteSelection.clear();
-                this._noteSelection.add(note);
-            }
-            this._setDragMode(DRAG_MODE_ADJUST_NOTE_SIZE);
-        } else {
-            if (isSelected) {
-                this._setDragMode(DRAG_MODE_ADJUST_NOTE_POSITION);
-            } else {
-                if (!this._keyboardStateManager.shiftKey) {
-                    this._noteSelection.clear();
-                }
-                this._noteSelection.add(note);
-                this.layer.batchDraw();
-            }
-        }
-
     }
 
 }

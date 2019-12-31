@@ -12,6 +12,22 @@ export default class NoteSelection {
         noteRect.fill('green');
     }
 
+    update(note, shiftKeyPressed) {
+        const isCurrentlySelected = this.has(note);
+        if (shiftKeyPressed) {
+            if (isCurrentlySelected) {
+                this.remove(note);
+            } else {
+                this.add(note);
+            }
+        } else {
+            this.clear();
+            if (!isCurrentlySelected) {
+                this.add(note);
+            }
+        }
+    }
+
     has(note) {
         return this._cache.hasOwnProperty(note.attrs.id);
     }
