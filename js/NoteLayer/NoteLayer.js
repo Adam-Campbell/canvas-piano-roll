@@ -61,11 +61,10 @@ marquee tool
 
 export default class NoteLayer {
 
-    constructor(conversionManager, audioReconciler, noteSelection, mouseStateManager) {
+    constructor(conversionManager, audioReconciler, mouseStateManager) {
         this.layer = new Layer({ x: 120 });
         this._conversionManager = conversionManager;
         this._audioReconciler = audioReconciler;
-        this._noteSelection = noteSelection;
         this._mouseStateManager = mouseStateManager;
     }
 
@@ -85,7 +84,7 @@ export default class NoteLayer {
             y,
             width: this._conversionManager.noteWidth,
             height: this._conversionManager.rowHeight,
-            fill: 'green',
+            fill: '#222',
             stroke: '#222',
             strokeWidth: 1,
             cornerRadius: 1,
@@ -96,8 +95,9 @@ export default class NoteLayer {
             isNoteRect: true
         });
         this.layer.add(newNote);
-        this._noteSelection.add(newNote);
-        this.layer.draw();
+        //this._noteSelection.add(newNote);
+        this.layer.batchDraw();
+        return newNote;
     }
 
     _updateSingleNoteDuration(note, xDelta) {
@@ -106,32 +106,34 @@ export default class NoteLayer {
             this._conversionManager.colWidth
         );
         note.width(newWidth);
-        this.layer.batchDraw();
     }
 
-    updateNoteDurations(terminalX) {
+    updateNoteDurations(terminalX, selectedNotes) {
         const xDelta = this._conversionManager.roundToGridCol(
             terminalX - this._mouseStateManager.x
         );
-        console.log('xDelta: ', xDelta);
-        this._noteSelection.each(note => {
+        selectedNotes.forEach(note => {
             this._updateSingleNoteDuration(note, xDelta);
         });
+        this.layer.batchDraw();
+        // this._noteSelection.each(note => {
+        //     this._updateSingleNoteDuration(note, xDelta);
+        // });
     }
 
-    confirmNotes() {
-        const notes = this._noteSelection.toArray();
+    updateNotesAttributeCaches(notes) {
+        //const notes = this._noteSelection.toArray();
         notes.forEach(note => {
             note.setAttr('cachedWidth', note.attrs.width);
             note.setAttr('cachedX', note.attrs.x);
             note.setAttr('cachedY', note.attrs.y);
         });
+        // This stuff below should be dealt with by PianoRoll
         this._audioReconciler.addNotes(notes);
         const allNoteRects = this.layer.find('Rect');
         const asNotes = allNoteRects.map(noteRect => {
             return this._audioReconciler._deriveNoteFromRect(noteRect);
         });
-        console.log(asNotes);
     }
 
     draw() {
@@ -139,7 +141,7 @@ export default class NoteLayer {
         this.layer.draw();
     }
 
-    repositionSelectedNotes(x, y) {
+    repositionSelectedNotes(x, y, notes) {
         console.log('repositionSelectedNotes was called');
         const xDelta = this._conversionManager.roundToGridCol(
             x - this._mouseStateManager.x
@@ -151,7 +153,7 @@ export default class NoteLayer {
             xDelta,
             yDelta
         });
-        this._noteSelection.each(note => {
+        notes.forEach(note => {
             const { cachedX, cachedY } = note.attrs;
             const newX = Math.max(
                 cachedX + xDelta,
@@ -167,50 +169,43 @@ export default class NoteLayer {
         this.layer.batchDraw();
     }
 
-    _reconcileSelectionWithMarquee(selectionX1, selectionX2, selectionY1, selectionY2) {
-        const rectChildren = this.layer.find('Rect');
-        rectChildren.forEach(rect => {
-            if (rect.getAttr('id') === 'MARQUEE') {
-                return;
-            }
-            const { x, y, width, height } = rect.attrs;
-            const noteX1 = x;
-            const noteX2 = x + width;
-            const noteY1 = y;
-            const noteY2 = y + height;
-            const overlapsWithSelection = doesOverlap(
-                noteX1,
-                noteX2,
-                noteY1,
-                noteY2,
-                selectionX1,
-                selectionX2,
-                selectionY1,
-                selectionY2
-            );
-            if (overlapsWithSelection) {
-                this._noteSelection.add(rect);
-            } else {
-                this._noteSelection.remove(rect);
-            }
-            console.log(overlapsWithSelection);
-        });
+    // _reconcileSelectionWithMarquee(selectionX1, selectionX2, selectionY1, selectionY2) {
+    //     const rectChildren = this.layer.find('Rect');
+    //     rectChildren.forEach(rect => {
+    //         if (rect.getAttr('id') === 'MARQUEE') {
+    //             return;
+    //         }
+    //         const { x, y, width, height } = rect.attrs;
+    //         const noteX1 = x;
+    //         const noteX2 = x + width;
+    //         const noteY1 = y;
+    //         const noteY2 = y + height;
+    //         const overlapsWithSelection = doesOverlap(
+    //             noteX1,
+    //             noteX2,
+    //             noteY1,
+    //             noteY2,
+    //             selectionX1,
+    //             selectionX2,
+    //             selectionY1,
+    //             selectionY2
+    //         );
+    //         if (overlapsWithSelection) {
+    //             this._noteSelection.add(rect);
+    //             this._addSelectedAppearance(rect);
+    //         } else {
+    //             this._noteSelection.remove(rect);
+    //             this._removeSelectedAppearance(rect);
+    //         }
+    //         console.log(overlapsWithSelection);
+    //     });
+    // }
+
+    TEMP_HACK_GET_ALL_NOTES() {
+        return this.layer.find('Rect').filter(rect => rect.getAttr('id') !== 'MARQUEE');
     }
 
-    updateSelectionMarquee(x, y) {
-        console.log('updateSelectionMarquee called');
-        const mouseDownX = this._conversionManager.roundToGridCol(
-            this._mouseStateManager.x
-        );
-        const mouseDownY = this._conversionManager.roundToGridRow(
-            this._mouseStateManager.y
-        );
-        const currentX = this._conversionManager.roundToGridCol(x);
-        const currentY = this._conversionManager.roundToGridRow(y);
-        const originX = Math.min(mouseDownX, currentX);
-        const terminalX = Math.max(mouseDownX, currentX);
-        const originY = Math.min(mouseDownY, currentY);
-        const terminalY = Math.max(mouseDownY, currentY);
+    updateSelectionMarquee(originX, originY, terminalX, terminalY) {
         const marquee = this.layer.findOne('#MARQUEE');
         if (!marquee) {
             const newMarquee = new Rect({
@@ -229,14 +224,49 @@ export default class NoteLayer {
             marquee.width(terminalX - originX);
             marquee.height(terminalY - originY);
         }
-        this._reconcileSelectionWithMarquee(
-            originX, 
-            terminalX,
-            originY,
-            terminalY
-        );
         this.layer.batchDraw();
     }
+
+    // _OLD_updateSelectionMarquee(x, y) {
+    //     console.log('updateSelectionMarquee called');
+    //     const mouseDownX = this._conversionManager.roundToGridCol(
+    //         this._mouseStateManager.x
+    //     );
+    //     const mouseDownY = this._conversionManager.roundToGridRow(
+    //         this._mouseStateManager.y
+    //     );
+    //     const currentX = this._conversionManager.roundToGridCol(x);
+    //     const currentY = this._conversionManager.roundToGridRow(y);
+    //     const originX = Math.min(mouseDownX, currentX);
+    //     const terminalX = Math.max(mouseDownX, currentX);
+    //     const originY = Math.min(mouseDownY, currentY);
+    //     const terminalY = Math.max(mouseDownY, currentY);
+    //     const marquee = this.layer.findOne('#MARQUEE');
+    //     if (!marquee) {
+    //         const newMarquee = new Rect({
+    //             x: originX,
+    //             y: originY,
+    //             width: terminalX - originX,
+    //             height: terminalY - originY,
+    //             fill: '#08b5d3',
+    //             opacity: 0.4,
+    //             id: 'MARQUEE'
+    //         });
+    //         this.layer.add(newMarquee); 
+    //     } else {
+    //         marquee.x(originX);
+    //         marquee.y(originY);
+    //         marquee.width(terminalX - originX);
+    //         marquee.height(terminalY - originY);
+    //     }
+    //     this._reconcileSelectionWithMarquee(
+    //         originX, 
+    //         terminalX,
+    //         originY,
+    //         terminalY
+    //     );
+    //     this.layer.batchDraw();
+    // }
 
     clearSelectionMarquee() {
         const marquee = this.layer.findOne('#MARQUEE');
@@ -246,8 +276,17 @@ export default class NoteLayer {
         }
     }
 
-    _shiftSelectionPitchUp() {
-        const notes = this._noteSelection.toArray();
+    _addSelectedAppearance(noteRect) {
+        noteRect.fill('#222');
+        this.layer.batchDraw();
+    }
+
+    _removeSelectedAppearance(noteRect) {
+        noteRect.fill('green');
+        this.layer.batchDraw();
+    }
+
+    _shiftSelectionPitchUp(notes) {
         if (!canShiftUp(notes)) {
             return;
         }
@@ -257,11 +296,10 @@ export default class NoteLayer {
             );
         });
         this.layer.batchDraw();
-        this.confirmNotes();
+        this.updateNotesAttributeCaches(notes);
     }
 
-    _shiftSelectionPitchDown() {
-        const notes = this._noteSelection.toArray();
+    _shiftSelectionPitchDown(notes) {
         if (!canShiftDown(notes, this._conversionManager.gridHeight)) {
             return;
         }
@@ -271,11 +309,10 @@ export default class NoteLayer {
             );
         });
         this.layer.batchDraw();
-        this.confirmNotes();
+        this.updateNotesAttributeCaches(notes);
     }
 
-    _shiftSelectionTimeBackwards() {
-        const notes = this._noteSelection.toArray();
+    _shiftSelectionTimeBackwards(notes) {
         if (!canShiftLeft(notes)) {
             return;
         }
@@ -285,11 +322,10 @@ export default class NoteLayer {
             );
         });
         this.layer.batchDraw();
-        this.confirmNotes();
+        this.updateNotesAttributeCaches(notes);
     }
 
-    _shiftSelectionTimeForwards() {
-        const notes = this._noteSelection.toArray();
+    _shiftSelectionTimeForwards(notes) {
         if (!canShiftRight(notes, this._conversionManager.gridWidth)) {
             return;
         }
@@ -299,7 +335,7 @@ export default class NoteLayer {
             );
         });
         this.layer.batchDraw();
-        this.confirmNotes();
+        this.updateNotesAttributeCaches(notes);
     }
 
 }

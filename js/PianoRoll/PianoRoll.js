@@ -20,6 +20,8 @@ import NoteSelection from '../NoteSelection';
 import KeyboardStateManager from '../KeyboardStateManager';
 import MouseStateManager from '../MouseStateManager';
 import ScrollManager from '../ScrollManager';
+import VelocityLayer from '../VelocityLayer';
+import { doesOverlap } from './utils';
 
 export default class PianoRoll {
     constructor(containerId, width = STAGE_WIDTH, height = STAGE_HEIGHT) {
@@ -39,9 +41,9 @@ export default class PianoRoll {
         this._noteLayer = new NoteLayer(
             this._conversionManager, 
             this._audioReconciler,
-            this._noteSelection,
             this._mouseStateManager
         );
+        this._velocityLayer = new VelocityLayer(this._conversionManager);
         this._pianoKeyLayer = new PianoKeyLayer();
         this._scrollManager = new ScrollManager(
             this._gridLayer,
@@ -79,16 +81,24 @@ export default class PianoRoll {
             }
         });
         this._keyboardStateManager.addKeyListener('ArrowUp', () => {
-            this._noteLayer._shiftSelectionPitchUp();
+            this._noteLayer._shiftSelectionPitchUp(
+                this._noteSelection.toArray()
+            );
         });
         this._keyboardStateManager.addKeyListener('ArrowDown', () => {
-            this._noteLayer._shiftSelectionPitchDown();
+            this._noteLayer._shiftSelectionPitchDown(
+                this._noteSelection.toArray()
+            );
         });
         this._keyboardStateManager.addKeyListener('ArrowLeft', () => {
-            this._noteLayer._shiftSelectionTimeBackwards();
+            this._noteLayer._shiftSelectionTimeBackwards(
+                this._noteSelection.toArray()
+            );
         });
         this._keyboardStateManager.addKeyListener('ArrowRight', () => {
-            this._noteLayer._shiftSelectionTimeForwards();
+            this._noteLayer._shiftSelectionTimeForwards(
+                this._noteSelection.toArray()
+            );
         });
         emitter.subscribe(ACTIVE_TOOL_UPDATE, tool => {
             this._activeTool = tool;
@@ -99,10 +109,12 @@ export default class PianoRoll {
     init() {
         this.addLayer(this._gridLayer);
         this.addLayer(this._noteLayer);
+        this.addLayer(this._velocityLayer);
         this.addLayer(this._pianoKeyLayer);
         this.addLayer(this._scrollbarLayer);
         this._gridLayer.draw();
         this._noteLayer.draw();
+        this._velocityLayer.draw();
         this._pianoKeyLayer.draw();
         this._scrollbarLayer.draw();
     }
@@ -120,6 +132,14 @@ export default class PianoRoll {
         this._audioReconciler.removeNotes(notes);
     }
 
+
+
+
+
+
+    /******************
+     Mouse down logic
+    *******************/
     _handleMouseDown(e) {
         const { evt, target } = e;
         const evtX = evt.offsetX - this._scrollManager.x;
@@ -142,8 +162,11 @@ export default class PianoRoll {
         } else if (this._activeTool === 'pencil') {
             console.log('enter adjust note size mode');
             this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
-            this._noteSelection.clear();
-            this._noteLayer.addNewNote(roundedX, roundedY);
+            const cleared = this._noteSelection.clear();
+            cleared.forEach(noteRect => this._noteLayer._removeSelectedAppearance(noteRect));
+            const newNote = this._noteLayer.addNewNote(roundedX, roundedY);
+            this._velocityLayer.addNewVelocityMarker(roundedX);
+            this._noteSelection.add(newNote);
             // else if cursor tool is active, a mousedown can result in transitioning to the adjust
             // note size state, adjust note position state, or no transtition at all, depending on the
             // events target and location.
@@ -158,25 +181,26 @@ export default class PianoRoll {
             const isSelected = this._noteSelection.has(target);
             if (isEdgeClick) {
                 if (!isSelected) {
-                    this._noteSelection.clear();
+                    const cleared = this._noteSelection.clear();
+                    cleared.forEach(noteRect => this._noteLayer._removeSelectedAppearance(noteRect));
                     this._noteSelection.add(target);
+                    this._noteLayer._addSelectedAppearance(target);
                 } 
                 this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
             } else {
                 this._dragMode = DRAG_MODE_ADJUST_NOTE_POSITION;
-                // if (isSelected) {
-                //     this._setDragMode(DRAG_MODE_ADJUST_NOTE_POSITION);
-                // } else {
-                    // if (!this._keyboardStateManager.shiftKey) {
-                    //     this._noteSelection.clear();
-                    // }
-                    // this._noteSelection.add(target);
-                    // this._noteLayer.layer.batchDraw();
-                // }
             }
         }
     }
 
+
+
+
+
+
+    /*****************
+     Mouse move logic
+    ******************/
     handleMouseMove(e) {
         switch (this._dragMode) {
             case DRAG_MODE_ADJUST_NOTE_SIZE:
@@ -197,7 +221,8 @@ export default class PianoRoll {
         //console.log('handleAdjustNoteSizeMouseMove was called')
         const { offsetX } = e.evt;
         const x = offsetX - this._gridLayer.layer.x();
-        this._noteLayer.updateNoteDurations(x);
+        const selectedNotes = this._noteSelection.toArray();
+        this._noteLayer.updateNoteDurations(x, selectedNotes);
     }
 
     handleAdjustNotePositionMouseMove(e) {
@@ -206,17 +231,67 @@ export default class PianoRoll {
         const x = offsetX - this._gridLayer.layer.x();
         const y = offsetY - this._gridLayer.layer.y();
         this._mouseStateManager.updateHasTravelled(x, y);
-        this._noteLayer.repositionSelectedNotes(x, y);
+        const notes = this._noteSelection.toArray();
+        this._noteLayer.repositionSelectedNotes(x, y, notes);
     }
 
     handleAdjustSelectionMouseMove(e) {
         console.log('handle adjust selection mouse move called');
         const { offsetX, offsetY } = e.evt;
-        const x = offsetX - this._gridLayer.layer.x();
-        const y = offsetY - this._gridLayer.layer.y();
-        this._noteLayer.updateSelectionMarquee(x, y);
+        const currentX = this._conversionManager.roundToGridCol(
+            offsetX - this._scrollManager.x
+        );
+        const currentY = this._conversionManager.roundDownToGridRow(
+            offsetY - this._scrollManager.y
+        );
+        const mouseDownX = this._conversionManager.roundToGridCol(
+            this._mouseStateManager.x
+        );
+        const mouseDownY = this._conversionManager.roundToGridRow(
+            this._mouseStateManager.y
+        );
+        const selectionX1 = Math.min(mouseDownX, currentX);
+        const selectionX2 = Math.max(mouseDownX, currentX);
+        const selectionY1 = Math.min(mouseDownY, currentY);
+        const selectionY2 = Math.max(mouseDownY, currentY);
+        
+        this._noteLayer.updateSelectionMarquee(selectionX1, selectionY1, selectionX2, selectionY2);
+
+        const allNotes = this._noteLayer.TEMP_HACK_GET_ALL_NOTES();
+
+        allNotes.forEach(noteRect => {
+            const { x, y, width, height } = noteRect.attrs;
+            const noteX1 = x;
+            const noteX2 = x + width;
+            const noteY1 = y;
+            const noteY2 = y + height;
+            const overlapsWithSelection = doesOverlap(
+                noteX1,
+                noteX2,
+                noteY1,
+                noteY2,
+                selectionX1,
+                selectionX2,
+                selectionY1,
+                selectionY2
+            );
+            if (overlapsWithSelection) {
+                this._noteSelection.add(noteRect);
+                this._noteLayer._addSelectedAppearance(noteRect);
+            } else {
+                this._noteSelection.remove(noteRect);
+                this._noteLayer._removeSelectedAppearance(noteRect);
+            }
+        });
     }
 
+
+
+
+
+    /***************
+     Mouse up logic
+    ****************/
     handleMouseUp(e) {
         switch (this._dragMode) {
             case DRAG_MODE_ADJUST_NOTE_SIZE:
@@ -235,21 +310,40 @@ export default class PianoRoll {
 
     handleAdjustNoteSizeMouseUp(e) {
         this._dragMode = null;
-        this._noteLayer.confirmNotes();
+        const notes = this._noteSelection.toArray();
+        this._noteLayer.updateNotesAttributeCaches(notes);
     }
 
     handleAdjustNotePositionMouseUp(e) {
         //console.log('handle adjust note position mouse up called');
         if (!this._mouseStateManager.hasTravelled) {
             const { target } = e;
-            this._noteSelection.update(
-                target,
-                this._keyboardStateManager.shiftKey
-            );
-            this._noteLayer.layer.batchDraw();
+            // this._noteSelection.update(
+            //     target,
+            //     this._keyboardStateManager.shiftKey
+            // );
+            // this._noteLayer.layer.batchDraw();
+            const isCurrentlySelected = this._noteSelection.has(target);
+            if (this._keyboardStateManager.shiftKey) {
+                if (isCurrentlySelected) {
+                    this._noteSelection.remove(target);
+                    this._noteLayer._removeSelectedAppearance(target);
+                } else {
+                    this._noteSelection.add(target);
+                    this._noteLayer._addSelectedAppearance(target);
+                }
+            } else {
+                const cleared = this._noteSelection.clear();
+                cleared.forEach(noteRect => this._noteLayer._removeSelectedAppearance(noteRect));
+                if (!isCurrentlySelected) {
+                    this._noteSelection.add(target);
+                    this._noteLayer._addSelectedAppearance(target);
+                }
+            }
             console.log('has travelled');
         }
-        this._noteLayer.confirmNotes();
+        const notes = this._noteSelection.toArray();
+        this._noteLayer.updateNotesAttributeCaches(notes);
         this._dragMode = null;
     }
 

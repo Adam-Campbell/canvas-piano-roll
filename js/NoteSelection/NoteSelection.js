@@ -34,17 +34,19 @@ export default class NoteSelection {
 
     add(note) {
         this._cache[note.attrs.id] = note;
-        this._addSelectedAppearance(note);
+        //this._addSelectedAppearance(note);
     }
 
     remove(note) {
         delete this._cache[note.attrs.id];
-        this._removeSelectedAppearance(note);
+        //this._removeSelectedAppearance(note);
     }
 
     clear() {
-        this.each(note => this._removeSelectedAppearance(note));
+        const selected = this.toArray();
+        //selected.forEeach(note => this._removeSelectedAppearance(note));
         this._cache = {};
+        return  selected;
     }
 
     each(cb) {

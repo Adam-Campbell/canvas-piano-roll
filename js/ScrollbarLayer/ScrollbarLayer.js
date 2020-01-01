@@ -7,7 +7,8 @@ import {
     SCROLLBAR_THUMB_LENGTH,
     SCROLLBAR_GUTTER,
     NOTES_GRID_WIDTH,
-    NOTES_GRID_HEIGHT
+    NOTES_GRID_HEIGHT,
+    VELOCITY_LAYER_HEIGHT
 } from '../constants';
 import { clamp } from './utils';
 
@@ -60,7 +61,7 @@ export default class ScrollbarLayer {
         verticalThumb.on('dragmove', e => {
             const yPos = e.target.attrs.y - SCROLLBAR_GUTTER;
             const yDecimal = yPos / totalVerticalThumbRange;
-            const newLayerY = -1 * yDecimal * (NOTES_GRID_HEIGHT - STAGE_HEIGHT + SCROLLBAR_WIDTH);
+            const newLayerY = -1 * yDecimal * (NOTES_GRID_HEIGHT - STAGE_HEIGHT + SCROLLBAR_WIDTH + VELOCITY_LAYER_HEIGHT);
             // this._gridLayer.updateY(newLayerY);
             // this._noteLayer.updateY(newLayerY);
             // this._pianoKeyLayer.updateY(newLayerY);
