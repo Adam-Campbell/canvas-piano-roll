@@ -1,7 +1,8 @@
 export default class ScrollManager {
-    constructor(gridLayer, noteLayer, pianoKeyLayer) {
+    constructor(gridLayer, noteLayer, velocityLayer, pianoKeyLayer) {
         this._gridLayer = gridLayer;
         this._noteLayer = noteLayer;
+        this._velocityLayer = velocityLayer;
         this._pianoKeyLayer = pianoKeyLayer;
         this._x = 120;
         this._y = 0;
@@ -14,6 +15,7 @@ export default class ScrollManager {
     set x(x) {
         this._x = x;
         this._gridLayer.updateX(x);
+        this._velocityLayer.updateX(x);
         this._noteLayer.updateX(x);
     }
 

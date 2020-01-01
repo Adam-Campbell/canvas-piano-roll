@@ -130,10 +130,15 @@ export default class NoteLayer {
         });
         // This stuff below should be dealt with by PianoRoll
         this._audioReconciler.addNotes(notes);
-        const allNoteRects = this.layer.find('Rect');
-        const asNotes = allNoteRects.map(noteRect => {
-            return this._audioReconciler._deriveNoteFromRect(noteRect);
-        });
+        // const allNoteRects = this.layer.find('Rect');
+        // const asNotes = allNoteRects.map(noteRect => {
+        //     return this._audioReconciler._deriveNoteFromRect(noteRect);
+        // });
+    }
+
+    deleteNotes(notes) {
+        notes.forEach(note => note.destroy());
+        this.layer.batchDraw();
     }
 
     draw() {
@@ -141,18 +146,18 @@ export default class NoteLayer {
         this.layer.draw();
     }
 
-    repositionSelectedNotes(x, y, notes) {
+    repositionNotes(xDelta, yDelta, notes) {
         console.log('repositionSelectedNotes was called');
-        const xDelta = this._conversionManager.roundToGridCol(
-            x - this._mouseStateManager.x
-        );
-        const yDelta = this._conversionManager.roundToGridRow(
-            y - this._mouseStateManager.y
-        );
-        console.log({
-            xDelta,
-            yDelta
-        });
+        // const xDelta = this._conversionManager.roundToGridCol(
+        //     x - this._mouseStateManager.x
+        // );
+        // const yDelta = this._conversionManager.roundToGridRow(
+        //     y - this._mouseStateManager.y
+        // );
+        // console.log({
+        //     xDelta,
+        //     yDelta
+        // });
         notes.forEach(note => {
             const { cachedX, cachedY } = note.attrs;
             const newX = Math.max(
@@ -286,10 +291,7 @@ export default class NoteLayer {
         this.layer.batchDraw();
     }
 
-    _shiftSelectionPitchUp(notes) {
-        if (!canShiftUp(notes)) {
-            return;
-        }
+    shiftNotesUp(notes) {
         notes.forEach(note => {
             note.y(
                 note.y() - this._conversionManager.rowHeight
@@ -299,10 +301,10 @@ export default class NoteLayer {
         this.updateNotesAttributeCaches(notes);
     }
 
-    _shiftSelectionPitchDown(notes) {
-        if (!canShiftDown(notes, this._conversionManager.gridHeight)) {
-            return;
-        }
+    shiftNotesDown(notes) {
+        // if (!canShiftDown(notes, this._conversionManager.gridHeight)) {
+        //     return;
+        // }
         notes.forEach(note => {
             note.y(
                 note.y() + this._conversionManager.rowHeight
@@ -312,10 +314,10 @@ export default class NoteLayer {
         this.updateNotesAttributeCaches(notes);
     }
 
-    _shiftSelectionTimeBackwards(notes) {
-        if (!canShiftLeft(notes)) {
-            return;
-        }
+    shiftNotesLeft(notes) {
+        // if (!canShiftLeft(notes)) {
+        //     return;
+        // }
         notes.forEach(note => {
             note.x(
                 note.x() - this._conversionManager.colWidth
@@ -325,10 +327,10 @@ export default class NoteLayer {
         this.updateNotesAttributeCaches(notes);
     }
 
-    _shiftSelectionTimeForwards(notes) {
-        if (!canShiftRight(notes, this._conversionManager.gridWidth)) {
-            return;
-        }
+    shiftNotesRight(notes) {
+        // if (!canShiftRight(notes, this._conversionManager.gridWidth)) {
+        //     return;
+        // }
         notes.forEach(note => {
             note.x(
                 note.x() + this._conversionManager.colWidth
