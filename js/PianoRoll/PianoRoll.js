@@ -4,7 +4,9 @@ import {
     STAGE_HEIGHT,
     DRAG_MODE_ADJUST_NOTE_SIZE,
     DRAG_MODE_ADJUST_NOTE_POSITION,
-    DRAG_MODE_ADJUST_SELECTION
+    DRAG_MODE_ADJUST_SELECTION,
+    VELOCITY_LAYER_HEIGHT,
+    SCROLLBAR_WIDTH
 } from '../constants';
 import {
     ACTIVE_TOOL_UPDATE
@@ -139,6 +141,7 @@ export default class PianoRoll {
         this._velocityLayer.deleteVelocityMarkers(notes);
         this._noteLayer.deleteNotes(notes);
         this._audioReconciler.removeNotes(notes);
+        this._noteSelection.clear();
     }
 
     _shiftSelectionUp() {
@@ -179,8 +182,9 @@ export default class PianoRoll {
     *******************/
     _handleMouseDown(e) {
         const { evt, target } = e;
-        const evtX = evt.offsetX - this._scrollManager.x;
-        const evtY = evt.offsetY - this._scrollManager.y;
+        const { offsetX, offsetY } = evt;
+        const evtX = offsetX - this._scrollManager.x;
+        const evtY = offsetY - this._scrollManager.y;
 
         const roundedX = this._conversionManager.roundDownToGridCol(evtX);
         const roundedY = this._conversionManager.roundDownToGridRow(evtY);
@@ -212,6 +216,31 @@ export default class PianoRoll {
             // events target and location.
         } else if (this._activeTool === 'cursor') {
             console.log('cursor active, logic missing');
+            const isVelocityLayerClick = STAGE_HEIGHT - offsetY <= VELOCITY_LAYER_HEIGHT + SCROLLBAR_WIDTH;
+            if (isVelocityLayerClick) {
+                console.log('is velocity layer click, no further action required');
+                const pxFromBottom = Math.min(
+                    STAGE_HEIGHT - offsetY - SCROLLBAR_WIDTH,
+                    50
+                );
+                const velocityValue = pxFromBottom / 50;
+                const {
+                    matchingRects,
+                    selectedMatchingRects
+                } = this._velocityLayer.TEMP_HACK_GET_VELOCITY_RECTS(roundedX);
+                let velocityMarkersToUpdate;
+                if (matchingRects.length === 0) {
+                    console.log('nothing to update');
+                } else if (selectedMatchingRects.length === 0) {
+                    velocityMarkersToUpdate = matchingRects;
+                    console.log('update all of the matching rects');
+                } else {
+                    velocityMarkersToUpdate = selectedMatchingRects;
+                    console.log('update only the selected matching rects');
+                }
+                this._velocityLayer.updateVelocityMarkersHeight(velocityMarkersToUpdate, pxFromBottom);
+
+            }
             const targetIsNote = Boolean(target.getAttr('isNoteRect'));
             if (!targetIsNote) {
                 return;
@@ -400,7 +429,7 @@ export default class PianoRoll {
                     this._velocityLayer.addSelectedAppearance(target);
                 }
             }
-            console.log('has travelled');
+            //console.log('has travelled');
         }
         const notes = this._noteSelection.toArray();
         this._noteLayer.updateNotesAttributeCaches(notes);

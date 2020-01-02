@@ -12,9 +12,10 @@ export default class VelocityLayer {
         this._border = this._constructBorder();
         this._unselectedGroup = new Group();
         this._selectedGroup = new Group();
-        this.layer.on('mousedown', e => {
-            this._handleMouseDown(e);
-        });
+        this._hasActiveInteraction = true;
+        // this.layer.on('mousedown', e => {
+        //     this._handleMouseDown(e);
+        // });
     }
 
     updateX(x) {
@@ -54,7 +55,8 @@ export default class VelocityLayer {
             y: STAGE_HEIGHT - SCROLLBAR_WIDTH - 50,
             fill: '#222',
             id,
-            cachedX: x
+            cachedX: x,
+            name: 'VELOCITY_MARKER'
         });
         //this._unselectedGroup.add(velocityMarker);
         velocityMarker.moveTo(this._selectedGroup);
@@ -138,6 +140,29 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
+    TEMP_HACK_GET_VELOCITY_RECTS(x) {
+        const matchingRects = this.layer.find('.VELOCITY_MARKER')
+        .filter(velocityRect => velocityRect.x() === x)
+        
+        const selectedMatchingRects = matchingRects.filter(velocityRect => {
+            return velocityRect.fill() === '#222';
+        });
+
+        return {
+            matchingRects,
+            selectedMatchingRects
+        };
+    }
+
+    updateVelocityMarkersHeight(velocityMarkers, newHeight) {
+        velocityMarkers.forEach(velocityRect => {
+            const { y, height } = velocityRect.attrs;
+            velocityRect.height(newHeight);
+            velocityRect.y(STAGE_HEIGHT - SCROLLBAR_WIDTH - newHeight);
+        });
+        this.layer.batchDraw();
+    }
+
     /*
         Mousedown logic:
 
@@ -165,12 +190,47 @@ export default class VelocityLayer {
         const { evt, target } = e;
         const { offsetX, offsetY } = evt;
 
-        const pxFromBottom = STAGE_HEIGHT - offsetY - SCROLLBAR_WIDTH;
+        // const pxFromBottom = STAGE_HEIGHT - offsetY - SCROLLBAR_WIDTH;
+        const pxFromBottom = Math.min(
+            STAGE_HEIGHT - offsetY - SCROLLBAR_WIDTH,
+            50
+        );
         const velocityValue = pxFromBottom / 50;
+
+        
         
         const roundedX = this._conversionManager.roundDownToGridCol(
             offsetX - this.layer.x()
         );
-        console.log(roundedX);
+        //console.log(roundedX);
+        const matchingRects = this.layer.find('.VELOCITY_MARKER')
+        .filter(velocityRect => velocityRect.x() === roundedX)
+        
+        const selectedMatchingRects = matchingRects.filter(velocityRect => {
+            return velocityRect.fill() === '#222';
+        });
+
+        //console.log(matchingRects, selectedMatchingRects);
+
+        let velocityMarkersToUpdate;
+
+        if (matchingRects.length === 0) {
+            console.log('nothing to update');
+        } else if (selectedMatchingRects.length === 0) {
+            velocityMarkersToUpdate = matchingRects;
+            console.log('update all of the matching rects');
+        } else {
+            velocityMarkersToUpdate = selectedMatchingRects;
+            console.log('update only the selected matching rects');
+        }
+
+        velocityMarkersToUpdate.forEach(velocityRect => {
+            const { y, height } = velocityRect.attrs;
+            velocityRect.height(pxFromBottom);
+            velocityRect.y(STAGE_HEIGHT - SCROLLBAR_WIDTH - pxFromBottom);
+        });
+        this.layer.batchDraw();
+
     }
+
 }
