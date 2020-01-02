@@ -30,6 +30,8 @@ import {
     canShiftLeft,
     canShiftRight
 } from './utils';
+import CanvasElementCache from '../CanvasElementCache';
+import { genId } from '../genId';
 
 export default class PianoRoll {
     constructor(containerId, width = STAGE_WIDTH, height = STAGE_HEIGHT) {
@@ -40,6 +42,8 @@ export default class PianoRoll {
             width,
             height
         });
+        this._noteCache = new CanvasElementCache();
+        this._velocityMarkerCache = new CanvasElementCache();
         this._keyboardStateManager = new KeyboardStateManager(this._stage.container());
         this._mouseStateManager = new MouseStateManager();
         this._conversionManager = new ConversionManager();
@@ -90,27 +94,15 @@ export default class PianoRoll {
             }
         });
         this._keyboardStateManager.addKeyListener('ArrowUp', () => {
-            // this._noteLayer._shiftSelectionPitchUp(
-            //     this._noteSelection.toArray()
-            // );
             this._shiftSelectionUp();
         });
         this._keyboardStateManager.addKeyListener('ArrowDown', () => {
-            // this._noteLayer._shiftSelectionPitchDown(
-            //     this._noteSelection.toArray()
-            // );
             this._shiftSelectionDown();
         });
         this._keyboardStateManager.addKeyListener('ArrowLeft', () => {
-            // this._noteLayer._shiftSelectionTimeBackwards(
-            //     this._noteSelection.toArray()
-            // );
             this._shiftSelectionLeft();
         });
         this._keyboardStateManager.addKeyListener('ArrowRight', () => {
-            // this._noteLayer._shiftSelectionTimeForwards(
-            //     this._noteSelection.toArray()
-            // );
             this._shiftSelectionRight();
         });
         emitter.subscribe(ACTIVE_TOOL_UPDATE, tool => {
@@ -137,40 +129,92 @@ export default class PianoRoll {
     }
 
     _deleteSelectedNotes() {
-        const notes = this._noteSelection.toArray();
-        this._velocityLayer.deleteVelocityMarkers(notes);
-        this._noteLayer.deleteNotes(notes);
-        this._audioReconciler.removeNotes(notes);
+
+        const selectedNoteIds = this._noteSelection.retreiveAll();
+        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
+        const selectedVelocityMarkerElements = this._velocityMarkerCache.retrieve(selectedNoteIds);
+        this._noteLayer.deleteNotes(selectedNoteElements);
+        this._velocityLayer.deleteVelocityMarkers(selectedVelocityMarkerElements);
+        //this._audioReconciler.removeNotes(selectedNoteElements);
+        this._noteSelection.clear();
+
+        // const notes = this._noteSelection.toArray();
+        // this._velocityLayer.deleteVelocityMarkers(notes);
+        // this._noteLayer.deleteNotes(notes);
+        // this._audioReconciler.removeNotes(notes);
+        // this._noteSelection.clear();
+    }
+
+    _clearSelection() {
+        console.log('clearSelection was called');
+        const selectedNoteIds = this._noteSelection.retreiveAll();
+        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
+        const selectedVelocityMarkerElements = this._velocityMarkerCache.retrieve(selectedNoteIds);
+        selectedNoteElements.forEach(el => this._noteLayer.removeSelectedAppearance(el));
+        selectedVelocityMarkerElements.forEach(el => this._velocityLayer.removeSelectedAppearance(el));
         this._noteSelection.clear();
     }
 
+    _addNoteToSelection(noteElement) {
+        this._noteSelection.add(noteElement);
+        const velocityMarkerElement = this._velocityMarkerCache.retrieveOne(noteElement.attrs.id);
+        this._noteLayer.addSelectedAppearance(noteElement);
+        this._velocityLayer.addSelectedAppearance(velocityMarkerElement);
+    }
+
+    _removeNoteFromSelection(noteElement) {
+        this._noteSelection.remove(noteElement);
+        const velocityMarkerElement = this._velocityMarkerCache.retrieveOne(noteElement.attrs.id);
+        this._noteLayer.removeSelectedAppearance(noteElement);
+        this._velocityLayer.removeSelectedAppearance(velocityMarkerElement);
+    } 
+
+    _addNewNote(x, y) {
+        const id = genId();
+        const newNote = this._noteLayer.addNewNote(x, y, id);
+        const newVelocityMarker = this._velocityLayer.addNewVelocityMarker(x, id);
+        this._noteCache.add(newNote);
+        this._velocityMarkerCache.add(newVelocityMarker);
+        this._noteSelection.add(newNote);
+    }
+
     _shiftSelectionUp() {
-        const noteRects = this._noteSelection.toArray();
-        if (canShiftUp(noteRects)) {
-            this._noteLayer.shiftNotesUp(noteRects);
+        const selectedNoteIds = this._noteSelection.retreiveAll();
+        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
+        if (canShiftUp(selectedNoteElements)) {
+            this._noteLayer.shiftNotesUp(selectedNoteElements);
         }
     }
 
     _shiftSelectionDown() {
-        const noteRects = this._noteSelection.toArray();
-        if (canShiftDown(noteRects, this._conversionManager.gridHeight)) {
-            this._noteLayer.shiftNotesDown(noteRects);
+        const selectedNoteIds = this._noteSelection.retreiveAll();
+        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
+        if (canShiftDown(selectedNoteElements, this._conversionManager.gridHeight)) {
+            this._noteLayer.shiftNotesDown(selectedNoteElements);
         }
     }
 
     _shiftSelectionLeft() {
-        const noteRects = this._noteSelection.toArray();
-        if (canShiftLeft(noteRects)) {
-            this._noteLayer.shiftNotesLeft(noteRects);
-            this._velocityLayer.shiftVelocityMarkersLeft(noteRects);
+        const selectedNoteIds = this._noteSelection.retreiveAll();
+        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
+        const selectedVelocityMarkerElements = this._velocityMarkerCache.retrieve(
+            selectedNoteIds
+        );
+        if (canShiftLeft(selectedNoteElements)) {
+            this._noteLayer.shiftNotesLeft(selectedNoteElements);
+            this._velocityLayer.shiftVelocityMarkersLeft(selectedVelocityMarkerElements);
         }
     }
 
     _shiftSelectionRight() {
-        const noteRects = this._noteSelection.toArray();
-        if (canShiftRight(noteRects, this._conversionManager.gridWidth)) {
-            this._noteLayer.shiftNotesRight(noteRects);
-            this._velocityLayer.shiftVelocityMarkersRight(noteRects);
+        const selectedNoteIds = this._noteSelection.retreiveAll();
+        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
+        const selectedVelocityMarkerElements = this._velocityMarkerCache.retrieve(
+            selectedNoteIds
+        );
+        if (canShiftRight(selectedNoteElements, this._conversionManager.gridWidth)) {
+            this._noteLayer.shiftNotesRight(selectedNoteElements);
+            this._velocityLayer.shiftVelocityMarkersRight(selectedVelocityMarkerElements);
         }
     }
 
@@ -195,52 +239,56 @@ export default class PianoRoll {
         // If marquee tool is active, a mousedown will always result in a transition to the
         // selection mode
         if (this._activeTool === 'marquee') {
-            console.log('enter selection mode');
             this._dragMode = DRAG_MODE_ADJUST_SELECTION;
 
             // else if pencil tool is active, a mousedown will always result in a transition to the
             // adjust note size drag mode
         } else if (this._activeTool === 'pencil') {
-            console.log('enter adjust note size mode');
+            // this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
+            // const cleared = this._noteSelection.clear();
+            // cleared.forEach(noteRect => {
+            //     this._noteLayer._removeSelectedAppearance(noteRect);
+            //     this._velocityLayer.removeSelectedAppearance(noteRect);
+            // });
             this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
-            const cleared = this._noteSelection.clear();
-            cleared.forEach(noteRect => {
-                this._noteLayer._removeSelectedAppearance(noteRect);
-                this._velocityLayer.removeSelectedAppearance(noteRect);
-            });
-            const newNote = this._noteLayer.addNewNote(roundedX, roundedY);
-            this._velocityLayer.addNewVelocityMarker(newNote);
-            this._noteSelection.add(newNote);
+            this._clearSelection();
+            this._addNewNote(roundedX, roundedY);
+            //this._noteSelection.add(newNoteId);
+            // const newNote = this._noteLayer.addNewNote(roundedX, roundedY);
+            // this._velocityLayer.addNewVelocityMarker(newNote);
+            // this._noteSelection.add(newNote);
             // else if cursor tool is active, a mousedown can result in transitioning to the adjust
             // note size state, adjust note position state, or no transtition at all, depending on the
             // events target and location.
         } else if (this._activeTool === 'cursor') {
-            console.log('cursor active, logic missing');
             const isVelocityLayerClick = STAGE_HEIGHT - offsetY <= VELOCITY_LAYER_HEIGHT + SCROLLBAR_WIDTH;
             if (isVelocityLayerClick) {
-                console.log('is velocity layer click, no further action required');
                 const pxFromBottom = Math.min(
                     STAGE_HEIGHT - offsetY - SCROLLBAR_WIDTH,
                     50
                 );
                 const velocityValue = pxFromBottom / 50;
-                const {
-                    matchingRects,
-                    selectedMatchingRects
-                } = this._velocityLayer.TEMP_HACK_GET_VELOCITY_RECTS(roundedX);
+                const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
+                const matchingMarkers = allVelocityMarkers.filter(el => el.x() === roundedX);
+                const selectedMatchingMarkers = matchingMarkers.filter(el => {
+                    return this._noteSelection.has(el);
+                });
                 let velocityMarkersToUpdate;
-                if (matchingRects.length === 0) {
-                    console.log('nothing to update');
-                } else if (selectedMatchingRects.length === 0) {
-                    velocityMarkersToUpdate = matchingRects;
-                    console.log('update all of the matching rects');
+                if (matchingMarkers.length === 0) {
+                    return;
+                } else if (selectedMatchingMarkers.length === 0) {
+                    velocityMarkersToUpdate = matchingMarkers;
                 } else {
-                    velocityMarkersToUpdate = selectedMatchingRects;
-                    console.log('update only the selected matching rects');
+                    velocityMarkersToUpdate = selectedMatchingMarkers;
                 }
                 this._velocityLayer.updateVelocityMarkersHeight(velocityMarkersToUpdate, pxFromBottom);
-
+                velocityMarkersToUpdate.forEach(velocityRect => {
+                    const id = velocityRect.getAttr('id');
+                    //this._audioReconciler.updateNoteVelocity(id, velocityValue);
+                });
+                return;
             }
+
             const targetIsNote = Boolean(target.getAttr('isNoteRect'));
             if (!targetIsNote) {
                 return;
@@ -250,14 +298,16 @@ export default class PianoRoll {
             const isSelected = this._noteSelection.has(target);
             if (isEdgeClick) {
                 if (!isSelected) {
-                    const cleared = this._noteSelection.clear();
-                    cleared.forEach(noteRect => {
-                        this._noteLayer._removeSelectedAppearance(noteRect);
-                        this._velocityLayer.removeSelectedAppearance(noteRect);
-                    });
-                    this._noteSelection.add(target);
-                    this._noteLayer._addSelectedAppearance(target);
-                    this._velocityLayer.addSelectedAppearance(target);
+                    // const cleared = this._noteSelection.clear();
+                    // cleared.forEach(noteRect => {
+                    //     this._noteLayer._removeSelectedAppearance(noteRect);
+                    //     this._velocityLayer.removeSelectedAppearance(noteRect);
+                    // });
+                    this._clearSelection();
+                    this._addNoteToSelection(target);
+                    // this._noteSelection.add(target);
+                    // this._noteLayer.addSelectedAppearance(target);
+                    // this._velocityLayer.addSelectedAppearance(target);
                 } 
                 this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
             } else {
@@ -294,8 +344,9 @@ export default class PianoRoll {
         //console.log('handleAdjustNoteSizeMouseMove was called')
         const { offsetX } = e.evt;
         const x = offsetX - this._gridLayer.layer.x();
-        const selectedNotes = this._noteSelection.toArray();
-        this._noteLayer.updateNoteDurations(x, selectedNotes);
+        const selectedNoteIds = this._noteSelection.retreiveAll();
+        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
+        this._noteLayer.updateNoteDurations(x, selectedNoteElements);
     }
 
     handleAdjustNotePositionMouseMove(e) {
@@ -310,13 +361,15 @@ export default class PianoRoll {
         const yDelta = this._conversionManager.roundToGridRow(
             y - this._mouseStateManager.y
         );
-        const notes = this._noteSelection.toArray();
-        this._noteLayer.repositionNotes(xDelta, yDelta, notes);
-        this._velocityLayer.repositionVelocityMarkers(xDelta, notes);
+        //const notes = this._noteSelection.toArray();
+        const selectedNoteIds = this._noteSelection.retreiveAll();
+        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
+        const selectedVelocityMarkerElements = this._velocityMarkerCache.retrieve(selectedNoteIds);
+        this._noteLayer.repositionNotes(xDelta, yDelta, selectedNoteElements);
+        this._velocityLayer.repositionVelocityMarkers(xDelta, selectedVelocityMarkerElements);
     }
 
     handleAdjustSelectionMouseMove(e) {
-        console.log('handle adjust selection mouse move called');
         const { offsetX, offsetY } = e.evt;
         const currentX = this._conversionManager.roundToGridCol(
             offsetX - this._scrollManager.x
@@ -337,7 +390,8 @@ export default class PianoRoll {
         
         this._noteLayer.updateSelectionMarquee(selectionX1, selectionY1, selectionX2, selectionY2);
 
-        const allNotes = this._noteLayer.TEMP_HACK_GET_ALL_NOTES();
+        //const allNotes = this._noteLayer.TEMP_HACK_GET_ALL_NOTES();
+        const allNotes = this._noteCache.retrieveAll();
 
         allNotes.forEach(noteRect => {
             const { x, y, width, height } = noteRect.attrs;
@@ -356,13 +410,15 @@ export default class PianoRoll {
                 selectionY2
             );
             if (overlapsWithSelection) {
-                this._noteSelection.add(noteRect);
-                this._noteLayer._addSelectedAppearance(noteRect);
-                this._velocityLayer.addSelectedAppearance(noteRect);
+                this._addNoteToSelection(noteRect);
+                // this._noteSelection.add(noteRect);
+                // this._noteLayer._addSelectedAppearance(noteRect);
+                // this._velocityLayer.addSelectedAppearance(noteRect);
             } else {
-                this._noteSelection.remove(noteRect);
-                this._noteLayer._removeSelectedAppearance(noteRect);
-                this._velocityLayer.removeSelectedAppearance(noteRect);
+                this._removeNoteFromSelection(noteRect);
+                // this._noteSelection.remove(noteRect);
+                // this._noteLayer._removeSelectedAppearance(noteRect);
+                // this._velocityLayer.removeSelectedAppearance(noteRect);
             }
         });
     }
@@ -392,9 +448,12 @@ export default class PianoRoll {
 
     handleAdjustNoteSizeMouseUp(e) {
         this._dragMode = null;
-        const notes = this._noteSelection.toArray();
-        this._noteLayer.updateNotesAttributeCaches(notes);
-        this._velocityLayer.updateVelocityMarkersAttributeCaches(notes);
+        //const notes = this._noteSelection.toArray();
+        const selectedNoteIds = this._noteSelection.retreiveAll();
+        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
+        const selectedVelocityMarkerElements = this._velocityMarkerCache.retrieve(selectedNoteIds);
+        this._noteLayer.updateNotesAttributeCaches(selectedNoteElements);
+        this._velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
     }
 
     handleAdjustNotePositionMouseUp(e) {
@@ -409,36 +468,42 @@ export default class PianoRoll {
             const isCurrentlySelected = this._noteSelection.has(target);
             if (this._keyboardStateManager.shiftKey) {
                 if (isCurrentlySelected) {
-                    this._noteSelection.remove(target);
-                    this._noteLayer._removeSelectedAppearance(target);
-                    this._velocityLayer.removeSelectedAppearance(target);
+                    this._removeNoteFromSelection(target);
+                    // this._noteSelection.remove(target);
+                    // this._noteLayer._removeSelectedAppearance(target);
+                    // this._velocityLayer.removeSelectedAppearance(target);
                 } else {
-                    this._noteSelection.add(target);
-                    this._noteLayer._addSelectedAppearance(target);
-                    this._velocityLayer.addSelectedAppearance(target)
+                    this._addNoteToSelection(target);
+                    // this._noteSelection.add(target);
+                    // this._noteLayer._addSelectedAppearance(target);
+                    // this._velocityLayer.addSelectedAppearance(target)
                 }
             } else {
-                const cleared = this._noteSelection.clear();
-                cleared.forEach(noteRect => {
-                    this._noteLayer._removeSelectedAppearance(noteRect);
-                    this._velocityLayer.removeSelectedAppearance(noteRect);
-                });
+                // const cleared = this._noteSelection.clear();
+                // cleared.forEach(noteRect => {
+                //     this._noteLayer._removeSelectedAppearance(noteRect);
+                //     this._velocityLayer.removeSelectedAppearance(noteRect);
+                // });
+                this._clearSelection();
                 if (!isCurrentlySelected) {
-                    this._noteSelection.add(target);
-                    this._noteLayer._addSelectedAppearance(target);
-                    this._velocityLayer.addSelectedAppearance(target);
+                    // this._noteSelection.add(target);
+                    // this._noteLayer._addSelectedAppearance(target);
+                    // this._velocityLayer.addSelectedAppearance(target);
+                    this._addNoteToSelection(target);
                 }
             }
             //console.log('has travelled');
         }
-        const notes = this._noteSelection.toArray();
-        this._noteLayer.updateNotesAttributeCaches(notes);
-        this._velocityLayer.updateVelocityMarkersAttributeCaches(notes);
+        const selectedNoteIds = this._noteSelection.retreiveAll();
+        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
+        const selectedVelocityMarkerElements = this._velocityMarkerCache.retrieve(selectedNoteIds);
+        //const notes = this._noteSelection.toArray();
+        this._noteLayer.updateNotesAttributeCaches(selectedNoteElements);
+        this._velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
         this._dragMode = null;
     }
 
     handleAdjustSelectionMouseUp(e) {
-        console.log('handle adjust selection mouse up called');
         this._noteLayer.clearSelectionMarquee();
         this._dragMode = null;
     }

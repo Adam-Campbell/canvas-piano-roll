@@ -45,8 +45,7 @@ export default class VelocityLayer {
         return border;
     }
 
-    addNewVelocityMarker(noteRect) {
-        const { x, id } = noteRect.getAttrs();
+    addNewVelocityMarker(x, id) {
         const velocityMarker = new Rect({
             width: 8,
             height: 50,
@@ -61,6 +60,7 @@ export default class VelocityLayer {
         //this._unselectedGroup.add(velocityMarker);
         velocityMarker.moveTo(this._selectedGroup);
         this.layer.batchDraw(); 
+        return velocityMarker;
     }
 
     deleteVelocityMarkers(noteRectsArray) {
@@ -72,18 +72,18 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
-    updateVelocityMarkersAttributeCaches(noteRectsArray) {
-        noteRectsArray.forEach(noteRect => {
-            const id = noteRect.getAttr('id');
-            const velocityRect = this.layer.findOne(`#${id}`);
+    updateVelocityMarkersAttributeCaches(velocityRectsArray) {
+        velocityRectsArray.forEach(velocityRect => {
+            // const id = noteRect.getAttr('id');
+            // const velocityRect = this.layer.findOne(`#${id}`);
             velocityRect.setAttr('cachedX', velocityRect.attrs.x);
         });
     }
 
-    repositionVelocityMarkers(xDelta, noteRectsArray) {
-        noteRectsArray.forEach(noteRect => {
-            const id = noteRect.getAttr('id');
-            const velocityRect = this.layer.findOne(`#${id}`);
+    repositionVelocityMarkers(xDelta, velocityRectsArray) {
+        velocityRectsArray.forEach(velocityRect => {
+            // const id = noteRect.getAttr('id');
+            // const velocityRect = this.layer.findOne(`#${id}`);
             const { cachedX } = velocityRect.attrs;
             const newX = Math.max(
                 cachedX + xDelta,
@@ -94,10 +94,10 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
-    shiftVelocityMarkersLeft(noteRects) {
-        noteRects.forEach(noteRect => {
-            const id = noteRect.getAttr('id');
-            const velocityRect = this.layer.findOne(`#${id}`);
+    shiftVelocityMarkersLeft(velocityRects) {
+        velocityRects.forEach(velocityRect => {
+            // const id = noteRect.getAttr('id');
+            // const velocityRect = this.layer.findOne(`#${id}`);
             velocityRect.x(
                 velocityRect.x() - this._conversionManager.colWidth
             );
@@ -105,10 +105,10 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
-    shiftVelocityMarkersRight(noteRects) {
-        noteRects.forEach(noteRect => {
-            const id = noteRect.getAttr('id');
-            const velocityRect = this.layer.findOne(`#${id}`);
+    shiftVelocityMarkersRight(velocityRects) {
+        velocityRects.forEach(velocityRect => {
+            // const id = noteRect.getAttr('id');
+            // const velocityRect = this.layer.findOne(`#${id}`);
             velocityRect.x(
                 velocityRect.x() + this._conversionManager.colWidth
             );
@@ -116,17 +116,17 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
-    addSelectedAppearance(noteRect) {
-        const id = noteRect.getAttr('id');
-        const velocityRect = this.layer.findOne(`#${id}`);
+    addSelectedAppearance(velocityRect) {
+        // const id = noteRect.getAttr('id');
+        // const velocityRect = this.layer.findOne(`#${id}`);
         velocityRect.fill('#222');
         velocityRect.moveTo(this._selectedGroup);
         this.layer.batchDraw();
     }
 
-    removeSelectedAppearance(noteRect) {
-        const id = noteRect.getAttr('id');
-        const velocityRect = this.layer.findOne(`#${id}`);
+    removeSelectedAppearance(velocityRect) {
+        // const id = noteRect.getAttr('id');
+        // const velocityRect = this.layer.findOne(`#${id}`);
         velocityRect.fill('green');
         velocityRect.moveTo(this._unselectedGroup);
         this.layer.batchDraw();

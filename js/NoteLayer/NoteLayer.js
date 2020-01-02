@@ -78,7 +78,7 @@ export default class NoteLayer {
         this.layer.batchDraw();
     }
 
-    addNewNote(x, y) {
+    addNewNote(x, y, id) {
         const newNote = new Rect({
             x,
             y,
@@ -88,7 +88,7 @@ export default class NoteLayer {
             stroke: '#222',
             strokeWidth: 1,
             cornerRadius: 1,
-            id: genId(),
+            id,
             cachedWidth: this._conversionManager.noteWidth,
             cachedX: x,
             cachedY: y,
@@ -281,12 +281,12 @@ export default class NoteLayer {
         }
     }
 
-    _addSelectedAppearance(noteRect) {
+    addSelectedAppearance(noteRect) {
         noteRect.fill('#222');
         this.layer.batchDraw();
     }
 
-    _removeSelectedAppearance(noteRect) {
+    removeSelectedAppearance(noteRect) {
         noteRect.fill('green');
         this.layer.batchDraw();
     }

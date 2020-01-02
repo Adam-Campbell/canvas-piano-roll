@@ -20,7 +20,7 @@ export default class AudioReconciler {
         this._part = new Tone.Part();
         this._part.start("0:0:0");
         this._part.callback = (time, value) => {
-            this._instrument.triggerAttackRelease(value.note, value.duration, time);
+            this._instrument.triggerAttackRelease(value.note, value.duration, time, value.velocity);
         };
         this._part.loop = false;
         window.part = this._part;
@@ -81,5 +81,20 @@ export default class AudioReconciler {
                 delete this._cache[noteRect.attrs.id];
             }
         });
+    }
+
+    updateNoteVelocity(id, velocity) {
+        const currentNote = this._cache[id];
+        if (!currentNote) {
+            return;
+        }
+        const newNote = {
+            ...currentNote,
+            velocity
+        };
+        console.log(currentNote, newNote);
+        this._cache[id] = newNote;
+        this._removeNoteFromEngine(currentNote);
+        this._addNoteToEngine(newNote);
     }
 }
