@@ -1,24 +1,4 @@
 import { Rect, Layer } from 'konva';
-import { 
-    NOTES_GRID_WIDTH, 
-    NOTES_GRID_HEIGHT, 
-    BAR_WIDTH, 
-    ROW_HEIGHT,
-    DRAG_MODE_ADJUST_EXISTING_NOTE_SIZE,
-    DRAG_MODE_ADJUST_NOTE_SIZE,
-    DRAG_MODE_ADJUST_NOTE_POSITION
-} from '../constants';
-import emitter from '../EventEmitter';
-import { ADD_NOTE, QUANTIZE_VALUE_UPDATE, NOTE_DURATION_UPDATE } from '../events';
-import { pitchesArray } from '../pitches';
-import { genId } from '../genId';
-import { 
-    doesOverlap,
-    canShiftUp,
-    canShiftDown,
-    canShiftLeft,
-    canShiftRight 
-} from './utils';
 
 /*
 
@@ -95,49 +75,38 @@ export default class NoteLayer {
             isNoteRect: true
         });
         this.layer.add(newNote);
-        //this._noteSelection.add(newNote);
         this.layer.batchDraw();
         return newNote;
     }
 
-    _updateSingleNoteDuration(note, xDelta) {
+    _updateSingleNoteDuration(noteRect, xDelta) {
         const newWidth = Math.max(
-            note.attrs.cachedWidth + xDelta,
+            noteRect.attrs.cachedWidth + xDelta,
             this._conversionManager.colWidth
         );
-        note.width(newWidth);
+        noteRect.width(newWidth);
     }
 
-    updateNoteDurations(terminalX, selectedNotes) {
+    updateNoteDurations(terminalX, noteRectsArray) {
         const xDelta = this._conversionManager.roundToGridCol(
             terminalX - this._mouseStateManager.x
         );
-        selectedNotes.forEach(note => {
-            this._updateSingleNoteDuration(note, xDelta);
+        noteRectsArray.forEach(noteRect => {
+            this._updateSingleNoteDuration(noteRect, xDelta);
         });
         this.layer.batchDraw();
-        // this._noteSelection.each(note => {
-        //     this._updateSingleNoteDuration(note, xDelta);
-        // });
     }
 
-    updateNotesAttributeCaches(notes) {
-        //const notes = this._noteSelection.toArray();
-        notes.forEach(note => {
-            note.setAttr('cachedWidth', note.attrs.width);
-            note.setAttr('cachedX', note.attrs.x);
-            note.setAttr('cachedY', note.attrs.y);
+    updateNotesAttributeCaches(noteRectsArray) {
+        noteRectsArray.forEach(noteRect => {
+            noteRect.setAttr('cachedWidth', noteRect.attrs.width);
+            noteRect.setAttr('cachedX', noteRect.attrs.x);
+            noteRect.setAttr('cachedY', noteRect.attrs.y);
         });
-        // This stuff below should be dealt with by PianoRoll
-        this._audioReconciler.addNotes(notes);
-        // const allNoteRects = this.layer.find('Rect');
-        // const asNotes = allNoteRects.map(noteRect => {
-        //     return this._audioReconciler._deriveNoteFromRect(noteRect);
-        // });
     }
 
-    deleteNotes(notes) {
-        notes.forEach(note => note.destroy());
+    deleteNotes(noteRectsArray) {
+        noteRectsArray.forEach(noteRect => noteRect.destroy());
         this.layer.batchDraw();
     }
 
@@ -146,20 +115,9 @@ export default class NoteLayer {
         this.layer.draw();
     }
 
-    repositionNotes(xDelta, yDelta, notes) {
-        console.log('repositionSelectedNotes was called');
-        // const xDelta = this._conversionManager.roundToGridCol(
-        //     x - this._mouseStateManager.x
-        // );
-        // const yDelta = this._conversionManager.roundToGridRow(
-        //     y - this._mouseStateManager.y
-        // );
-        // console.log({
-        //     xDelta,
-        //     yDelta
-        // });
-        notes.forEach(note => {
-            const { cachedX, cachedY } = note.attrs;
+    repositionNotes(xDelta, yDelta, noteRectsArray) {
+        noteRectsArray.forEach(noteRect => {
+            const { cachedX, cachedY } = noteRect.attrs;
             const newX = Math.max(
                 cachedX + xDelta,
                 0
@@ -168,46 +126,10 @@ export default class NoteLayer {
                 cachedY + yDelta,
                 0
             );
-            note.x(newX);
-            note.y(newY);
+            noteRect.x(newX);
+            noteRect.y(newY);
         });
         this.layer.batchDraw();
-    }
-
-    // _reconcileSelectionWithMarquee(selectionX1, selectionX2, selectionY1, selectionY2) {
-    //     const rectChildren = this.layer.find('Rect');
-    //     rectChildren.forEach(rect => {
-    //         if (rect.getAttr('id') === 'MARQUEE') {
-    //             return;
-    //         }
-    //         const { x, y, width, height } = rect.attrs;
-    //         const noteX1 = x;
-    //         const noteX2 = x + width;
-    //         const noteY1 = y;
-    //         const noteY2 = y + height;
-    //         const overlapsWithSelection = doesOverlap(
-    //             noteX1,
-    //             noteX2,
-    //             noteY1,
-    //             noteY2,
-    //             selectionX1,
-    //             selectionX2,
-    //             selectionY1,
-    //             selectionY2
-    //         );
-    //         if (overlapsWithSelection) {
-    //             this._noteSelection.add(rect);
-    //             this._addSelectedAppearance(rect);
-    //         } else {
-    //             this._noteSelection.remove(rect);
-    //             this._removeSelectedAppearance(rect);
-    //         }
-    //         console.log(overlapsWithSelection);
-    //     });
-    // }
-
-    TEMP_HACK_GET_ALL_NOTES() {
-        return this.layer.find('Rect').filter(rect => rect.getAttr('id') !== 'MARQUEE');
     }
 
     updateSelectionMarquee(originX, originY, terminalX, terminalY) {
@@ -232,47 +154,6 @@ export default class NoteLayer {
         this.layer.batchDraw();
     }
 
-    // _OLD_updateSelectionMarquee(x, y) {
-    //     console.log('updateSelectionMarquee called');
-    //     const mouseDownX = this._conversionManager.roundToGridCol(
-    //         this._mouseStateManager.x
-    //     );
-    //     const mouseDownY = this._conversionManager.roundToGridRow(
-    //         this._mouseStateManager.y
-    //     );
-    //     const currentX = this._conversionManager.roundToGridCol(x);
-    //     const currentY = this._conversionManager.roundToGridRow(y);
-    //     const originX = Math.min(mouseDownX, currentX);
-    //     const terminalX = Math.max(mouseDownX, currentX);
-    //     const originY = Math.min(mouseDownY, currentY);
-    //     const terminalY = Math.max(mouseDownY, currentY);
-    //     const marquee = this.layer.findOne('#MARQUEE');
-    //     if (!marquee) {
-    //         const newMarquee = new Rect({
-    //             x: originX,
-    //             y: originY,
-    //             width: terminalX - originX,
-    //             height: terminalY - originY,
-    //             fill: '#08b5d3',
-    //             opacity: 0.4,
-    //             id: 'MARQUEE'
-    //         });
-    //         this.layer.add(newMarquee); 
-    //     } else {
-    //         marquee.x(originX);
-    //         marquee.y(originY);
-    //         marquee.width(terminalX - originX);
-    //         marquee.height(terminalY - originY);
-    //     }
-    //     this._reconcileSelectionWithMarquee(
-    //         originX, 
-    //         terminalX,
-    //         originY,
-    //         terminalY
-    //     );
-    //     this.layer.batchDraw();
-    // }
-
     clearSelectionMarquee() {
         const marquee = this.layer.findOne('#MARQUEE');
         if (marquee) {
@@ -291,53 +172,44 @@ export default class NoteLayer {
         this.layer.batchDraw();
     }
 
-    shiftNotesUp(notes) {
-        notes.forEach(note => {
-            note.y(
-                note.y() - this._conversionManager.rowHeight
+    shiftNotesUp(noteRectsArray) {
+        noteRectsArray.forEach(noteRect => {
+            noteRect.y(
+                noteRect.y() - this._conversionManager.rowHeight
             );
         });
         this.layer.batchDraw();
-        this.updateNotesAttributeCaches(notes);
+        this.updateNotesAttributeCaches(noteRectsArray);
     }
 
-    shiftNotesDown(notes) {
-        // if (!canShiftDown(notes, this._conversionManager.gridHeight)) {
-        //     return;
-        // }
-        notes.forEach(note => {
-            note.y(
-                note.y() + this._conversionManager.rowHeight
+    shiftNotesDown(noteRectsArray) {
+        noteRectsArray.forEach(noteRect => {
+            noteRect.y(
+                noteRect.y() + this._conversionManager.rowHeight
             );
         });
         this.layer.batchDraw();
-        this.updateNotesAttributeCaches(notes);
+        this.updateNotesAttributeCaches(noteRectsArray);
     }
 
-    shiftNotesLeft(notes) {
-        // if (!canShiftLeft(notes)) {
-        //     return;
-        // }
-        notes.forEach(note => {
-            note.x(
-                note.x() - this._conversionManager.colWidth
+    shiftNotesLeft(noteRectsArray) {
+        noteRectsArray.forEach(noteRect => {
+            noteRect.x(
+                noteRect.x() - this._conversionManager.colWidth
             );
         });
         this.layer.batchDraw();
-        this.updateNotesAttributeCaches(notes);
+        this.updateNotesAttributeCaches(noteRectsArray);
     }
 
-    shiftNotesRight(notes) {
-        // if (!canShiftRight(notes, this._conversionManager.gridWidth)) {
-        //     return;
-        // }
-        notes.forEach(note => {
-            note.x(
-                note.x() + this._conversionManager.colWidth
+    shiftNotesRight(noteRectsArray) {
+        noteRectsArray.forEach(noteRect => {
+            noteRect.x(
+                noteRect.x() + this._conversionManager.colWidth
             );
         });
         this.layer.batchDraw();
-        this.updateNotesAttributeCaches(notes);
+        this.updateNotesAttributeCaches(noteRectsArray);
     }
 
 }

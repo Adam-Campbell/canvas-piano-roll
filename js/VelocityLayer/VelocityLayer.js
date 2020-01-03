@@ -13,9 +13,6 @@ export default class VelocityLayer {
         this._unselectedGroup = new Group();
         this._selectedGroup = new Group();
         this._hasActiveInteraction = true;
-        // this.layer.on('mousedown', e => {
-        //     this._handleMouseDown(e);
-        // });
     }
 
     updateX(x) {
@@ -57,16 +54,13 @@ export default class VelocityLayer {
             cachedX: x,
             name: 'VELOCITY_MARKER'
         });
-        //this._unselectedGroup.add(velocityMarker);
         velocityMarker.moveTo(this._selectedGroup);
         this.layer.batchDraw(); 
         return velocityMarker;
     }
 
-    deleteVelocityMarkers(noteRectsArray) {
-        noteRectsArray.forEach(noteRect => {
-            const id = noteRect.getAttr('id');
-            const velocityRect = this.layer.findOne(`#${id}`);
+    deleteVelocityMarkers(velocityRectsArray) {
+        velocityRectsArray.forEach(velocityRect => {
             velocityRect.destroy();
         });
         this.layer.batchDraw();
@@ -74,16 +68,12 @@ export default class VelocityLayer {
 
     updateVelocityMarkersAttributeCaches(velocityRectsArray) {
         velocityRectsArray.forEach(velocityRect => {
-            // const id = noteRect.getAttr('id');
-            // const velocityRect = this.layer.findOne(`#${id}`);
             velocityRect.setAttr('cachedX', velocityRect.attrs.x);
         });
     }
 
     repositionVelocityMarkers(xDelta, velocityRectsArray) {
         velocityRectsArray.forEach(velocityRect => {
-            // const id = noteRect.getAttr('id');
-            // const velocityRect = this.layer.findOne(`#${id}`);
             const { cachedX } = velocityRect.attrs;
             const newX = Math.max(
                 cachedX + xDelta,
@@ -94,10 +84,8 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
-    shiftVelocityMarkersLeft(velocityRects) {
-        velocityRects.forEach(velocityRect => {
-            // const id = noteRect.getAttr('id');
-            // const velocityRect = this.layer.findOne(`#${id}`);
+    shiftVelocityMarkersLeft(velocityRectsArray) {
+        velocityRectsArray.forEach(velocityRect => {
             velocityRect.x(
                 velocityRect.x() - this._conversionManager.colWidth
             );
@@ -105,10 +93,8 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
-    shiftVelocityMarkersRight(velocityRects) {
-        velocityRects.forEach(velocityRect => {
-            // const id = noteRect.getAttr('id');
-            // const velocityRect = this.layer.findOne(`#${id}`);
+    shiftVelocityMarkersRight(velocityRectsArray) {
+        velocityRectsArray.forEach(velocityRect => {
             velocityRect.x(
                 velocityRect.x() + this._conversionManager.colWidth
             );
@@ -117,16 +103,12 @@ export default class VelocityLayer {
     }
 
     addSelectedAppearance(velocityRect) {
-        // const id = noteRect.getAttr('id');
-        // const velocityRect = this.layer.findOne(`#${id}`);
         velocityRect.fill('#222');
         velocityRect.moveTo(this._selectedGroup);
         this.layer.batchDraw();
     }
 
     removeSelectedAppearance(velocityRect) {
-        // const id = noteRect.getAttr('id');
-        // const velocityRect = this.layer.findOne(`#${id}`);
         velocityRect.fill('green');
         velocityRect.moveTo(this._unselectedGroup);
         this.layer.batchDraw();
@@ -140,97 +122,13 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
-    TEMP_HACK_GET_VELOCITY_RECTS(x) {
-        const matchingRects = this.layer.find('.VELOCITY_MARKER')
-        .filter(velocityRect => velocityRect.x() === x)
-        
-        const selectedMatchingRects = matchingRects.filter(velocityRect => {
-            return velocityRect.fill() === '#222';
-        });
-
-        return {
-            matchingRects,
-            selectedMatchingRects
-        };
-    }
-
-    updateVelocityMarkersHeight(velocityMarkers, newHeight) {
-        velocityMarkers.forEach(velocityRect => {
+    updateVelocityMarkersHeight(velocityRectsArray, newHeight) {
+        velocityRectsArray.forEach(velocityRect => {
             const { y, height } = velocityRect.attrs;
             velocityRect.height(newHeight);
             velocityRect.y(STAGE_HEIGHT - SCROLLBAR_WIDTH - newHeight);
         });
         this.layer.batchDraw();
-    }
-
-    /*
-        Mousedown logic:
-
-        All of this logic should take place in the PianoRoll class. Move it to there. I just started
-        it here for ease. 
-
-        - calculate the velocityValue based on event (done).
-        - calculate the grid col clicked based on event (done).
-        - determine whether there were any matching velocity rects (any with an x value matching
-          the grid col calculation).
-        
-        - if there are none, return. 
-        - still need to work out desired behaviour if there is one or more. Maybe:
-            - if one, update it.
-            - if multiple and none are selected or all are selected, update all.
-            - if multiple but only some selected, update selected ones but don't touch the others. 
-
-        - whichever ones do get updated:
-        - update the velocity rects appearance (y and height) based on the velocityValue calculated earlier.
-        - update the note in the audio reconcilier.
-
-    */
-    _handleMouseDown(e) {
-        e.cancelBubble = true;
-        const { evt, target } = e;
-        const { offsetX, offsetY } = evt;
-
-        // const pxFromBottom = STAGE_HEIGHT - offsetY - SCROLLBAR_WIDTH;
-        const pxFromBottom = Math.min(
-            STAGE_HEIGHT - offsetY - SCROLLBAR_WIDTH,
-            50
-        );
-        const velocityValue = pxFromBottom / 50;
-
-        
-        
-        const roundedX = this._conversionManager.roundDownToGridCol(
-            offsetX - this.layer.x()
-        );
-        //console.log(roundedX);
-        const matchingRects = this.layer.find('.VELOCITY_MARKER')
-        .filter(velocityRect => velocityRect.x() === roundedX)
-        
-        const selectedMatchingRects = matchingRects.filter(velocityRect => {
-            return velocityRect.fill() === '#222';
-        });
-
-        //console.log(matchingRects, selectedMatchingRects);
-
-        let velocityMarkersToUpdate;
-
-        if (matchingRects.length === 0) {
-            console.log('nothing to update');
-        } else if (selectedMatchingRects.length === 0) {
-            velocityMarkersToUpdate = matchingRects;
-            console.log('update all of the matching rects');
-        } else {
-            velocityMarkersToUpdate = selectedMatchingRects;
-            console.log('update only the selected matching rects');
-        }
-
-        velocityMarkersToUpdate.forEach(velocityRect => {
-            const { y, height } = velocityRect.attrs;
-            velocityRect.height(pxFromBottom);
-            velocityRect.y(STAGE_HEIGHT - SCROLLBAR_WIDTH - pxFromBottom);
-        });
-        this.layer.batchDraw();
-
     }
 
 }

@@ -1,6 +1,5 @@
 import Tone from 'tone';
 
-
 export default class AudioReconciler {
 
     constructor(conversionManager) {
@@ -27,26 +26,16 @@ export default class AudioReconciler {
     }
 
     _addNoteToEngine(noteObject) {
-        console.log(`adding note with id ${noteObject.id} to engine`);
-        // const { note, start, duration } = noteObject;
-        // const formatted = {
-        //     note,
-        //     time: Tone.Ticks(start).toBarsBeatsSixteenths(),
-        //     duration: Tone.Ticks(duration).toBarsBeatsSixteenths(),
-        //     velocity: 1
-        // };
-        // console.log(formatted);
         this._part.add(noteObject);
     }
 
     _removeNoteFromEngine(note) {
-        console.log(`removing note with id ${note.id} from engine`);
         this._part.remove(note);
     }
 
-    _deriveNoteFromRect(rect) {
-        console.log(rect);
-        const { x, y, width, id } = rect.attrs;
+    _deriveNoteFromElements(noteElement, velocityMarkerElement) {
+        const velocity = velocityMarkerElement.attrs.height / 50;
+        const { x, y, width, id } = noteElement.attrs;
         const note = this._conversionManager.derivePitchFromY(y);
         const time = Tone.Ticks(
             this._conversionManager.convertPxToTicks(x)
@@ -58,43 +47,27 @@ export default class AudioReconciler {
             note,
             time, 
             duration,
-            velocity: 1,
+            velocity,
             id
         };
     }
 
-    addNotes(rectsArray) {
-        rectsArray.forEach(rect => {
-            const note = this._deriveNoteFromRect(rect);
-            if (this._cache[note.id]) {
-                this._removeNoteFromEngine(this._cache[note.id]);
-            }
-            this._addNoteToEngine(note);
-            this._cache[note.id] = note;
-        });
-    }
-
-    removeNotes(noteRectsArray) {
-        noteRectsArray.forEach(noteRect => {
-            if (this._cache[noteRect.attrs.id]) {
-                this._removeNoteFromEngine(this._cache[noteRect.attrs.id]);
-                delete this._cache[noteRect.attrs.id];
-            }
-        });
-    }
-
-    updateNoteVelocity(id, velocity) {
-        const currentNote = this._cache[id];
-        if (!currentNote) {
-            return;
+    addNote(noteElement, velocityMarkerElement) {
+        const note = this._deriveNoteFromElements(noteElement, velocityMarkerElement);
+        if (this._cache[note.id]) {
+            this._removeNoteFromEngine(this._cache[note.id]);
         }
-        const newNote = {
-            ...currentNote,
-            velocity
-        };
-        console.log(currentNote, newNote);
-        this._cache[id] = newNote;
-        this._removeNoteFromEngine(currentNote);
-        this._addNoteToEngine(newNote);
+        this._addNoteToEngine(note);
+        this._cache[note.id] = note;
     }
+
+    removeNotes(noteIds) {
+        noteIds.forEach(id => {
+            if (this._cache[id]) {
+                this._removeNoteFromEngine(this._cache[id]);
+                delete this._cache[id];
+            }
+        })
+    }
+
 }
