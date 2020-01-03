@@ -29,4 +29,8 @@ export default class NoteSelection {
         ];
     }
 
+    forceToState(selectedNoteIdsState = []) {
+        this._cache = new Set(selectedNoteIdsState);
+    }
+
 }

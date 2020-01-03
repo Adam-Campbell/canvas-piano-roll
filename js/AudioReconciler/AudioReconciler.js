@@ -70,4 +70,23 @@ export default class AudioReconciler {
         })
     }
 
+    forceToState(notesState) {
+        // remove all current notes from the engine and reset cache
+        Object.values(this._cache).forEach(note => this._removeNoteFromEngine(note));
+        this._cache = {};
+        // iterate over notes, convert each note into a valid note object.
+        // add that note object to the cache and the underlying _part
+        notesState.forEach(note => {
+            const noteObject = {
+                note: note.note,
+                time: Tone.Ticks(note.time).toBarsBeatsSixteenths(),
+                duration: Tone.Ticks(note.duration).toBarsBeatsSixteenths(),
+                velocity: note.velocity,
+                id: note.id
+            };
+            this._addNoteToEngine(noteObject);
+            this._cache[note.id] = noteObject;
+        });
+    }
+
 }

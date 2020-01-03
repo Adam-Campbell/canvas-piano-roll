@@ -42,22 +42,37 @@ export default class VelocityLayer {
         return border;
     }
 
-    addNewVelocityMarker(x, id) {
+    _createVelocityMarker(x, y, height, id, isSelected) {
         const velocityMarker = new Rect({
-            width: 8,
-            height: 50,
-            cornerRadius: [2, 2, 0, 0],
             x,
-            y: STAGE_HEIGHT - SCROLLBAR_WIDTH - 50,
-            fill: '#222',
+            y,
+            width: 8,
+            height,
+            fill: isSelected ? '#222' : 'green',
             id,
             cachedX: x,
             name: 'VELOCITY_MARKER'
         });
-        velocityMarker.moveTo(this._selectedGroup);
-        this.layer.batchDraw(); 
+        if (isSelected) {
+            velocityMarker.moveTo(this._selectedGroup);
+        } else {
+            velocityMarker.moveTo(this._unselectedGroup);
+        }
         return velocityMarker;
     }
+
+    addNewVelocityMarker(x, id) {
+        const velocityMarker = this._createVelocityMarker(
+            x,
+            STAGE_HEIGHT - SCROLLBAR_WIDTH - 50,
+            50,
+            id,
+            true
+        );
+        this.layer.batchDraw();
+        return velocityMarker;
+    }
+
 
     deleteVelocityMarkers(velocityRectsArray) {
         velocityRectsArray.forEach(velocityRect => {
@@ -129,6 +144,36 @@ export default class VelocityLayer {
             velocityRect.y(STAGE_HEIGHT - SCROLLBAR_WIDTH - newHeight);
         });
         this.layer.batchDraw();
+    }
+
+    forceToState(state) {
+        // delete all velocity markers from the layer.
+        const existingVelocityElements = this.layer.find('.VELOCITY_MARKER');
+        existingVelocityElements.forEach(el => el.destroy());
+
+        const newVelocityMarkerElements = state.notes.map(note => {
+            // calculate x, y, height, id, isSelected
+            const x = this._conversionManager.convertTicksToPx(note.time);
+            const height = note.velocity * 50;
+            const y = STAGE_HEIGHT - SCROLLBAR_WIDTH - height;
+            const isSelected = state.selectedNoteIds.includes(note.id);
+            const velocityMarkerElement = this._createVelocityMarker(
+                x,
+                y,
+                height,
+                note.id,
+                isSelected
+            );
+            return velocityMarkerElement;
+        });
+        this.layer.batchDraw();
+        return newVelocityMarkerElements;
+
+        // map over the notes and use the addNewVelocityMarker method to create a 
+        // velocity marker element for each note. Same as with note layer, return this
+        // from the map function so the end result is an array of the velocity marker
+        // elements, that the PianoRoll class can use to updated velocityMarkerCache. 
+
     }
 
 }

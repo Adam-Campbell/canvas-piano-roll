@@ -32,10 +32,12 @@ import {
 } from './utils';
 import CanvasElementCache from '../CanvasElementCache';
 import { genId } from '../genId';
+import HistoryStack from '../HistoryStack';
 
 export default class PianoRoll {
 
     constructor(containerId, width = STAGE_WIDTH, height = STAGE_HEIGHT) {
+        window.pianoRoll = this;
         this._dragMode = null;
         this._activeTool = 'cursor';
         this._stage = new Stage({
@@ -50,6 +52,11 @@ export default class PianoRoll {
         this._conversionManager = new ConversionManager();
         this._audioReconciler = new AudioReconciler(this._conversionManager);
         this._noteSelection = new NoteSelection();
+        this._historyStack = new HistoryStack();
+        window.historyStack = this._historyStack;
+        window.noteCache = this._noteCache;
+        window.velocityCache = this._velocityMarkerCache;
+        window.noteSelection = this._noteSelection;
         this._gridLayer = new GridLayer(4, '16n');
         this._noteLayer = new NoteLayer(
             this._conversionManager, 
@@ -144,6 +151,7 @@ export default class PianoRoll {
         this._velocityLayer.deleteVelocityMarkers(selectedVelocityMarkerElements);
         this._noteSelection.clear();
         this._audioReconciler.removeNotes(selectedNoteIds);
+        this._serializeState();
     }
 
     _clearSelection() {
@@ -184,6 +192,7 @@ export default class PianoRoll {
         if (canShiftUp(selectedNoteElements)) {
             this._noteLayer.shiftNotesUp(selectedNoteElements);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
+            this._serializeState();
         }
     }
 
@@ -193,6 +202,7 @@ export default class PianoRoll {
         if (canShiftDown(selectedNoteElements, this._conversionManager.gridHeight)) {
             this._noteLayer.shiftNotesDown(selectedNoteElements);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
+            this._serializeState();
         }
     }
 
@@ -206,6 +216,7 @@ export default class PianoRoll {
             this._noteLayer.shiftNotesLeft(selectedNoteElements);
             this._velocityLayer.shiftVelocityMarkersLeft(selectedVelocityMarkerElements);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
+            this._serializeState();
         }
     }
 
@@ -219,6 +230,7 @@ export default class PianoRoll {
             this._noteLayer.shiftNotesRight(selectedNoteElements);
             this._velocityLayer.shiftVelocityMarkersRight(selectedVelocityMarkerElements);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
+            this._serializeState();
         }
     }
 
@@ -245,6 +257,8 @@ export default class PianoRoll {
         velocityMarkersToUpdate.forEach(velocityRect => {
             const id = velocityRect.getAttr('id');
             //this._audioReconciler.updateNoteVelocity(id, velocityValue);
+            this.addNoteToAudioEngine(id);
+            this._serializeState();
         });
     }
 
@@ -260,6 +274,57 @@ export default class PianoRoll {
             this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
         } else {
             this._dragMode = DRAG_MODE_ADJUST_NOTE_POSITION;
+        }
+    }
+
+    _serializeState() {
+        // grab all of the noteElements
+        // grab all of the velocityMarkerElements
+        // for each pair of noteElement & velocityMarkerElement, produce a plain object
+        // representing that note. 
+        // grab the ids of all selected notes. 
+        // use all of this information to produce the complete serialized state. Return it. 
+        const serializedNotes = this._noteCache.retrieveAll().map(noteElement => {
+            const velocityMarkerElement = this._velocityMarkerCache.retrieveOne(
+                noteElement.attrs.id
+            );
+            return {
+                note: this._conversionManager.derivePitchFromY(noteElement.attrs.y),
+                time: this._conversionManager.convertPxToTicks(noteElement.attrs.x),
+                duration: this._conversionManager.convertPxToTicks(noteElement.attrs.width),
+                velocity: velocityMarkerElement.attrs.height / 50,
+                id: noteElement.attrs.id
+            }
+        });
+        const selectedNoteIds = this._noteSelection.retreiveAll();
+        const serializedState = {
+            notes: serializedNotes,
+            selectedNoteIds
+        };
+        //console.log(serializedState);
+        this._historyStack.addEntry(serializedState);
+    }
+
+    _forceToState(state) {
+        const noteElements = this._noteLayer.forceToState(state);
+        const velocityMarkerElements = this._velocityLayer.forceToState(state);
+        this._noteCache.forceToState(noteElements);
+        this._velocityMarkerCache.forceToState(velocityMarkerElements);
+        this._noteSelection.forceToState(state.selectedNoteIds);
+        this._audioReconciler.forceToState(state.notes);
+    }
+
+    _undo() {
+        if (!this._historyStack.isAtStart) {
+            const nextState = this._historyStack.goBackwards();
+            this._forceToState(nextState);
+        }
+    }
+
+    _redo() {
+        if (!this._historyStack.isAtEnd) {
+            const nextState = this._historyStack.goForwards();
+            this._forceToState(nextState);
         }
     }
 
@@ -433,6 +498,7 @@ export default class PianoRoll {
         this._noteLayer.updateNotesAttributeCaches(selectedNoteElements);
         this._velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
         selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
+        this._serializeState();
     }
 
     handleAdjustNotePositionMouseUp(e) {
@@ -458,6 +524,7 @@ export default class PianoRoll {
         this._noteLayer.updateNotesAttributeCaches(selectedNoteElements);
         this._velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
         selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
+        this._serializeState();
         this._dragMode = null;
     }
 

@@ -58,22 +58,33 @@ export default class NoteLayer {
         this.layer.batchDraw();
     }
 
-    addNewNote(x, y, id) {
-        const newNote = new Rect({
+    _createNoteElement(x, y, width, id, isSelected) {
+        return new Rect({
             x,
             y,
-            width: this._conversionManager.noteWidth,
+            width,
             height: this._conversionManager.rowHeight,
-            fill: '#222',
+            fill: isSelected ? '#222' : 'green',
             stroke: '#222',
             strokeWidth: 1,
             cornerRadius: 1,
             id,
-            cachedWidth: this._conversionManager.noteWidth,
-            cachedX: x,
+            cachedWidth: width,
+            cachedX: x, 
             cachedY: y,
-            isNoteRect: true
+            isNoteRect: true,
+            name: 'NOTE'
         });
+    }
+
+    addNewNote(x, y, id) {
+        const newNote = this._createNoteElement(
+            x,
+            y,
+            this._conversionManager.noteWidth,
+            id,
+            true
+        );
         this.layer.add(newNote);
         this.layer.batchDraw();
         return newNote;
@@ -210,6 +221,46 @@ export default class NoteLayer {
         });
         this.layer.batchDraw();
         this.updateNotesAttributeCaches(noteRectsArray);
+    }
+
+    forceToState(state) {
+        // delete all note elements currently on the layer
+        const existingNoteElements = this.layer.find('.NOTE');
+        existingNoteElements.forEach(noteElement => noteElement.destroy());
+        // delete marquee element if exists
+        const marqueeElement = this.layer.findOne('#MARQUEE');
+        if (marqueeElement) {
+            marqueeElement.destroy();
+        }
+        
+        console.log(state.notes);
+
+        const noteElements = state.notes.map(note => {
+            const isSelected = state.selectedNoteIds.includes(note.id);
+            const x = this._conversionManager.convertTicksToPx(note.time);
+            const y = this._conversionManager.deriveYFromPitch(note.note);
+            const width = this._conversionManager.convertTicksToPx(note.duration);
+            console.log(x, width);
+            const noteElement = this._createNoteElement(
+                x,
+                y,
+                width,
+                note.id,
+                isSelected
+            );
+            this.layer.add(noteElement);
+            return noteElement;
+        });
+
+        this.layer.batchDraw();
+
+        return noteElements;
+
+        // map over notes array, for each note use the addNewNote method to add a note
+        // element to the layer. Return the result of this in the map function. The end 
+        // result will be an array of the note elements themselves, and this is what should
+        // be returned from this method so that the PianoRoll class can update the noteCache
+        // with them. 
     }
 
 }

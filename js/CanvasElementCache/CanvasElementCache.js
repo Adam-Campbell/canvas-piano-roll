@@ -32,4 +32,11 @@ export default class CanvasElementCache {
         return Object.values(this._cache);
     }
 
+    forceToState(canvasElementsState) {
+        this._cache = {};
+        canvasElementsState.forEach(canvasElement => {
+            this._cache[canvasElement.attrs.id] = canvasElement;
+        });
+    }
+
 }
