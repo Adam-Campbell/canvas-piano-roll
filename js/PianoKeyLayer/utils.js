@@ -22,7 +22,9 @@ export const getKeyProps = (pitch, idx) => {
                 width: 90,
                 height: 20,
                 fill: 'black',
-                pitch
+                originalFill: 'black',
+                pitch,
+                id: pitch
             };
         case 6:
         case 11:
@@ -32,7 +34,10 @@ export const getKeyProps = (pitch, idx) => {
                 width: 120,
                 height: 30,
                 fill: 'white',
-                pitch
+                originalFill: 'white',
+                pitch,
+                id: pitch
+
             };
         case 0:
         case 7:
@@ -42,7 +47,9 @@ export const getKeyProps = (pitch, idx) => {
                 width: 120,
                 height: 30,
                 fill: 'white',
-                pitch
+                originalFill: 'white',
+                pitch,
+                id: pitch
             };
         case 2:
         case 4:
@@ -53,7 +60,9 @@ export const getKeyProps = (pitch, idx) => {
                 width: 120,
                 height: 40,
                 fill: 'white',
-                pitch
+                originalFill: 'white',
+                pitch,
+                id: pitch
             };
     }
 };
