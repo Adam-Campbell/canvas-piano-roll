@@ -47,16 +47,24 @@ export default class ConversionManager {
         return Math.round(total / divisor) * divisor;
     }
 
-    _durationToPx(duration) {
+    convertDurationToPx(duration) {
         return noteDurationsMappedToTicks[duration] * this._tickToPxRatio;
     }
 
+    convertTicksToPx(ticks) {
+        return ticks * this._tickToPxRatio;
+    }
+
+    convertPxToTicks(px) {
+        return px / this._tickToPxRatio;
+    }
+
     get colWidth() {
-        return this._durationToPx(this._quantize);
+        return this.convertDurationToPx(this._quantize);
     }
 
     get noteWidth() {
-        return this._durationToPx(this._noteDuration);
+        return this.convertDurationToPx(this._noteDuration);
     }
 
     get rowHeight() {
@@ -86,13 +94,17 @@ export default class ConversionManager {
     roundToGridCol(x) {
         return this._round(x, this.colWidth);
     }
-
-    convertPxToTicks(px) {
-        return px / this._tickToPxRatio;
-    }
     
     derivePitchFromY(y) {
         const idx = y / ROW_HEIGHT;
         return pitchesArray[idx];
+    }
+
+    deriveYFromPitch(pitch) {
+        const rowNumber = Math.max(
+            pitchesArray.indexOf(pitch),
+            0
+        );
+        return rowNumber * this.rowHeight
     }
 }

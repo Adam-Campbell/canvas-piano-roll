@@ -1,24 +1,4 @@
 import { Rect, Layer } from 'konva';
-import { 
-    NOTES_GRID_WIDTH, 
-    NOTES_GRID_HEIGHT, 
-    BAR_WIDTH, 
-    ROW_HEIGHT,
-    DRAG_MODE_ADJUST_EXISTING_NOTE_SIZE,
-    DRAG_MODE_ADJUST_NOTE_SIZE,
-    DRAG_MODE_ADJUST_NOTE_POSITION
-} from '../constants';
-import emitter from '../EventEmitter';
-import { ADD_NOTE, QUANTIZE_VALUE_UPDATE, NOTE_DURATION_UPDATE } from '../events';
-import { pitchesArray } from '../pitches';
-import { genId } from '../genId';
-import { 
-    doesOverlap,
-    canShiftUp,
-    canShiftDown,
-    canShiftLeft,
-    canShiftRight 
-} from './utils';
 
 /*
 
@@ -61,40 +41,11 @@ marquee tool
 
 export default class NoteLayer {
 
-    constructor(conversionManager, setDragMode, audioReconciler, noteSelection, keyboardStateManager, mouseStateManager) {
+    constructor(conversionManager, audioReconciler, mouseStateManager) {
         this.layer = new Layer({ x: 120 });
         this._conversionManager = conversionManager;
         this._audioReconciler = audioReconciler;
-        this._setDragMode = setDragMode;
-        this._noteSelection = noteSelection;
-        this._keyboardStateManager = keyboardStateManager;
         this._mouseStateManager = mouseStateManager;
-        this.unsubscribe = emitter.subscribe(ADD_NOTE, (x, y) => {
-            this.addNewNote(x, y);
-        });
-        this.layer.on('mousedown', e => {
-            this._handleMouseDown(e);
-        });
-        this._keyboardStateManager.addKeyListener('Delete', () => {
-            console.log('Delete key triggered');
-            this._deleteSelectedNotes();
-        });
-        this._keyboardStateManager.addKeyListener('ArrowUp', () => {
-            console.log('ArrowUp key pressed');
-            this._shiftSelectionPitchUp();
-        });
-        this._keyboardStateManager.addKeyListener('ArrowDown', () => {
-            console.log('ArrowDown key pressed');
-            this._shiftSelectionPitchDown();
-        });
-        this._keyboardStateManager.addKeyListener('ArrowLeft', () => {
-            console.log('ArrowLeft key pressed');
-            this._shiftSelectionTimeBackwards();
-        });
-        this._keyboardStateManager.addKeyListener('ArrowRight', () => {
-            console.log('ArrowRight key pressed');
-            this._shiftSelectionTimeForwards();
-        });
     }
 
     updateX(x) {
@@ -107,53 +58,67 @@ export default class NoteLayer {
         this.layer.batchDraw();
     }
 
-    addNewNote(x, y) {
-        const newNote = new Rect({
+    _createNoteElement(x, y, width, id, isSelected) {
+        return new Rect({
             x,
             y,
-            width: this._conversionManager.noteWidth,
+            width,
             height: this._conversionManager.rowHeight,
-            fill: 'green',
+            fill: isSelected ? '#222' : 'green',
             stroke: '#222',
             strokeWidth: 1,
             cornerRadius: 1,
-            id: genId(),
-            cachedWidth: this._conversionManager.noteWidth,
-            cachedX: x,
-            cachedY: y
+            id,
+            cachedWidth: width,
+            cachedX: x, 
+            cachedY: y,
+            isNoteRect: true,
+            name: 'NOTE'
         });
-        this.layer.add(newNote);
-        this._noteSelection.add(newNote);
-        this.layer.draw();
     }
 
-    _updateSingleNoteDuration(note, xDelta) {
+    addNewNote(x, y, id) {
+        const newNote = this._createNoteElement(
+            x,
+            y,
+            this._conversionManager.noteWidth,
+            id,
+            true
+        );
+        this.layer.add(newNote);
+        this.layer.batchDraw();
+        return newNote;
+    }
+
+    _updateSingleNoteDuration(noteRect, xDelta) {
         const newWidth = Math.max(
-            note.attrs.cachedWidth + xDelta,
+            noteRect.attrs.cachedWidth + xDelta,
             this._conversionManager.colWidth
         );
-        note.width(newWidth);
-        this.layer.batchDraw();
+        noteRect.width(newWidth);
     }
 
-    updateNoteDurations(terminalX) {
+    updateNoteDurations(terminalX, noteRectsArray) {
         const xDelta = this._conversionManager.roundToGridCol(
             terminalX - this._mouseStateManager.x
         );
-        console.log('xDelta: ', xDelta);
-        this._noteSelection.each(note => {
-            this._updateSingleNoteDuration(note, xDelta);
+        noteRectsArray.forEach(noteRect => {
+            this._updateSingleNoteDuration(noteRect, xDelta);
+        });
+        this.layer.batchDraw();
+    }
+
+    updateNotesAttributeCaches(noteRectsArray) {
+        noteRectsArray.forEach(noteRect => {
+            noteRect.setAttr('cachedWidth', noteRect.attrs.width);
+            noteRect.setAttr('cachedX', noteRect.attrs.x);
+            noteRect.setAttr('cachedY', noteRect.attrs.y);
         });
     }
 
-    confirmNotes() {
-        const notes = this._noteSelection.toArray();
-        notes.forEach(note => {
-            note.setAttr('cachedWidth', note.attrs.width);
-            note.setAttr('cachedX', note.attrs.x);
-            note.setAttr('cachedY', note.attrs.y);
-        });
-        this._audioReconciler.addNotes(notes);
+    deleteNotes(noteRectsArray) {
+        noteRectsArray.forEach(noteRect => noteRect.destroy());
+        this.layer.batchDraw();
     }
 
     draw() {
@@ -161,20 +126,9 @@ export default class NoteLayer {
         this.layer.draw();
     }
 
-    repositionSelectedNotes(x, y) {
-        console.log('repositionSelectedNotes was called');
-        const xDelta = this._conversionManager.roundToGridCol(
-            x - this._mouseStateManager.x
-        );
-        const yDelta = this._conversionManager.roundToGridRow(
-            y - this._mouseStateManager.y
-        );
-        console.log({
-            xDelta,
-            yDelta
-        });
-        this._noteSelection.each(note => {
-            const { cachedX, cachedY } = note.attrs;
+    repositionNotes(xDelta, yDelta, noteRectsArray) {
+        noteRectsArray.forEach(noteRect => {
+            const { cachedX, cachedY } = noteRect.attrs;
             const newX = Math.max(
                 cachedX + xDelta,
                 0
@@ -183,66 +137,13 @@ export default class NoteLayer {
                 cachedY + yDelta,
                 0
             );
-            note.x(newX);
-            note.y(newY);
+            noteRect.x(newX);
+            noteRect.y(newY);
         });
         this.layer.batchDraw();
     }
 
-    deselectIfNeeded(e) {
-        console.log('deselectIfNeeded called');
-        const now = Date.now();
-        if (now - this._mouseStateManager.mouseDownTimestamp < 250) {
-            console.log('and threshold met');
-            this._noteSelection.clear();
-            this.layer.batchDraw();
-        }
-    }
-
-    _reconcileSelectionWithMarquee(selectionX1, selectionX2, selectionY1, selectionY2) {
-        const rectChildren = this.layer.find('Rect');
-        rectChildren.forEach(rect => {
-            if (rect.getAttr('id') === 'MARQUEE') {
-                return;
-            }
-            const { x, y, width, height } = rect.attrs;
-            const noteX1 = x;
-            const noteX2 = x + width;
-            const noteY1 = y;
-            const noteY2 = y + height;
-            const overlapsWithSelection = doesOverlap(
-                noteX1,
-                noteX2,
-                noteY1,
-                noteY2,
-                selectionX1,
-                selectionX2,
-                selectionY1,
-                selectionY2
-            );
-            if (overlapsWithSelection) {
-                this._noteSelection.add(rect);
-            } else {
-                this._noteSelection.remove(rect);
-            }
-            console.log(overlapsWithSelection);
-        });
-    }
-
-    updateSelectionMarquee(x, y) {
-        console.log('updateSelectionMarquee called');
-        const mouseDownX = this._conversionManager.roundToGridCol(
-            this._mouseStateManager.x
-        );
-        const mouseDownY = this._conversionManager.roundToGridRow(
-            this._mouseStateManager.y
-        );
-        const currentX = this._conversionManager.roundToGridCol(x);
-        const currentY = this._conversionManager.roundToGridRow(y);
-        const originX = Math.min(mouseDownX, currentX);
-        const terminalX = Math.max(mouseDownX, currentX);
-        const originY = Math.min(mouseDownY, currentY);
-        const terminalY = Math.max(mouseDownY, currentY);
+    updateSelectionMarquee(originX, originY, terminalX, terminalY) {
         const marquee = this.layer.findOne('#MARQUEE');
         if (!marquee) {
             const newMarquee = new Rect({
@@ -261,137 +162,105 @@ export default class NoteLayer {
             marquee.width(terminalX - originX);
             marquee.height(terminalY - originY);
         }
-        this._reconcileSelectionWithMarquee(
-            originX, 
-            terminalX,
-            originY,
-            terminalY
-        );
         this.layer.batchDraw();
     }
 
     clearSelectionMarquee() {
         const marquee = this.layer.findOne('#MARQUEE');
         if (marquee) {
-            //this.layer.remove(marquee);
             marquee.destroy();
             this.layer.batchDraw();
         }
     }
 
-    _deleteSelectedNotes() {
-        const notes = this._noteSelection.toArray();
-        notes.forEach(note => {
-            note.destroy();
-        });
+    addSelectedAppearance(noteRect) {
+        noteRect.fill('#222');
         this.layer.batchDraw();
-        this._audioReconciler.removeNotes(notes);
     }
 
-    _shiftSelectionPitch(shouldShiftPitchUp) {
-        const directionModifier = shouldShiftPitchUp ? 1 : -1;
-        const notes = this._noteSelection.toArray();
-        notes.forEach(note => {
-            const currentY = note.y();
-            const newY = currentY - this._conversionManager.rowHeight * directionModifier;
-            const clampedNewY = Math.max(
-                Math.min(
-                    newY,
-                    this._conversionManager.gridHeight - this._conversionManager.rowHeight
-                ),
-                0
-            );
-            note.y(clampedNewY);
-        });
+    removeSelectedAppearance(noteRect) {
+        noteRect.fill('green');
         this.layer.batchDraw();
-        this.confirmNotes();
     }
 
-    _shiftSelectionPitchUp() {
-        const notes = this._noteSelection.toArray();
-        if (!canShiftUp(notes)) {
-            return;
-        }
-        notes.forEach(note => {
-            note.y(
-                note.y() - this._conversionManager.rowHeight
+    shiftNotesUp(noteRectsArray) {
+        noteRectsArray.forEach(noteRect => {
+            noteRect.y(
+                noteRect.y() - this._conversionManager.rowHeight
             );
         });
         this.layer.batchDraw();
-        this.confirmNotes();
+        this.updateNotesAttributeCaches(noteRectsArray);
     }
 
-    _shiftSelectionPitchDown() {
-        const notes = this._noteSelection.toArray();
-        if (!canShiftDown(notes, this._conversionManager.gridHeight)) {
-            return;
-        }
-        notes.forEach(note => {
-            note.y(
-                note.y() + this._conversionManager.rowHeight
+    shiftNotesDown(noteRectsArray) {
+        noteRectsArray.forEach(noteRect => {
+            noteRect.y(
+                noteRect.y() + this._conversionManager.rowHeight
             );
         });
         this.layer.batchDraw();
-        this.confirmNotes();
+        this.updateNotesAttributeCaches(noteRectsArray);
     }
 
-    _shiftSelectionTimeBackwards() {
-        const notes = this._noteSelection.toArray();
-        if (!canShiftLeft(notes)) {
-            return;
-        }
-        notes.forEach(note => {
-            note.x(
-                note.x() - this._conversionManager.colWidth
+    shiftNotesLeft(noteRectsArray) {
+        noteRectsArray.forEach(noteRect => {
+            noteRect.x(
+                noteRect.x() - this._conversionManager.colWidth
             );
         });
         this.layer.batchDraw();
-        this.confirmNotes();
+        this.updateNotesAttributeCaches(noteRectsArray);
     }
 
-    _shiftSelectionTimeForwards() {
-        const notes = this._noteSelection.toArray();
-        if (!canShiftRight(notes, this._conversionManager.gridWidth)) {
-            return;
-        }
-        notes.forEach(note => {
-            note.x(
-                note.x() + this._conversionManager.colWidth
+    shiftNotesRight(noteRectsArray) {
+        noteRectsArray.forEach(noteRect => {
+            noteRect.x(
+                noteRect.x() + this._conversionManager.colWidth
             );
         });
         this.layer.batchDraw();
-        this.confirmNotes();
+        this.updateNotesAttributeCaches(noteRectsArray);
     }
 
-
-    _handleMouseDown(e) {
-        e.cancelBubble = true;
-        const timestamp = Date.now();
-        const { evt, target: note } = e;
-        const { id, width: rectWidth, x: rectX } = note.attrs;
-        const evtX = evt.offsetX - this.layer.x();
-        const evtY = evt.offsetY - this.layer.y();
-        const isEdgeClick = rectWidth + rectX - evtX < 10;
-        const isSelected = this._noteSelection.has(note);
-        this._mouseStateManager.addMouseDownEvent(evtX, evtY, timestamp);
-        if (isEdgeClick) {
-            if (!isSelected) {
-                this._noteSelection.clear();
-                this._noteSelection.add(note);
-            }
-            this._setDragMode(DRAG_MODE_ADJUST_NOTE_SIZE);
-        } else {
-            if (isSelected) {
-                this._setDragMode(DRAG_MODE_ADJUST_NOTE_POSITION);
-            } else {
-                if (!this._keyboardStateManager.shiftKey) {
-                    this._noteSelection.clear();
-                }
-                this._noteSelection.add(note);
-                this.layer.batchDraw();
-            }
+    forceToState(state) {
+        // delete all note elements currently on the layer
+        const existingNoteElements = this.layer.find('.NOTE');
+        existingNoteElements.forEach(noteElement => noteElement.destroy());
+        // delete marquee element if exists
+        const marqueeElement = this.layer.findOne('#MARQUEE');
+        if (marqueeElement) {
+            marqueeElement.destroy();
         }
+        
+        console.log(state.notes);
 
+        const noteElements = state.notes.map(note => {
+            const isSelected = state.selectedNoteIds.includes(note.id);
+            const x = this._conversionManager.convertTicksToPx(note.time);
+            const y = this._conversionManager.deriveYFromPitch(note.note);
+            const width = this._conversionManager.convertTicksToPx(note.duration);
+            console.log(x, width);
+            const noteElement = this._createNoteElement(
+                x,
+                y,
+                width,
+                note.id,
+                isSelected
+            );
+            this.layer.add(noteElement);
+            return noteElement;
+        });
+
+        this.layer.batchDraw();
+
+        return noteElements;
+
+        // map over notes array, for each note use the addNewNote method to add a note
+        // element to the layer. Return the result of this in the map function. The end 
+        // result will be an array of the note elements themselves, and this is what should
+        // be returned from this method so that the PianoRoll class can update the noteCache
+        // with them. 
     }
 
 }

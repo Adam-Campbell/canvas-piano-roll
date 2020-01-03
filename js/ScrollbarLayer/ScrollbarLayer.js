@@ -7,20 +7,25 @@ import {
     SCROLLBAR_THUMB_LENGTH,
     SCROLLBAR_GUTTER,
     NOTES_GRID_WIDTH,
-    NOTES_GRID_HEIGHT
+    NOTES_GRID_HEIGHT,
+    VELOCITY_LAYER_HEIGHT
 } from '../constants';
 import { clamp } from './utils';
 
 export default class ScrollbarLayer {
-    constructor(gridLayer, noteLayer, pianoKeyLayer) {
+    constructor(scrollManager) {
         this.layer = new Layer();
-        this._gridLayer = gridLayer;
-        this._pianoKeyLayer = pianoKeyLayer;
-        this._noteLayer = noteLayer;
+        //this._gridLayer = gridLayer;
+        //this._pianoKeyLayer = pianoKeyLayer;
+        //this._noteLayer = noteLayer;
+        this._scrollManager = scrollManager;
         this._verticalTrack = this._constructVerticalTrack();
         this._verticalThumb = this._constructVerticalThumb();
         this._horizontalTrack = this._constructHorizontalTrack();
         this._horizontalThumb = this._constructHorizontalThumb();
+        this.layer.on('mousedown', e => {
+            e.cancelBubble = true;
+        });
     }
 
     _constructVerticalTrack() {
@@ -56,10 +61,11 @@ export default class ScrollbarLayer {
         verticalThumb.on('dragmove', e => {
             const yPos = e.target.attrs.y - SCROLLBAR_GUTTER;
             const yDecimal = yPos / totalVerticalThumbRange;
-            const newLayerY = -1 * yDecimal * (NOTES_GRID_HEIGHT - STAGE_HEIGHT + SCROLLBAR_WIDTH);
-            this._gridLayer.updateY(newLayerY);
-            this._noteLayer.updateY(newLayerY);
-            this._pianoKeyLayer.updateY(newLayerY);
+            const newLayerY = -1 * yDecimal * (NOTES_GRID_HEIGHT - STAGE_HEIGHT + SCROLLBAR_WIDTH + VELOCITY_LAYER_HEIGHT);
+            // this._gridLayer.updateY(newLayerY);
+            // this._noteLayer.updateY(newLayerY);
+            // this._pianoKeyLayer.updateY(newLayerY);
+            this._scrollManager.y = newLayerY;
         });
         return verticalThumb
     }
@@ -98,8 +104,9 @@ export default class ScrollbarLayer {
             const xPos = e.target.attrs.x - SCROLLBAR_GUTTER;
             const xDecimal = xPos / totalHorizontalThumbRange;
             const newLayerX = (-1 * xDecimal * (NOTES_GRID_WIDTH - STAGE_WIDTH + SCROLLBAR_WIDTH + PIANO_KEY_WIDTH)) + PIANO_KEY_WIDTH;
-            this._gridLayer.updateX(newLayerX);
-            this._noteLayer.updateX(newLayerX);
+            //this._gridLayer.updateX(newLayerX);
+            //this._noteLayer.updateX(newLayerX);
+            this._scrollManager.x = newLayerX;
         });
         return horizontalThumb;
     }

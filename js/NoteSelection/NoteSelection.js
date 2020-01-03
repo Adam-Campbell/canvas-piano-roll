@@ -1,44 +1,36 @@
 
 export default class NoteSelection {
     constructor() {
-        this._cache = {};
+        this._cache = new Set();
     }
 
-    _addSelectedAppearance(noteRect) {
-        noteRect.fill('#222');
+    has(canvasElement) {
+        return this._cache.has(canvasElement.attrs.id);
     }
 
-    _removeSelectedAppearance(noteRect) {
-        noteRect.fill('green');
+    add(canvasElement) {
+        this._cache.add(canvasElement.attrs.id);
     }
 
-    has(note) {
-        return this._cache.hasOwnProperty(note.attrs.id);
-    }
-
-    add(note) {
-        this._cache[note.attrs.id] = note;
-        this._addSelectedAppearance(note);
-    }
-
-    remove(note) {
-        delete this._cache[note.attrs.id];
-        this._removeSelectedAppearance(note);
+    remove(canvasElement) {
+        console.log('noteSelection remove method called')
+        this._cache.delete(canvasElement.attrs.id);
     }
 
     clear() {
-        this.each(note => this._removeSelectedAppearance(note));
-        this._cache = {};
+        const selected = this.retreiveAll();
+        this._cache.clear();
+        return selected;
     }
 
-    each(cb) {
-        for (let noteId in this._cache) {
-            cb(this._cache[noteId]);
-        }
+    retreiveAll() {
+        return [
+            ...this._cache.values()
+        ];
     }
 
-    toArray() {
-        return Object.values(this._cache);
+    forceToState(selectedNoteIdsState = []) {
+        this._cache = new Set(selectedNoteIdsState);
     }
 
 }

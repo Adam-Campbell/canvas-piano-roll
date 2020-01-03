@@ -19,22 +19,23 @@ import {
 
 export default class GridLayer {
     
-    constructor(numBars = 4, initialQuantize = '16n', setDragMode, conversionManager, noteSelection, mouseStateManager, keyboardStateManager) {
+    constructor(numBars = 4, initialQuantize = '16n') {
         this.layer = new Layer({ x: 120 });
-        this._conversionManager = conversionManager;
+        //this._conversionManager = conversionManager;
         this._numBars = numBars;
         this._quantize = initialQuantize;
-        this._setDragMode = setDragMode;
-        this._noteSelection = noteSelection;
-        this._mouseStateManager = mouseStateManager;
-        this._keyboardStateManager = keyboardStateManager;
+        //this._setDragMode = setDragMode;
+        //this._noteSelection = noteSelection;
         this.unsubscribe1 = emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
             this._quantize = qVal;
             this.draw();
         });
-        this.layer.on('mousedown', e => {
-            this.handleMouseDown(e);
-        });
+
+
+
+        // this.layer.on('mousedown', e => {
+        //     this.handleMouseDown(e);
+        // });
     }
 
     updateX(x) {
@@ -82,21 +83,21 @@ export default class GridLayer {
         };
     }
 
-    handleMouseDown(e) {
-        const { offsetX, offsetY } = e.evt;
-        const { x, y } = this.getAbsoluteCoords(offsetX, offsetY);
-        const roundedX = this._conversionManager.roundDownToGridCol(x);
-        const roundedY = this._conversionManager.roundDownToGridRow(y);
-        const timestamp = Date.now();
-        this._mouseStateManager.addMouseDownEvent(roundedX, roundedY, timestamp);
-        this._noteSelection.clear();
-        if (this._keyboardStateManager.shiftKey) {
-            console.log('MADE IT INTO THE CRITERIA')
-            this._setDragMode(DRAG_MODE_ADJUST_SELECTION);
-        } else {
-            emitter.broadcast(ADD_NOTE, roundedX, roundedY);
-            this._setDragMode(DRAG_MODE_ADJUST_NOTE_SIZE);
-        }
-    }
+    // handleMouseDown(e) {
+    //     const { offsetX, offsetY } = e.evt;
+    //     const { x, y } = this.getAbsoluteCoords(offsetX, offsetY);
+    //     const roundedX = this._conversionManager.roundDownToGridCol(x);
+    //     const roundedY = this._conversionManager.roundDownToGridRow(y);
+    //     const timestamp = Date.now();
+    //     this._mouseStateManager.addMouseDownEvent(roundedX, roundedY, timestamp);
+    //     this._noteSelection.clear();
+    //     if (this._keyboardStateManager.shiftKey) {
+    //         console.log('MADE IT INTO THE CRITERIA')
+    //         this._setDragMode(DRAG_MODE_ADJUST_SELECTION);
+    //     } else {
+    //         emitter.broadcast(ADD_NOTE, roundedX, roundedY);
+    //         this._setDragMode(DRAG_MODE_ADJUST_NOTE_SIZE);
+    //     }
+    // }
 
 }
