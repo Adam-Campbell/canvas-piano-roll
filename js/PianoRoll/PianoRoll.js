@@ -234,7 +234,7 @@ export default class PianoRoll {
         }
     }
 
-    _handleVelocityMarkerAreaMouseDown(offsetY) {
+    _handleVelocityMarkerAreaMouseDown(offsetY, roundedX) {
         const pxFromBottom = Math.min(
             STAGE_HEIGHT - offsetY - SCROLLBAR_WIDTH,
             50
@@ -359,7 +359,7 @@ export default class PianoRoll {
         } else if (this._activeTool === 'cursor') {
             const isVelocityLayerClick = STAGE_HEIGHT - offsetY <= VELOCITY_LAYER_HEIGHT + SCROLLBAR_WIDTH;
             if (isVelocityLayerClick) {
-                this._handleVelocityMarkerAreaMouseDown(offsetY);
+                this._handleVelocityMarkerAreaMouseDown(offsetY, roundedX);
                 return;
             } else {
                 const targetIsNote = Boolean(target.getAttr('isNoteRect'));
