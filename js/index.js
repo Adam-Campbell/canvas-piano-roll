@@ -12,4 +12,7 @@ initNoteDurationSelect();
 initButtons();
 initToolSelect();
 
-const pianoRoll = new PianoRoll('canvas-container').init();
+const initialWidth = document.documentElement.clientWidth;
+const initialHeight = document.documentElement.clientHeight - 50;
+
+const pianoRoll = new PianoRoll('canvas-container', initialWidth, initialHeight).init();

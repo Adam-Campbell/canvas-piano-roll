@@ -7,7 +7,8 @@ import {
     DRAG_MODE_ADJUST_NOTE_POSITION,
     DRAG_MODE_ADJUST_SELECTION,
     VELOCITY_LAYER_HEIGHT,
-    SCROLLBAR_WIDTH
+    SCROLLBAR_WIDTH,
+    PIANO_KEY_WIDTH
 } from '../constants';
 import {
     ACTIVE_TOOL_UPDATE
@@ -51,7 +52,10 @@ export default class PianoRoll {
         this._velocityMarkerCache = new CanvasElementCache();
         this._keyboardStateManager = new KeyboardStateManager(this._stage.container());
         this._mouseStateManager = new MouseStateManager();
-        this._conversionManager = new ConversionManager();
+        this._conversionManager = new ConversionManager(
+            width, 
+            height
+        );
         this._audioReconciler = new AudioReconciler(this._conversionManager);
         this._noteSelection = new NoteSelection();
         this._historyStack = new HistoryStack();
@@ -75,7 +79,8 @@ export default class PianoRoll {
             this._pianoKeyLayer
         );
         this._scrollbarLayer = new ScrollbarLayer(
-            this._scrollManager
+            this._scrollManager,
+            this._conversionManager
         );
         this._stage.on('mousedown', e => {
             this._handleMouseDown(e);
@@ -119,6 +124,45 @@ export default class PianoRoll {
         emitter.subscribe(ACTIVE_TOOL_UPDATE, tool => {
             this._activeTool = tool;
             console.log(this._activeTool);
+        });
+        window.addEventListener('resize', e => {
+            //console.log('resize event fired');
+            const window = e.target;
+            const { clientWidth, clientHeight } = window.document.documentElement;
+
+            if (clientWidth !== this._conversionManager.stageWidth) {
+                console.log('we need to perform horizontal checks');
+                this._conversionManager.stageWidth = clientWidth;
+                this._stage.width(clientWidth);
+                //this._scrollbarLayer.draw();
+                if(this._scrollManager.x * -1 > this._conversionManager.gridWidth + SCROLLBAR_WIDTH - clientWidth) {
+                    const newXScroll = (-1 * (this._conversionManager.gridWidth - this._conversionManager.stageWidth + SCROLLBAR_WIDTH + PIANO_KEY_WIDTH)) + PIANO_KEY_WIDTH;
+                    this._scrollManager.x = newXScroll;
+                }
+            }
+
+            //if (clientHeight - 50 !== this._conversionManager.stageHeight) {
+                this._conversionManager.stageHeight = clientHeight - 50;
+                this._stage.height(clientHeight - 50);
+                //this._scrollbarLayer.draw();
+                if (this._scrollManager.y * -1 >= this._conversionManager.gridHeight + SCROLLBAR_WIDTH + 60 - clientHeight + 50) {
+                    console.log('vertical scroll needs to be adjusted');
+                    const newYScroll = -1 * (this._conversionManager.gridHeight - this._conversionManager.stageHeight + SCROLLBAR_WIDTH + 60);
+                    this._scrollManager.y = newYScroll;
+                }
+                this._velocityLayer.redrawOnVerticalResize();
+                this._scrollbarLayer.redrawOnVerticalResize();
+
+            //}
+
+            //console.log(clientWidth, clientHeight);
+            
+            
+            
+            
+            
+            
+            
         });
     }
 
@@ -239,7 +283,7 @@ export default class PianoRoll {
 
     _handleVelocityMarkerAreaMouseDown(offsetY, roundedX) {
         const pxFromBottom = Math.min(
-            STAGE_HEIGHT - offsetY - SCROLLBAR_WIDTH,
+            this._conversionManager.stageHeight - offsetY - SCROLLBAR_WIDTH,
             50
         );
         const velocityValue = pxFromBottom / 50;
@@ -365,7 +409,7 @@ export default class PianoRoll {
             this._noteCache.add(noteElement);
             const velocityMarkerElement = this._velocityLayer._createVelocityMarker(
                 this._conversionManager.convertTicksToPx(noteObject.time),
-                STAGE_HEIGHT - SCROLLBAR_WIDTH - (noteObject.velocity * 50),
+                this._conversionManager.stageHeight - SCROLLBAR_WIDTH - (noteObject.velocity * 50),
                 noteObject.velocity * 50,
                 noteObject.id,
                 true
@@ -393,7 +437,7 @@ export default class PianoRoll {
         const roundedY = this._conversionManager.roundDownToGridRow(evtY);
         const timestamp = Date.now();
         this._mouseStateManager.addMouseDownEvent(evtX, evtY, timestamp);
-        const isVelocityLayerClick = STAGE_HEIGHT - offsetY <= VELOCITY_LAYER_HEIGHT + SCROLLBAR_WIDTH;
+        const isVelocityLayerClick = this._conversionManager.stageHeight - offsetY <= VELOCITY_LAYER_HEIGHT + SCROLLBAR_WIDTH;
         // If marquee tool is active, a mousedown will always result in a transition to the
         // selection mode
         if (this._activeTool === 'marquee') {
