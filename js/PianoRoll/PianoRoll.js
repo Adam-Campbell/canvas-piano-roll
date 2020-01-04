@@ -1,3 +1,4 @@
+import Tone from 'tone';
 import { Stage } from 'konva';
 import { 
     STAGE_WIDTH, 
@@ -33,6 +34,7 @@ import {
 import CanvasElementCache from '../CanvasElementCache';
 import { genId } from '../genId';
 import HistoryStack from '../HistoryStack';
+import Clipboard from '../Clipboard';
 
 export default class PianoRoll {
 
@@ -53,6 +55,7 @@ export default class PianoRoll {
         this._audioReconciler = new AudioReconciler(this._conversionManager);
         this._noteSelection = new NoteSelection();
         this._historyStack = new HistoryStack();
+        this._clipboard = new Clipboard(this._conversionManager);
         window.historyStack = this._historyStack;
         window.noteCache = this._noteCache;
         window.velocityCache = this._velocityMarkerCache;
@@ -326,6 +329,54 @@ export default class PianoRoll {
             const nextState = this._historyStack.goForwards();
             this._forceToState(nextState);
         }
+    }
+
+    _copy() {
+        const selectedNoteIds = this._noteSelection.retreiveAll();
+        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
+        const selectedVelocityMarkerElements = this._velocityMarkerCache.retrieve(selectedNoteIds);
+        this._clipboard.add(selectedNoteElements, selectedVelocityMarkerElements);
+    }
+
+    _cut() {
+        this._copy();
+        this._deleteSelectedNotes();
+    }
+
+    _paste() {
+        const currentQuantizeAsTicks = this._conversionManager.convertPxToTicks(
+            this._conversionManager.colWidth
+        );
+        const roundedStartTime = this._conversionManager.round(
+            Tone.Transport.ticks,
+            currentQuantizeAsTicks
+        );
+        const newNoteData = this._clipboard.produceCopy(roundedStartTime);
+        this._clearSelection();
+        newNoteData.forEach(noteObject => {
+            const noteElement = this._noteLayer._createNoteElement(
+                this._conversionManager.convertTicksToPx(noteObject.time),
+                this._conversionManager.deriveYFromPitch(noteObject.note),
+                this._conversionManager.convertTicksToPx(noteObject.duration),
+                noteObject.id,
+                true
+            );
+            this._noteLayer.layer.add(noteElement);
+            this._noteCache.add(noteElement);
+            const velocityMarkerElement = this._velocityLayer._createVelocityMarker(
+                this._conversionManager.convertTicksToPx(noteObject.time),
+                STAGE_HEIGHT - SCROLLBAR_WIDTH - (noteObject.velocity * 50),
+                noteObject.velocity * 50,
+                noteObject.id,
+                true
+            );
+            this._velocityMarkerCache.add(velocityMarkerElement);
+            this._audioReconciler.addNote(noteElement, velocityMarkerElement);
+            this._noteSelection.add(noteElement);
+        });
+        this._noteLayer.layer.batchDraw();
+        this._velocityLayer.layer.batchDraw();
+        this._serializeState();
     }
 
 

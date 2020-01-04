@@ -39,11 +39,11 @@ export default class ConversionManager {
         });
     }
 
-    _roundDown(total, divisor) {
+    roundDown(total, divisor) {
         return total - (total % divisor);
     }
 
-    _round(total, divisor) {
+    round(total, divisor) {
         return Math.round(total / divisor) * divisor;
     }
 
@@ -80,19 +80,19 @@ export default class ConversionManager {
     }
 
     roundDownToGridRow(y) {
-        return this._roundDown(y, ROW_HEIGHT);
+        return this.roundDown(y, ROW_HEIGHT);
     }
 
     roundDownToGridCol(x) {
-        return this._roundDown(x, this.colWidth);
+        return this.roundDown(x, this.colWidth);
     }
 
     roundToGridRow(y) {
-        return this._round(y, ROW_HEIGHT);
+        return this.round(y, ROW_HEIGHT);
     }
 
     roundToGridCol(x) {
-        return this._round(x, this.colWidth);
+        return this.round(x, this.colWidth);
     }
     
     derivePitchFromY(y) {
