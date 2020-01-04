@@ -342,22 +342,31 @@ export default class PianoRoll {
         const roundedY = this._conversionManager.roundDownToGridRow(evtY);
         const timestamp = Date.now();
         this._mouseStateManager.addMouseDownEvent(evtX, evtY, timestamp);
+        const isVelocityLayerClick = STAGE_HEIGHT - offsetY <= VELOCITY_LAYER_HEIGHT + SCROLLBAR_WIDTH;
         // If marquee tool is active, a mousedown will always result in a transition to the
         // selection mode
         if (this._activeTool === 'marquee') {
-            this._dragMode = DRAG_MODE_ADJUST_SELECTION;
-
+            // As a future enhancement, I would like a velocity layer interaction whilst the marquee tool
+            // is active to result in selecting all of the notes that fit within the horizontal space
+            // covered by the interaction, regardless of vertical space (so as if the top vertical edge
+            // was the top of the note grid and the bottom vertical edge was the bottom of note grid).
+            if (!isVelocityLayerClick) {
+                this._dragMode = DRAG_MODE_ADJUST_SELECTION;
+            }
             // else if pencil tool is active, a mousedown will always result in a transition to the
             // adjust note size drag mode
         } else if (this._activeTool === 'pencil') {
-            this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
-            this._clearSelection();
-            this._addNewNote(roundedX, roundedY);
+            if (isVelocityLayerClick) {
+                this._handleVelocityMarkerAreaMouseDown(offsetY, roundedX);
+            } else {
+                this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
+                this._clearSelection();
+                this._addNewNote(roundedX, roundedY);
+            }
             // else if cursor tool is active, a mousedown can result in transitioning to the adjust
             // note size state, adjust note position state, or no transtition at all, depending on the
             // events target and location.
         } else if (this._activeTool === 'cursor') {
-            const isVelocityLayerClick = STAGE_HEIGHT - offsetY <= VELOCITY_LAYER_HEIGHT + SCROLLBAR_WIDTH;
             if (isVelocityLayerClick) {
                 this._handleVelocityMarkerAreaMouseDown(offsetY, roundedX);
                 return;
