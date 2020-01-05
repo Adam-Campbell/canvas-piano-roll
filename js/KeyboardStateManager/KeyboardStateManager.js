@@ -28,10 +28,12 @@ export default class KeyboardStateManager {
         this._altKey = false;
         this._keyListeners = {};
         this._stageContainer.addEventListener('keydown', e => {
-            const { key, code, ctrlKey, shiftKey, altKey, metaKey } = e;
+            const { key, code, keyCode, ctrlKey, shiftKey, altKey, metaKey } = e;
             console.log(key);
-            this._updateKeyState(key, true);
-            this._triggerKeyListeners(key);
+            //console.log(e);
+            const keyString = keyCode >= 65 && keyCode <= 90 ? key.toLowerCase() : key;
+            this._updateKeyState(keyString, true);
+            this._triggerKeyListeners(keyString);
         });
         this._stageContainer.addEventListener('keyup', e => {
             const { key, code, ctrlKey, shiftKey, altKey, metaKey } = e;
