@@ -26,7 +26,9 @@ const noteDurationsMappedToTicks = {
 };
 
 export default class ConversionManager {
-    constructor(initialQuantize = '16n', initialNoteDuration = '16n', numBars = 4) {
+    constructor(stageWidth, stageHeight, initialQuantize = '16n', initialNoteDuration = '16n', numBars = 4) {
+        this._stageWidth = stageWidth;
+        this._stageHeight = stageHeight;
         this._quantize = initialQuantize;
         this._noteDuration = initialNoteDuration;
         this._tickToPxRatio = BAR_WIDTH / TICKS_PER_BAR;
@@ -77,6 +79,22 @@ export default class ConversionManager {
 
     get gridWidth() {
         return this._numBars * BAR_WIDTH
+    }
+
+    get stageWidth() {
+        return this._stageWidth;
+    }
+
+    set stageWidth(width) {
+        this._stageWidth = width;
+    }
+
+    get stageHeight() {
+        return this._stageHeight;
+    }
+
+    set stageHeight(height) {
+        this._stageHeight = height;
     }
 
     roundDownToGridRow(y) {

@@ -1,6 +1,5 @@
 import { Layer, Rect, Group } from 'konva';
 import {
-    STAGE_HEIGHT,
     SCROLLBAR_WIDTH
 } from '../constants';
 
@@ -8,8 +7,8 @@ export default class VelocityLayer {
     constructor(conversionManager) {
         this.layer = new Layer({ x: 120 });
         this._conversionManager = conversionManager;
-        this._background = this._constructBackground();
-        this._border = this._constructBorder();
+        //this._background = this._constructBackground();
+        //this._border = this._constructBorder();
         this._unselectedGroup = new Group();
         this._selectedGroup = new Group();
         this._hasActiveInteraction = true;
@@ -20,13 +19,27 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
+    redrawOnVerticalResize() {
+        const background = this.layer.findOne('#VELOCITY_BACKGROUND');
+        const delta = this._conversionManager.stageHeight - SCROLLBAR_WIDTH - 60 - background.attrs.y;
+
+        const allRects = this.layer.find('Rect');
+        allRects.forEach(rect => {
+            rect.y(
+                rect.y() + delta
+            );
+        });
+        this.layer.batchDraw();
+    }
+
     _constructBackground() {
         const background = new Rect({
             width: this._conversionManager.gridWidth,
             height: 60,
             x: 0,
-            y: STAGE_HEIGHT - SCROLLBAR_WIDTH - 60,
-            fill: '#acacac'
+            y: this._conversionManager.stageHeight - SCROLLBAR_WIDTH - 60,
+            fill: '#acacac',
+            id: 'VELOCITY_BACKGROUND'
         });
         return background;
     }
@@ -36,8 +49,9 @@ export default class VelocityLayer {
             width: this._conversionManager.gridWidth,
             height: 2,
             x: 0,
-            y: STAGE_HEIGHT - SCROLLBAR_WIDTH - 60,
-            fill: '#222'
+            y: this._conversionManager.stageHeight - SCROLLBAR_WIDTH - 60,
+            fill: '#222',
+            id: 'VELOCITY_BORDER'
         });
         return border;
     }
@@ -64,7 +78,7 @@ export default class VelocityLayer {
     addNewVelocityMarker(x, id) {
         const velocityMarker = this._createVelocityMarker(
             x,
-            STAGE_HEIGHT - SCROLLBAR_WIDTH - 50,
+            this._conversionManager.stageHeight - SCROLLBAR_WIDTH - 50,
             50,
             id,
             true
@@ -130,8 +144,11 @@ export default class VelocityLayer {
     }
 
     draw() {
-        this.layer.add(this._background);
-        this.layer.add(this._border);
+        this.layer.removeChildren();
+        const background = this._constructBackground();
+        const border = this._constructBorder();
+        this.layer.add(background);
+        this.layer.add(border);
         this.layer.add(this._unselectedGroup);
         this.layer.add(this._selectedGroup);
         this.layer.batchDraw();
@@ -141,7 +158,7 @@ export default class VelocityLayer {
         velocityRectsArray.forEach(velocityRect => {
             const { y, height } = velocityRect.attrs;
             velocityRect.height(newHeight);
-            velocityRect.y(STAGE_HEIGHT - SCROLLBAR_WIDTH - newHeight);
+            velocityRect.y(this._conversionManager.stageHeight - SCROLLBAR_WIDTH - newHeight);
         });
         this.layer.batchDraw();
     }
@@ -155,7 +172,7 @@ export default class VelocityLayer {
             // calculate x, y, height, id, isSelected
             const x = this._conversionManager.convertTicksToPx(note.time);
             const height = note.velocity * 50;
-            const y = STAGE_HEIGHT - SCROLLBAR_WIDTH - height;
+            const y = this._conversionManager.stageHeight - SCROLLBAR_WIDTH - height;
             const isSelected = state.selectedNoteIds.includes(note.id);
             const velocityMarkerElement = this._createVelocityMarker(
                 x,

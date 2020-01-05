@@ -8,49 +8,51 @@
     <title>Document</title>
 </head>
 <body>
-    <h1 id="page-heading">Content here</h1>
+    <div class="main-container">
+        <div class="toolbar-container">
+            <label for="quantize-select">Quantize value</label>
+            <select id="quantize-select">
+                <option value="32t">32t</option>
+                <option value="32n">32n</option>
+                <option value="16t">16t</option>
+                <option value="16n" selected>16n</option>
+                <option value="8t">8t</option>
+                <option value="8n">8n</option>
+                <option value="4t">4t</option>
+                <option value="4n">4n</option>
+                <option value="2t">2t</option>
+                <option value="2n">2n</option>
+                <option value="1m">1m</option>
+            </select>
 
-    <label for="quantize-select">Quantize value</label>
-    <select id="quantize-select">
-        <option value="32t">32t</option>
-        <option value="32n">32n</option>
-        <option value="16t">16t</option>
-        <option value="16n" selected>16n</option>
-        <option value="8t">8t</option>
-        <option value="8n">8n</option>
-        <option value="4t">4t</option>
-        <option value="4n">4n</option>
-        <option value="2t">2t</option>
-        <option value="2n">2n</option>
-        <option value="1m">1m</option>
-    </select>
+            <label for="note-duration-select">Note duration</label>
+            <select id="note-duration-select">
+                <option value="32t">32t</option>
+                <option value="32n">32n</option>
+                <option value="16t">16t</option>
+                <option value="16n" selected>16n</option>
+                <option value="8t">8t</option>
+                <option value="8n">8n</option>
+                <option value="4t">4t</option>
+                <option value="4n">4n</option>
+                <option value="2t">2t</option>
+                <option value="2n">2n</option>
+                <option value="1m">1m</option>
+            </select>
 
-    <label for="note-duration-select">Note duration</label>
-    <select id="note-duration-select">
-        <option value="32t">32t</option>
-        <option value="32n">32n</option>
-        <option value="16t">16t</option>
-        <option value="16n" selected>16n</option>
-        <option value="8t">8t</option>
-        <option value="8n">8n</option>
-        <option value="4t">4t</option>
-        <option value="4n">4n</option>
-        <option value="2t">2t</option>
-        <option value="2n">2n</option>
-        <option value="1m">1m</option>
-    </select>
+            <label for="tool-type-cursor">Cursor</label>
+            <input id="tool-type-cursor" type="radio" name="tool-type" value="cursor" checked />
+            <label for="tool-type-pencil">Pencil</label>
+            <input id="tool-type-pencil" type="radio" name="tool-type" value="pencil" />
+            <label for="tool-type-marquee">Marquee</label>
+            <input id="tool-type-marquee" type="radio" name="tool-type" value="marquee" />
 
-    <label for="tool-type-cursor">Cursor</label>
-    <input id="tool-type-cursor" type="radio" name="tool-type" value="cursor" checked />
-    <label for="tool-type-pencil">Pencil</label>
-    <input id="tool-type-pencil" type="radio" name="tool-type" value="pencil" />
-    <label for="tool-type-marquee">Marquee</label>
-    <input id="tool-type-marquee" type="radio" name="tool-type" value="marquee" />
-
-    <button id="start-button">Start</button>
-    <button id="stop-button">Stop</button>
-
-    <div id="canvas-container" tabindex="0"></div>
+            <button id="start-button">Start</button>
+            <button id="pause-button">Pause</button>
+            <button id="stop-button">Stop</button>
+        </div>
+        <div id="canvas-container" tabindex="0"></div>
+    </div>
 
     <script type="text/javascript" src="./js/index.js"></script>
 </body>
