@@ -18,12 +18,12 @@ export default class NoteSelection {
     }
 
     clear() {
-        const selected = this.retreiveAll();
+        const selected = this.retrieveAll();
         this._cache.clear();
         return selected;
     }
 
-    retreiveAll() {
+    retrieveAll() {
         return [
             ...this._cache.values()
         ];
