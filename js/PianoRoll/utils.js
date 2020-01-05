@@ -2,21 +2,13 @@ const isInRange = (point, rangeMin, rangeMax) => {
     return point >= rangeMin && point <= rangeMax;
 }
 
-const pointIsInRange = (pointX, pointY, rangeX1, rangeX2, rangeY1, rangeY2) => {
-    return isInRange(pointX, rangeX1, rangeX2) &&
-        isInRange(pointY, rangeY1, rangeY2);
-};
-
-const isContained = (entityA_X1, entityA_X2, entityA_Y1, entityA_Y2, entityB_X1, entityB_X2, entityB_Y1, entityB_Y2) => {
-    return pointIsInRange(entityA_X1, entityA_Y1, entityB_X1, entityB_X2, entityB_Y1, entityB_Y2) ||
-        pointIsInRange(entityA_X1, entityA_Y2, entityB_X1, entityB_X2, entityB_Y1, entityB_Y2) ||
-        pointIsInRange(entityA_X2, entityA_Y1, entityB_X1, entityB_X2, entityB_Y1, entityB_Y2) ||
-        pointIsInRange(entityA_X2, entityA_Y2, entityB_X1, entityB_X2, entityB_Y1, entityB_Y2);
+const doesOverlapAlongAxis = (a1, a2, b1, b2) => {
+    return isInRange(a1, b1, b2) || isInRange(a2, b1, b2) || isInRange(b1, a1, a2) || isInRange(b2, a1, a2);
 }
 
-export const doesOverlap = (entityA_X1, entityA_X2, entityA_Y1, entityA_Y2, entityB_X1, entityB_X2, entityB_Y1, entityB_Y2) => {
-    return isContained(entityA_X1, entityA_X2, entityA_Y1, entityA_Y2, entityB_X1, entityB_X2, entityB_Y1, entityB_Y2) ||
-        isContained(entityB_X1, entityB_X2, entityB_Y1, entityB_Y2, entityA_X1, entityA_X2, entityA_Y1, entityA_Y2);
+export const doesOverlap = (A_x1, A_x2, A_y1, A_y2, B_x1, B_x2, B_y1, B_y2) => {
+    return doesOverlapAlongAxis(A_x1, A_x2, B_x1, B_x2) &&
+        doesOverlapAlongAxis(A_y1, A_y2, B_y1, B_y2);
 }
 
 export const canShiftUp = (notes) => {
