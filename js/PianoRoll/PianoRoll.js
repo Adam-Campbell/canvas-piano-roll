@@ -126,44 +126,49 @@ export default class PianoRoll {
             console.log(this._activeTool);
         });
         window.addEventListener('resize', e => {
-            //console.log('resize event fired');
-            const window = e.target;
-            const { clientWidth, clientHeight } = window.document.documentElement;
-
-            if (clientWidth !== this._conversionManager.stageWidth) {
-                console.log('we need to perform horizontal checks');
-                this._conversionManager.stageWidth = clientWidth;
-                this._stage.width(clientWidth);
-                //this._scrollbarLayer.draw();
-                if(this._scrollManager.x * -1 > this._conversionManager.gridWidth + SCROLLBAR_WIDTH - clientWidth) {
-                    const newXScroll = (-1 * (this._conversionManager.gridWidth - this._conversionManager.stageWidth + SCROLLBAR_WIDTH + PIANO_KEY_WIDTH)) + PIANO_KEY_WIDTH;
-                    this._scrollManager.x = newXScroll;
-                }
-            }
-
-            //if (clientHeight - 50 !== this._conversionManager.stageHeight) {
-                this._conversionManager.stageHeight = clientHeight - 50;
-                this._stage.height(clientHeight - 50);
-                //this._scrollbarLayer.draw();
-                if (this._scrollManager.y * -1 >= this._conversionManager.gridHeight + SCROLLBAR_WIDTH + 60 - clientHeight + 50) {
-                    console.log('vertical scroll needs to be adjusted');
-                    const newYScroll = -1 * (this._conversionManager.gridHeight - this._conversionManager.stageHeight + SCROLLBAR_WIDTH + 60);
-                    this._scrollManager.y = newYScroll;
-                }
-                this._velocityLayer.redrawOnVerticalResize();
-                this._scrollbarLayer.redrawOnVerticalResize();
-
-            //}
-
-            //console.log(clientWidth, clientHeight);
-            
-            
-            
-            
-            
-            
-            
+            this._handleResize(e);
         });
+
+    }
+
+    _handleResize(e) {
+        // grab clientWidth and clientHeight from event
+
+        // if clientWidth not equals stageWidth
+            // update stage width
+            // if new clientWidth would expose stage OOB
+                // adjust x scroll accordingly
+            // call method to update scrollbar layer horizontally
+        // if clientHeight not equals stageHeight
+            // update stage height
+            // if new clientHeight would expose stage OOB
+                // adjust y scroll accordingly
+            // call method to update scrollbar layer vertically
+        const window = e.target;
+        const { clientWidth, clientHeight } = window.document.documentElement;
+
+        if (clientWidth !== this._conversionManager.stageWidth) {
+            this._conversionManager.stageWidth = clientWidth;
+            this._stage.width(clientWidth);
+            const willExposeOutOfBounds = this._scrollManager.x * -1 > this._conversionManager.gridWidth + SCROLLBAR_WIDTH - clientWidth;
+            if (willExposeOutOfBounds) {
+                const newXScroll = (-1 * (this._scrollbarLayer.horizontalScrollRange)) + PIANO_KEY_WIDTH;
+                this._scrollManager.x = newXScroll;
+            }
+            
+        }
+        if (clientHeight - 50 !== this._conversionManager.stageHeight) {
+            this._conversionManager.stageHeight = clientHeight - 50;
+            this._stage.height(clientHeight - 50);
+            const willExposeOutOfBounds = this._scrollManager.y * -1 >= this._scrollbarLayer.verticalScrollRange;
+            if (willExposeOutOfBounds) {
+                const newYScroll = -1 * (this._scrollbarLayer.verticalScrollRange);
+                this._scrollManager.y = newYScroll;
+            }
+        }
+        this._velocityLayer.redrawOnVerticalResize();
+        this._scrollbarLayer.redrawOnHorizontalResize();
+        this._scrollbarLayer.redrawOnVerticalResize();
     }
 
     init() {
