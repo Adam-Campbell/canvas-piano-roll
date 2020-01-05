@@ -11,7 +11,12 @@ import {
     PIANO_KEY_WIDTH
 } from '../constants';
 import {
-    ACTIVE_TOOL_UPDATE
+    ACTIVE_TOOL_UPDATE,
+    UNDO_ACTION,
+    REDO_ACTION,
+    COPY_TO_CLIPBOARD,
+    CUT_TO_CLIPBOARD,
+    PASTE_FROM_CLIPBOARD
 } from '../events';
 import emitter from '../EventEmitter';
 import GridLayer from '../GridLayer';
@@ -58,7 +63,7 @@ export default class PianoRoll {
         );
         this._audioReconciler = new AudioReconciler(this._conversionManager);
         this._noteSelection = new NoteSelection();
-        this._historyStack = new HistoryStack();
+        this._historyStack = new HistoryStack({ notes: [], selectedNoteIds: [] });
         this._clipboard = new Clipboard(this._conversionManager);
         window.historyStack = this._historyStack;
         window.noteCache = this._noteCache;
@@ -82,18 +87,10 @@ export default class PianoRoll {
             this._scrollManager,
             this._conversionManager
         );
-        this._stage.on('mousedown', e => {
-            this._handleMouseDown(e);
-        })
-        this._stage.on('mousemove', e => {
-            this.handleMouseMove(e);
-        });
-        this._stage.on('mouseup', e => {
-            this.handleMouseUp(e);
-        });
-        this._keyboardStateManager.addKeyListener('Delete', () => {
-            this._deleteSelectedNotes();
-        });
+        this._stage.on('mousedown', e => this._handleMouseDown(e));
+        this._stage.on('mousemove', e => this.handleMouseMove(e));
+        this._stage.on('mouseup', e => this.handleMouseUp(e));
+        this._keyboardStateManager.addKeyListener('Delete', () => this._deleteSelectedNotes());
         this._keyboardStateManager.addKeyListener('1', () => {
             if (this._keyboardStateManager.altKey) {
                 emitter.broadcast(ACTIVE_TOOL_UPDATE, 'cursor');
@@ -109,25 +106,27 @@ export default class PianoRoll {
                 emitter.broadcast(ACTIVE_TOOL_UPDATE, 'marquee');
             }
         });
-        this._keyboardStateManager.addKeyListener('ArrowUp', () => {
-            this._shiftSelectionUp();
-        });
-        this._keyboardStateManager.addKeyListener('ArrowDown', () => {
-            this._shiftSelectionDown();
-        });
-        this._keyboardStateManager.addKeyListener('ArrowLeft', () => {
-            this._shiftSelectionLeft();
-        });
-        this._keyboardStateManager.addKeyListener('ArrowRight', () => {
-            this._shiftSelectionRight();
-        });
+        this._keyboardStateManager.addKeyListener('ArrowUp', () => this._shiftSelectionUp());
+        this._keyboardStateManager.addKeyListener('ArrowDown', () => this._shiftSelectionDown());
+        this._keyboardStateManager.addKeyListener('ArrowLeft', () => this._shiftSelectionLeft());
+        this._keyboardStateManager.addKeyListener('ArrowRight', () => this._shiftSelectionRight());
+        this._keyboardStateManager.addKeyListener('z', () => this._keyboardStateManager.ctrlKey && this._undo());
+        this._keyboardStateManager.addKeyListener('y', () => this._keyboardStateManager.ctrlKey && this._redo());
+        this._keyboardStateManager.addKeyListener('x', () => this._keyboardStateManager.ctrlKey && this._cut());
+        this._keyboardStateManager.addKeyListener('c', () => this._keyboardStateManager.ctrlKey && this._copy());
+        this._keyboardStateManager.addKeyListener('v', () => this._keyboardStateManager.ctrlKey && this._paste());
+
         emitter.subscribe(ACTIVE_TOOL_UPDATE, tool => {
             this._activeTool = tool;
             console.log(this._activeTool);
         });
-        window.addEventListener('resize', e => {
-            this._handleResize(e);
-        });
+        emitter.subscribe(UNDO_ACTION, () => this._undo());
+        emitter.subscribe(REDO_ACTION, () => this._redo());
+        emitter.subscribe(COPY_TO_CLIPBOARD, () => this._copy());
+        emitter.subscribe(CUT_TO_CLIPBOARD, () => this._cut());
+        emitter.subscribe(PASTE_FROM_CLIPBOARD, () => this._paste());
+        
+        window.addEventListener('resize', e => this._handleResize(e));
 
     }
 
