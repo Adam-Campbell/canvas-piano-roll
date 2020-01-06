@@ -6,9 +6,11 @@ import {
     DRAG_MODE_ADJUST_NOTE_SIZE,
     DRAG_MODE_ADJUST_NOTE_POSITION,
     DRAG_MODE_ADJUST_SELECTION,
+    DRAG_MODE_ADJUST_SELECTION_FROM_VELOCITY_AREA,
     VELOCITY_LAYER_HEIGHT,
     SCROLLBAR_WIDTH,
-    PIANO_KEY_WIDTH
+    PIANO_KEY_WIDTH,
+    SCROLLBAR_GUTTER
 } from '../constants';
 import {
     ACTIVE_TOOL_UPDATE,
@@ -228,7 +230,34 @@ export default class PianoRoll {
         const velocityMarkerElement = this._velocityMarkerCache.retrieveOne(noteElement.attrs.id);
         this._noteLayer.removeSelectedAppearance(noteElement);
         this._velocityLayer.removeSelectedAppearance(velocityMarkerElement);
-    } 
+    }
+
+    _reconcileNoteSelectionWithSelectionArea(selectionX1, selectionY1, selectionX2, selectionY2) {
+        const allNotes = this._noteCache.retrieveAll();
+
+        allNotes.forEach(noteRect => {
+            const { x, y, width, height } = noteRect.attrs;
+            const noteX1 = x;
+            const noteX2 = x + width;
+            const noteY1 = y;
+            const noteY2 = y + height;
+            const overlapsWithSelection = doesOverlap(
+                noteX1,
+                noteX2,
+                noteY1,
+                noteY2,
+                selectionX1,
+                selectionX2,
+                selectionY1,
+                selectionY2
+            );
+            if (overlapsWithSelection) {
+                this._addNoteToSelection(noteRect);
+            } else {
+                this._removeNoteFromSelection(noteRect);
+            }
+        });
+    }
 
     _addNewNote(x, y) {
         const id = genId();
@@ -438,12 +467,13 @@ export default class PianoRoll {
         const { offsetX, offsetY } = evt;
         const evtX = offsetX - this._scrollManager.x;
         const evtY = offsetY - this._scrollManager.y;
-
         const roundedX = this._conversionManager.roundDownToGridCol(evtX);
         const roundedY = this._conversionManager.roundDownToGridRow(evtY);
-        const timestamp = Date.now();
-        this._mouseStateManager.addMouseDownEvent(evtX, evtY, timestamp);
+
         const isVelocityLayerClick = this._conversionManager.stageHeight - offsetY <= VELOCITY_LAYER_HEIGHT + SCROLLBAR_WIDTH;
+        this._mouseStateManager.addMouseDownEvent(evtX, evtY);
+        //this._mouseStateManager.addMouseDownEvent(evtX, evtY);
+        
         // If marquee tool is active, a mousedown will always result in a transition to the
         // selection mode
         if (this._activeTool === 'marquee') {
@@ -451,7 +481,12 @@ export default class PianoRoll {
             // is active to result in selecting all of the notes that fit within the horizontal space
             // covered by the interaction, regardless of vertical space (so as if the top vertical edge
             // was the top of the note grid and the bottom vertical edge was the bottom of note grid).
-            if (!isVelocityLayerClick) {
+            if (isVelocityLayerClick) {
+                //const topOfVelocityLayer = this._conversionManager.stageHeight - VELOCITY_LAYER_HEIGHT - SCROLLBAR_WIDTH;
+                //const yRelativeToVelocityLayer = offsetY - topOfVelocityLayer;
+                this._mouseStateManager.addMouseDownEvent(evtX, offsetY);
+                this._dragMode = DRAG_MODE_ADJUST_SELECTION_FROM_VELOCITY_AREA;
+            } else {
                 this._dragMode = DRAG_MODE_ADJUST_SELECTION;
             }
             // else if pencil tool is active, a mousedown will always result in a transition to the
@@ -499,6 +534,9 @@ export default class PianoRoll {
             case DRAG_MODE_ADJUST_SELECTION:
                 this.handleAdjustSelectionMouseMove(e);
                 break;
+            case DRAG_MODE_ADJUST_SELECTION_FROM_VELOCITY_AREA:
+                this.handleAdjustSelectionFromVelocityMouseMove(e);
+                break;
             default:
                 return;
         }
@@ -532,18 +570,6 @@ export default class PianoRoll {
 
     handleAdjustSelectionMouseMove(e) {
         const { offsetX, offsetY } = e.evt;
-        // const currentX = this._conversionManager.roundToGridCol(
-        //     offsetX - this._scrollManager.x
-        // );
-        // const currentY = this._conversionManager.roundDownToGridRow(
-        //     offsetY - this._scrollManager.y
-        // );
-        // const mouseDownX = this._conversionManager.roundToGridCol(
-        //     this._mouseStateManager.x
-        // );
-        // const mouseDownY = this._conversionManager.roundToGridRow(
-        //     this._mouseStateManager.y
-        // );
         const currentX = offsetX - this._scrollManager.x;
         const currentY = offsetY - this._scrollManager.y;
         const mouseDownX = this._mouseStateManager.x;
@@ -554,31 +580,22 @@ export default class PianoRoll {
         const selectionY2 = Math.max(mouseDownY, currentY);
         
         this._noteLayer.updateSelectionMarquee(selectionX1, selectionY1, selectionX2, selectionY2);
+        this._reconcileNoteSelectionWithSelectionArea(selectionX1, selectionY1, selectionX2, selectionY2);
+    }
 
-        const allNotes = this._noteCache.retrieveAll();
-
-        allNotes.forEach(noteRect => {
-            const { x, y, width, height } = noteRect.attrs;
-            const noteX1 = x;
-            const noteX2 = x + width;
-            const noteY1 = y;
-            const noteY2 = y + height;
-            const overlapsWithSelection = doesOverlap(
-                noteX1,
-                noteX2,
-                noteY1,
-                noteY2,
-                selectionX1,
-                selectionX2,
-                selectionY1,
-                selectionY2
-            );
-            if (overlapsWithSelection) {
-                this._addNoteToSelection(noteRect);
-            } else {
-                this._removeNoteFromSelection(noteRect);
-            }
-        });
+    handleAdjustSelectionFromVelocityMouseMove(e) {
+        const evtX = e.evt.offsetX - this._scrollManager.x;
+        const evtY = e.evt.offsetY;
+        const mouseDownX = this._mouseStateManager.x;
+        const mouseDownY = this._mouseStateManager.y;
+        const topOfVelocityArea = this._conversionManager.stageHeight - VELOCITY_LAYER_HEIGHT - SCROLLBAR_WIDTH;
+        const bottomofVelocityArea = this._conversionManager.stageHeight - SCROLLBAR_WIDTH;
+        const x1 = Math.min(mouseDownX, evtX);
+        const x2 = Math.max(mouseDownX, evtX);
+        const y1 = Math.max(topOfVelocityArea, Math.min(mouseDownY, evtY) );
+        const y2 = Math.min(bottomofVelocityArea, Math.max(mouseDownY, evtY) );
+        this._velocityLayer.updateSelectionMarquee(x1, y1, x2, y2);
+        this._reconcileNoteSelectionWithSelectionArea(x1, 0, x2, this._conversionManager.gridHeight);
     }
 
 
@@ -598,6 +615,9 @@ export default class PianoRoll {
                 break;
             case DRAG_MODE_ADJUST_SELECTION:
                 this.handleAdjustSelectionMouseUp(e);
+                break;
+            case DRAG_MODE_ADJUST_SELECTION_FROM_VELOCITY_AREA:
+                this.handleAdjustSelectionFromVelocityMouseUp(e);
                 break;
             default:
                 return;
@@ -644,6 +664,11 @@ export default class PianoRoll {
 
     handleAdjustSelectionMouseUp(e) {
         this._noteLayer.clearSelectionMarquee();
+        this._dragMode = null;
+    }
+
+    handleAdjustSelectionFromVelocityMouseUp(e) {
+        this._velocityLayer.clearSelectionMarquee();
         this._dragMode = null;
     }
 
