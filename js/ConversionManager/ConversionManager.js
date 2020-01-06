@@ -1,7 +1,8 @@
 import emitter from '../EventEmitter';
 import {
     BAR_WIDTH,
-    ROW_HEIGHT
+    ROW_HEIGHT,
+    VELOCITY_LAYER_HEIGHT
 } from '../constants';
 import {
     QUANTIZE_VALUE_UPDATE,
@@ -29,6 +30,7 @@ export default class ConversionManager {
     constructor(stageWidth, stageHeight, initialQuantize = '16n', initialNoteDuration = '16n', numBars = 4) {
         this._stageWidth = stageWidth;
         this._stageHeight = stageHeight;
+        this._velocityAreaHeight = VELOCITY_LAYER_HEIGHT;
         this._quantize = initialQuantize;
         this._noteDuration = initialNoteDuration;
         this._tickToPxRatio = BAR_WIDTH / TICKS_PER_BAR;
@@ -95,6 +97,14 @@ export default class ConversionManager {
 
     set stageHeight(height) {
         this._stageHeight = height;
+    }
+
+    get velocityAreaHeight() {
+        return this._velocityAreaHeight;
+    }
+
+    set velocityAreaHeight(height) {
+        this._velocityAreaHeight = height;
     }
 
     roundDownToGridRow(y) {
