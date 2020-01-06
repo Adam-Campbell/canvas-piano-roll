@@ -7,6 +7,7 @@ import {
     DRAG_MODE_ADJUST_NOTE_POSITION,
     DRAG_MODE_ADJUST_SELECTION,
     DRAG_MODE_ADJUST_SELECTION_FROM_VELOCITY_AREA,
+    DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT,
     VELOCITY_LAYER_HEIGHT,
     SCROLLBAR_WIDTH,
     PIANO_KEY_WIDTH,
@@ -319,9 +320,9 @@ export default class PianoRoll {
     _handleVelocityMarkerAreaMouseDown(offsetY, roundedX) {
         const pxFromBottom = Math.min(
             this._conversionManager.stageHeight - offsetY - SCROLLBAR_WIDTH,
-            50
+            this._conversionManager.velocityAreaHeight - 10
         );
-        const velocityValue = pxFromBottom / 50;
+        const velocityValue = pxFromBottom / (this._conversionManager.velocityAreaHeight - 10);
         const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
         const matchingMarkers = allVelocityMarkers.filter(el => el.x() === roundedX);
         const selectedMatchingMarkers = matchingMarkers.filter(el => {
@@ -335,7 +336,7 @@ export default class PianoRoll {
         } else {
             velocityMarkersToUpdate = selectedMatchingMarkers;
         }
-        this._velocityLayer.updateVelocityMarkersHeight(velocityMarkersToUpdate, pxFromBottom);
+        this._velocityLayer.updateVelocityMarkersHeight(velocityMarkersToUpdate, velocityValue);
         velocityMarkersToUpdate.forEach(velocityRect => {
             const id = velocityRect.getAttr('id');
             //this._audioReconciler.updateNoteVelocity(id, velocityValue);
@@ -374,7 +375,7 @@ export default class PianoRoll {
                 note: this._conversionManager.derivePitchFromY(noteElement.attrs.y),
                 time: this._conversionManager.convertPxToTicks(noteElement.attrs.x),
                 duration: this._conversionManager.convertPxToTicks(noteElement.attrs.width),
-                velocity: velocityMarkerElement.attrs.height / 50,
+                velocity: velocityMarkerElement.attrs.velocity,
                 id: noteElement.attrs.id
             }
         });
@@ -442,12 +443,14 @@ export default class PianoRoll {
             );
             this._noteLayer.layer.add(noteElement);
             this._noteCache.add(noteElement);
+            const velocityMarkerHeight = noteObject.velocity * (this._conversionManager.velocityAreaHeight - 10);
             const velocityMarkerElement = this._velocityLayer._createVelocityMarker(
                 this._conversionManager.convertTicksToPx(noteObject.time),
-                this._conversionManager.stageHeight - SCROLLBAR_WIDTH - (noteObject.velocity * 50),
-                noteObject.velocity * 50,
+                this._conversionManager.stageHeight - SCROLLBAR_WIDTH - velocityMarkerHeight,
+                velocityMarkerHeight,
                 noteObject.id,
-                true
+                true,
+                noteObject.velocity
             );
             this._velocityMarkerCache.add(velocityMarkerElement);
             this._audioReconciler.addNote(noteElement, velocityMarkerElement);
@@ -470,7 +473,7 @@ export default class PianoRoll {
         const roundedX = this._conversionManager.roundDownToGridCol(evtX);
         const roundedY = this._conversionManager.roundDownToGridRow(evtY);
 
-        const isVelocityLayerClick = this._conversionManager.stageHeight - offsetY <= VELOCITY_LAYER_HEIGHT + SCROLLBAR_WIDTH;
+        const isVelocityLayerClick = this._conversionManager.stageHeight - offsetY <= this._conversionManager.velocityAreaHeight + SCROLLBAR_WIDTH;
         this._mouseStateManager.addMouseDownEvent(evtX, evtY);
         //this._mouseStateManager.addMouseDownEvent(evtX, evtY);
         
@@ -504,8 +507,11 @@ export default class PianoRoll {
             // events target and location.
         } else if (this._activeTool === 'cursor') {
             if (isVelocityLayerClick) {
-                this._handleVelocityMarkerAreaMouseDown(offsetY, roundedX);
-                return;
+                if (target.id() === 'VELOCITY_BORDER') {
+                    this._dragMode = DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT;
+                } else {
+                    this._handleVelocityMarkerAreaMouseDown(offsetY, roundedX);
+                }
             } else {
                 const targetIsNote = Boolean(target.getAttr('isNoteRect'));
                 if (targetIsNote) {
@@ -536,6 +542,9 @@ export default class PianoRoll {
                 break;
             case DRAG_MODE_ADJUST_SELECTION_FROM_VELOCITY_AREA:
                 this.handleAdjustSelectionFromVelocityMouseMove(e);
+                break;
+            case DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT:
+                this.handleAdjustVelocityAreaHeightMouseMove(e);
                 break;
             default:
                 return;
@@ -588,7 +597,7 @@ export default class PianoRoll {
         const evtY = e.evt.offsetY;
         const mouseDownX = this._mouseStateManager.x;
         const mouseDownY = this._mouseStateManager.y;
-        const topOfVelocityArea = this._conversionManager.stageHeight - VELOCITY_LAYER_HEIGHT - SCROLLBAR_WIDTH;
+        const topOfVelocityArea = this._conversionManager.stageHeight - this._conversionManager.velocityAreaHeight - SCROLLBAR_WIDTH;
         const bottomofVelocityArea = this._conversionManager.stageHeight - SCROLLBAR_WIDTH;
         const x1 = Math.min(mouseDownX, evtX);
         const x2 = Math.max(mouseDownX, evtX);
@@ -598,6 +607,12 @@ export default class PianoRoll {
         this._reconcileNoteSelectionWithSelectionArea(x1, 0, x2, this._conversionManager.gridHeight);
     }
 
+    handleAdjustVelocityAreaHeightMouseMove(e) {
+        const { offsetY } = e.evt;
+        const newHeight = (this._conversionManager.stageHeight - SCROLLBAR_WIDTH) - offsetY;
+        this._velocityLayer.redrawOnHeightChange(newHeight);
+        this._conversionManager.velocityAreaHeight = newHeight;
+    }
 
 
 
@@ -618,6 +633,9 @@ export default class PianoRoll {
                 break;
             case DRAG_MODE_ADJUST_SELECTION_FROM_VELOCITY_AREA:
                 this.handleAdjustSelectionFromVelocityMouseUp(e);
+                break;
+            case DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT:
+                this.handleAdjustVelocityAreaHeightMouseUp(e);
                 break;
             default:
                 return;
@@ -669,6 +687,11 @@ export default class PianoRoll {
 
     handleAdjustSelectionFromVelocityMouseUp(e) {
         this._velocityLayer.clearSelectionMarquee();
+        this._dragMode = null;
+    }
+
+    handleAdjustVelocityAreaHeightMouseUp(e) {
+        console.log('adjust velocity area height mouseup');
         this._dragMode = null;
     }
 

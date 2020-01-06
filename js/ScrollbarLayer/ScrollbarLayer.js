@@ -5,8 +5,7 @@ import {
     SCROLLBAR_THUMB_LENGTH,
     SCROLLBAR_GUTTER,
     NOTES_GRID_WIDTH,
-    NOTES_GRID_HEIGHT,
-    VELOCITY_LAYER_HEIGHT
+    NOTES_GRID_HEIGHT
 } from '../constants';
 import { clamp } from './utils';
 
@@ -25,7 +24,7 @@ export default class ScrollbarLayer {
     }
 
     get verticalScrollRange() {
-        return this._conversionManager.gridHeight - this._conversionManager.stageHeight + SCROLLBAR_WIDTH + VELOCITY_LAYER_HEIGHT;
+        return this._conversionManager.gridHeight - this._conversionManager.stageHeight + SCROLLBAR_WIDTH + this._conversionManager.velocityAreaHeight;
     }
 
     get verticalThumbMovementRange() {

@@ -7,8 +7,8 @@ export default class VelocityLayer {
     constructor(conversionManager) {
         this.layer = new Layer({ x: 120 });
         this._conversionManager = conversionManager;
-        //this._background = this._constructBackground();
-        //this._border = this._constructBorder();
+        this._background = this._constructBackground();
+        this._border = this._constructBorder();
         this._unselectedGroup = new Group();
         this._selectedGroup = new Group();
         this._hasActiveInteraction = true;
@@ -20,9 +20,7 @@ export default class VelocityLayer {
     }
 
     redrawOnVerticalResize() {
-        const background = this.layer.findOne('#VELOCITY_BACKGROUND');
-        const delta = this._conversionManager.stageHeight - SCROLLBAR_WIDTH - 60 - background.attrs.y;
-
+        const delta = this._conversionManager.stageHeight - SCROLLBAR_WIDTH - this._conversionManager.velocityAreaHeight - this._background.attrs.y;
         const allRects = this.layer.find('Rect');
         allRects.forEach(rect => {
             rect.y(
@@ -32,12 +30,32 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
+    redrawOnHeightChange(height) {
+        console.log(`redrawOnHeightChange called with height: ${height}`);
+        this._background.height(height);
+        this._background.y(
+            this._conversionManager.stageHeight - height - SCROLLBAR_WIDTH
+        );
+        this._border.y(
+            this._conversionManager.stageHeight - height - SCROLLBAR_WIDTH
+        );
+        const velocityMarkers = this.layer.find('.VELOCITY_MARKER');
+        velocityMarkers.forEach(velocityMarker => {
+            const newMarkerHeight = velocityMarker.attrs.velocity * (height - 10);
+            velocityMarker.height(newMarkerHeight);
+            velocityMarker.y(
+                this._conversionManager.stageHeight - SCROLLBAR_WIDTH - newMarkerHeight
+            );
+        });
+        this.layer.batchDraw();
+    }
+
     _constructBackground() {
         const background = new Rect({
             width: this._conversionManager.gridWidth,
-            height: 60,
+            height: this._conversionManager.velocityAreaHeight,
             x: 0,
-            y: this._conversionManager.stageHeight - SCROLLBAR_WIDTH - 60,
+            y: this._conversionManager.stageHeight - SCROLLBAR_WIDTH - this._conversionManager.velocityAreaHeight,
             fill: '#acacac',
             id: 'VELOCITY_BACKGROUND'
         });
@@ -47,16 +65,16 @@ export default class VelocityLayer {
     _constructBorder() {
         const border = new Rect({
             width: this._conversionManager.gridWidth,
-            height: 2,
+            height: 3,
             x: 0,
-            y: this._conversionManager.stageHeight - SCROLLBAR_WIDTH - 60,
+            y: this._conversionManager.stageHeight - SCROLLBAR_WIDTH - this._conversionManager.velocityAreaHeight,
             fill: '#222',
             id: 'VELOCITY_BORDER'
         });
         return border;
     }
 
-    _createVelocityMarker(x, y, height, id, isSelected) {
+    _createVelocityMarker(x, y, height, id, isSelected, velocity) {
         const velocityMarker = new Rect({
             x,
             y,
@@ -65,7 +83,8 @@ export default class VelocityLayer {
             fill: isSelected ? '#222' : 'green',
             id,
             cachedX: x,
-            name: 'VELOCITY_MARKER'
+            name: 'VELOCITY_MARKER',
+            velocity
         });
         if (isSelected) {
             velocityMarker.moveTo(this._selectedGroup);
@@ -78,10 +97,11 @@ export default class VelocityLayer {
     addNewVelocityMarker(x, id) {
         const velocityMarker = this._createVelocityMarker(
             x,
-            this._conversionManager.stageHeight - SCROLLBAR_WIDTH - 50,
-            50,
+            this._conversionManager.stageHeight - SCROLLBAR_WIDTH - (this._conversionManager.velocityAreaHeight - 10),
+            (this._conversionManager.velocityAreaHeight - 10),
             id,
-            true
+            true,
+            1
         );
         this.layer.batchDraw();
         return velocityMarker;
@@ -175,20 +195,20 @@ export default class VelocityLayer {
 
     draw() {
         this.layer.removeChildren();
-        const background = this._constructBackground();
-        const border = this._constructBorder();
-        this.layer.add(background);
-        this.layer.add(border);
+        this.layer.add(this._background);
+        this.layer.add(this._border);
         this.layer.add(this._unselectedGroup);
         this.layer.add(this._selectedGroup);
         this.layer.batchDraw();
     }
 
-    updateVelocityMarkersHeight(velocityRectsArray, newHeight) {
+    updateVelocityMarkersHeight(velocityRectsArray, velocityValue) {
+        const newHeight = velocityValue * (this._conversionManager.velocityAreaHeight - 10);
+        const newY = this._conversionManager.stageHeight - SCROLLBAR_WIDTH - newHeight;
         velocityRectsArray.forEach(velocityRect => {
-            const { y, height } = velocityRect.attrs;
+            velocityRect.setAttr('velocity', velocityValue);
             velocityRect.height(newHeight);
-            velocityRect.y(this._conversionManager.stageHeight - SCROLLBAR_WIDTH - newHeight);
+            velocityRect.y(newY);
         });
         this.layer.batchDraw();
     }
@@ -201,7 +221,7 @@ export default class VelocityLayer {
         const newVelocityMarkerElements = state.notes.map(note => {
             // calculate x, y, height, id, isSelected
             const x = this._conversionManager.convertTicksToPx(note.time);
-            const height = note.velocity * 50;
+            const height = note.velocity * (this._conversionManager.velocityAreaHeight - 10);
             const y = this._conversionManager.stageHeight - SCROLLBAR_WIDTH - height;
             const isSelected = state.selectedNoteIds.includes(note.id);
             const velocityMarkerElement = this._createVelocityMarker(
@@ -209,7 +229,8 @@ export default class VelocityLayer {
                 y,
                 height,
                 note.id,
-                isSelected
+                isSelected,
+                note.velocity
             );
             return velocityMarkerElement;
         });
