@@ -143,6 +143,36 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
+    updateSelectionMarquee(x1, y1, x2, y2) {
+        const marquee = this.layer.findOne('#MARQUEE');
+        if (!marquee) {
+            const newMarquee = new Rect({
+                x: x1,
+                y: y1,
+                width: x2 - x1,
+                height: y2 - y1,
+                fill: '#08b5d3',
+                opacity: 0.4,
+                id: 'MARQUEE'
+            });
+            this.layer.add(newMarquee); 
+        } else {
+            marquee.x(x1);
+            marquee.y(y1);
+            marquee.width(x2 - x1);
+            marquee.height(y2 - y1);
+        }
+        this.layer.batchDraw();
+    }
+
+    clearSelectionMarquee() {
+        const marquee = this.layer.findOne('#MARQUEE');
+        if (marquee) {
+            marquee.destroy();
+            this.layer.batchDraw();
+        }
+    }
+
     draw() {
         this.layer.removeChildren();
         const background = this._constructBackground();

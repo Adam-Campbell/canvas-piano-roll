@@ -1,15 +1,14 @@
 export default class MouseStateManager {
+    
     constructor() {
         this._x = null;
         this._y = null;
-        this._mouseDownTimestamp = null;
         this._hasTravelled = null;
     }
 
-    addMouseDownEvent(x, y, timestamp) {
+    addMouseDownEvent(x, y) {
         this._x = x;
         this._y = y;
-        this._mouseDownTimestamp = timestamp;
         this._hasTravelled = false;
     }
 
@@ -30,11 +29,8 @@ export default class MouseStateManager {
         return this._y;
     }
 
-    get mouseDownTimestamp() {
-        return this._mouseDownTimestamp
-    }
-
     get hasTravelled() {
         return this._hasTravelled;
     }
+
 }
