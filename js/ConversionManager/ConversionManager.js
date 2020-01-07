@@ -33,7 +33,8 @@ export default class ConversionManager {
         this._velocityAreaHeight = VELOCITY_LAYER_HEIGHT;
         this._quantize = initialQuantize;
         this._noteDuration = initialNoteDuration;
-        this._tickToPxRatio = BAR_WIDTH / TICKS_PER_BAR;
+        //this._tickToPxRatio = BAR_WIDTH / TICKS_PER_BAR;
+        this._tickToPxRatio = 0.25;
         this._numBars = numBars;
         this.unsubscribe1 = emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
             this._quantize = qVal;
@@ -63,12 +64,25 @@ export default class ConversionManager {
         return px / this._tickToPxRatio;
     }
 
+    get tickToPxRatio() {
+        return this._tickToPxRatio;
+    }
+
+    set tickToPxRatio(ratio) {
+        // legal ratios are 0.125, 0.25, 0.5 (default) and 1.
+        this._tickToPxRatio = ratio;
+    }
+
     get colWidth() {
         return this.convertDurationToPx(this._quantize);
     }
 
     get noteWidth() {
         return this.convertDurationToPx(this._noteDuration);
+    }
+
+    get barWidth() {
+        return TICKS_PER_BAR * this.tickToPxRatio;
     }
 
     get rowHeight() {
@@ -80,7 +94,7 @@ export default class ConversionManager {
     }
 
     get gridWidth() {
-        return this._numBars * BAR_WIDTH
+        return this.numBars * this.barWidth;
     }
 
     get stageWidth() {
@@ -105,6 +119,10 @@ export default class ConversionManager {
 
     set velocityAreaHeight(height) {
         this._velocityAreaHeight = height;
+    }
+
+    get numBars() {
+        return this._numBars;
     }
 
     roundDownToGridRow(y) {

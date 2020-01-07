@@ -7,7 +7,7 @@ import {
     NOTES_GRID_WIDTH,
     NOTES_GRID_HEIGHT
 } from '../constants';
-import { clamp } from './utils';
+import { clamp } from '../utils';
 
 export default class ScrollbarLayer {
     constructor(scrollManager, conversionManager) {

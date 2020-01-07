@@ -41,10 +41,9 @@ marquee tool
 
 export default class NoteLayer {
 
-    constructor(conversionManager, audioReconciler, mouseStateManager) {
+    constructor(conversionManager, mouseStateManager) {
         this.layer = new Layer({ x: 120 });
         this._conversionManager = conversionManager;
-        this._audioReconciler = audioReconciler;
         this._mouseStateManager = mouseStateManager;
     }
 
@@ -55,6 +54,19 @@ export default class NoteLayer {
 
     updateY(y) {
         this.layer.y(y);
+        this.layer.batchDraw();
+    }
+
+    redrawOnZoomAdjustment(isZoomingIn) {
+        const noteElements = this.layer.find('.NOTE');
+        noteElements.forEach(noteElement => {
+            noteElement.x(
+                isZoomingIn ? noteElement.x() * 2 : noteElement.x() * 0.5
+            );
+            noteElement.width(
+                isZoomingIn ? noteElement.width() * 2 : noteElement.width() * 0.5
+            );
+        });
         this.layer.batchDraw();
     }
 

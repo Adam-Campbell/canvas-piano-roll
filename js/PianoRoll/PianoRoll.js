@@ -44,10 +44,11 @@ import CanvasElementCache from '../CanvasElementCache';
 import { genId } from '../genId';
 import HistoryStack from '../HistoryStack';
 import Clipboard from '../Clipboard';
+import { clamp } from '../utils';
 
 export default class PianoRoll {
 
-    constructor(containerId, width = STAGE_WIDTH, height = STAGE_HEIGHT) {
+    constructor(containerId, width = STAGE_WIDTH, height = STAGE_HEIGHT, initialQuantize = '16n', initialNoteDuration = '16n', numBars = 8) {
         window.pianoRoll = this;
         this._dragMode = null;
         this._activeTool = 'cursor';
@@ -62,7 +63,10 @@ export default class PianoRoll {
         this._mouseStateManager = new MouseStateManager();
         this._conversionManager = new ConversionManager(
             width, 
-            height
+            height,
+            initialQuantize,
+            initialNoteDuration,
+            numBars
         );
         this._audioReconciler = new AudioReconciler(this._conversionManager);
         this._noteSelection = new NoteSelection();
@@ -72,10 +76,9 @@ export default class PianoRoll {
         window.noteCache = this._noteCache;
         window.velocityCache = this._velocityMarkerCache;
         window.noteSelection = this._noteSelection;
-        this._gridLayer = new GridLayer(4, '16n');
+        this._gridLayer = new GridLayer(this._conversionManager);
         this._noteLayer = new NoteLayer(
             this._conversionManager, 
-            this._audioReconciler,
             this._mouseStateManager
         );
         this._velocityLayer = new VelocityLayer(this._conversionManager);
@@ -118,7 +121,12 @@ export default class PianoRoll {
         this._keyboardStateManager.addKeyListener('x', () => this._keyboardStateManager.ctrlKey && this._cut());
         this._keyboardStateManager.addKeyListener('c', () => this._keyboardStateManager.ctrlKey && this._copy());
         this._keyboardStateManager.addKeyListener('v', () => this._keyboardStateManager.ctrlKey && this._paste());
-
+        this._keyboardStateManager.addKeyListener('i', () => {
+            this._keyboardStateManager.altKey && this._handleZoomAdjustment(true);
+        });
+        this._keyboardStateManager.addKeyListener('o', () => {
+            this._keyboardStateManager.altKey && this._handleZoomAdjustment(false);
+        });
         emitter.subscribe(ACTIVE_TOOL_UPDATE, tool => {
             this._activeTool = tool;
             console.log(this._activeTool);
@@ -131,6 +139,23 @@ export default class PianoRoll {
         
         window.addEventListener('resize', e => this._handleResize(e));
 
+    }
+
+    _handleZoomAdjustment(isZoomingIn) {
+        const zoomLevels = [0.125, 0.25, 0.5, 1];
+        const currentZoomIdx = zoomLevels.indexOf(this._conversionManager.tickToPxRatio);
+        const newZoomIdx = clamp(
+            isZoomingIn ? currentZoomIdx + 1 : currentZoomIdx - 1,
+            0,
+            zoomLevels.length - 1
+        );
+        if (currentZoomIdx !== newZoomIdx) {
+            const newZoomLevel = zoomLevels[newZoomIdx];
+            this._conversionManager.tickToPxRatio = newZoomLevel;
+            this._gridLayer.draw();
+            this._noteLayer.redrawOnZoomAdjustment(isZoomingIn);
+            this._velocityLayer.redrawOnZoomAdjustment(isZoomingIn);
+        }
     }
 
     _handleResize(e) {
