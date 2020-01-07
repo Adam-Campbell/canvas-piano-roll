@@ -21,6 +21,9 @@ export default class ScrollbarLayer {
         this.layer.on('mousedown', e => {
             e.cancelBubble = true;
         });
+        this.layer.on('touchstart', e => {
+            e.cancelBubble = true;
+        });
     }
 
     get verticalScrollRange() {

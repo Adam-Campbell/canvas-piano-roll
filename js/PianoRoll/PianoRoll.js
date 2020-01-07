@@ -96,6 +96,9 @@ export default class PianoRoll {
         this._stage.on('mousedown', e => this._handleMouseDown(e));
         this._stage.on('mousemove', e => this.handleMouseMove(e));
         this._stage.on('mouseup', e => this.handleMouseUp(e));
+        this._stage.on('touchstart', e => this.handleTouchStart(e));
+        this._stage.on('touchmove', e => this.handleTouchMove(e));
+        this._stage.on('touchend', e => this.handleTouchEnd(e));
         this._keyboardStateManager.addKeyListener('Delete', () => this._deleteSelectedNotes());
         this._keyboardStateManager.addKeyListener('1', () => {
             if (this._keyboardStateManager.altKey) {
@@ -138,7 +141,76 @@ export default class PianoRoll {
         emitter.subscribe(PASTE_FROM_CLIPBOARD, () => this._paste());
         
         window.addEventListener('resize', e => this._handleResize(e));
+    }
 
+    _getTouchCoordsRelativeToStage(touch) {
+        const { clientX, clientY } = touch;
+        //const { pageX: clientX, pageY: clientY } = touch;
+        const rect = this._stage.container().getBoundingClientRect();
+        //console.log(rect);
+        const { top, left } = rect;
+        return {
+            offsetX: clientX - left,
+            offsetY: clientY - top
+        };
+    }
+
+    handleTouchStart(e) {
+        //console.log(e.evt.touches[0]);
+        //this._pianoKeyLayer._instrument.triggerAttack('C5');
+        const touch = e.evt.touches[0];
+        const { offsetX, offsetY } = this._getTouchCoordsRelativeToStage(touch);
+        //console.log({ offsetX, offsetY })
+        const evtX = offsetX - this._scrollManager.x;
+        const evtY = offsetY - this._scrollManager.y;
+        const roundedX = this._conversionManager.roundDownToGridCol(evtX);
+        const roundedY = this._conversionManager.roundDownToGridRow(evtY);
+        this._mouseStateManager.addMouseDownEvent(roundedX, roundedY);
+
+        this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
+        this._clearSelection();
+        this._addNewNote(roundedX, roundedY);
+        
+    }
+
+    handleTouchMove(e) {
+        switch (this._dragMode) {
+            case DRAG_MODE_ADJUST_NOTE_SIZE:
+                this.handleAdjustNoteSizeTouchMove(e);
+                break;
+            default:
+                return;
+        }
+    }
+
+    handleAdjustNoteSizeTouchMove(e) {
+        const { offsetX } = this._getTouchCoordsRelativeToStage(e.evt.touches[0]);
+        const x = offsetX - this._scrollManager.x;
+        const selectedNoteIds = this._noteSelection.retrieveAll();
+        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
+        this._noteLayer.updateNoteDurations(x, selectedNoteElements);
+    }
+
+    handleTouchEnd(e) {
+        switch (this._dragMode) {
+            case DRAG_MODE_ADJUST_NOTE_SIZE:
+                this.handleAdjustNoteSizeTouchEnd(e);
+                break;
+            default:
+                return;
+        }
+    }
+
+    handleAdjustNoteSizeTouchEnd(e) {
+        //this._pianoKeyLayer._instrument.triggerRelease('C5');
+        this._dragMode = null;
+        const selectedNoteIds = this._noteSelection.retrieveAll();
+        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
+        const selectedVelocityMarkerElements = this._velocityMarkerCache.retrieve(selectedNoteIds);
+        this._noteLayer.updateNotesAttributeCaches(selectedNoteElements);
+        this._velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
+        selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
+        this._serializeState();
     }
 
     _handleZoomAdjustment(isZoomingIn) {

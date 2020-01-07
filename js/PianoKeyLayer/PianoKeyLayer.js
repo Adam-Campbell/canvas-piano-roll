@@ -8,6 +8,20 @@ import {
     sortByColor
 } from './utils';
 
+
+/*
+
+Touch bugs:
+
+- Because there is no touch equivalent to mouseout, if you activate a key with touchstart and then
+move the touch away from that key before touchend then the key will not be deactivated (you would then 
+have to trigger another touchstart and ensure the touchend occurs over the relevant key). To fix this
+either recreate the mouseout functionality using the touch events, or figure out a different way to manage
+the keys when using touch (must not affect the way they work when using mouse).
+
+
+*/
+
 export default class PianoKeyLayer {
     constructor() {
         this.layer = new Layer();
@@ -31,6 +45,18 @@ export default class PianoKeyLayer {
             this._deactivateKey(e.target);
         });
         this.layer.on('mouseout', e => {
+            e.cancelBubble = true;
+            this._deactivateKey(e.target);
+        });
+        this.layer.on('touchstart', e => {
+            e.cancelBubble = true;
+            //alert('touchstart')
+            //const a = Object.values(e).toString;
+            //alert(e.evt.touches[0].clientX);
+            //console.log(e.target);
+            this._activateKey(e.target);
+        });
+        this.layer.on('touchend', e => {
             e.cancelBubble = true;
             this._deactivateKey(e.target);
         });
