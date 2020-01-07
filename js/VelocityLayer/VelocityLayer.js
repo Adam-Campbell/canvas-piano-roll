@@ -19,6 +19,22 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
+    redrawOnZoomAdjustment(isZoomingIn) {
+        this._background.width(
+            isZoomingIn ? this._background.width() * 2 : this._background.width() * 0.5
+        );
+        this._border.width(
+            isZoomingIn ? this._border.width() * 2 : this._border.width() * 0.5
+        );
+        const velocityElements = this.layer.find('.VELOCITY_MARKER');
+        velocityElements.forEach(velocityElement => {
+            velocityElement.x(
+                isZoomingIn ? velocityElement.x() * 2 : velocityElement.x() * 0.5
+            );
+        });
+        this.layer.batchDraw();
+    }
+
     redrawOnVerticalResize() {
         const delta = this._conversionManager.stageHeight - SCROLLBAR_WIDTH - this._conversionManager.velocityAreaHeight - this._background.attrs.y;
         const allRects = this.layer.find('Rect');
