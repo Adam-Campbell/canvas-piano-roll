@@ -93,9 +93,12 @@ export default class PianoRoll {
             this._scrollManager,
             this._conversionManager
         );
-        this._stage.on('mousedown', e => this._handleMouseDown(e));
-        this._stage.on('mousemove', e => this.handleMouseMove(e));
-        this._stage.on('mouseup', e => this.handleMouseUp(e));
+        this._stage.on('mousedown', e => this._handleInteractionStart(e));
+        this._stage.on('mousemove', e => this._handleInteractionUpdate(e));
+        this._stage.on('mouseup', e => this._handleInteractionEnd(e));
+        this._stage.on('touchstart', e => this._handleInteractionStart(e));
+        this._stage.on('touchmove', e => this._handleInteractionUpdate(e));
+        this._stage.on('touchend', e => this._handleInteractionEnd(e));
         this._keyboardStateManager.addKeyListener('Delete', () => this._deleteSelectedNotes());
         this._keyboardStateManager.addKeyListener('1', () => {
             if (this._keyboardStateManager.altKey) {
@@ -138,7 +141,23 @@ export default class PianoRoll {
         emitter.subscribe(PASTE_FROM_CLIPBOARD, () => this._paste());
         
         window.addEventListener('resize', e => this._handleResize(e));
+    }
 
+    init() {
+        this._addLayer(this._gridLayer);
+        this._addLayer(this._noteLayer);
+        this._addLayer(this._velocityLayer);
+        this._addLayer(this._pianoKeyLayer);
+        this._addLayer(this._scrollbarLayer);
+        this._gridLayer.draw();
+        this._noteLayer.draw();
+        this._velocityLayer.draw();
+        this._pianoKeyLayer.draw();
+        this._scrollbarLayer.draw();
+    }
+
+    _addLayer(layerClass) {
+        this._stage.add(layerClass.layer);
     }
 
     _handleZoomAdjustment(isZoomingIn) {
@@ -198,29 +217,60 @@ export default class PianoRoll {
         this._scrollbarLayer.redrawOnVerticalResize();
     }
 
-    init() {
-        this.addLayer(this._gridLayer);
-        this.addLayer(this._noteLayer);
-        this.addLayer(this._velocityLayer);
-        this.addLayer(this._pianoKeyLayer);
-        this.addLayer(this._scrollbarLayer);
-        this._gridLayer.draw();
-        this._noteLayer.draw();
-        this._velocityLayer.draw();
-        this._pianoKeyLayer.draw();
-        this._scrollbarLayer.draw();
+    _serializeState() {
+        // grab all of the noteElements
+        // grab all of the velocityMarkerElements
+        // for each pair of noteElement & velocityMarkerElement, produce a plain object
+        // representing that note. 
+        // grab the ids of all selected notes. 
+        // use all of this information to produce the complete serialized state. Return it. 
+
+        const serializedNotes = this._noteCache.retrieveAll().map(noteElement => {
+            const velocityMarkerElement = this._velocityMarkerCache.retrieveOne(
+                noteElement.attrs.id
+            );
+            return {
+                note: this._conversionManager.derivePitchFromY(noteElement.attrs.y),
+                time: this._conversionManager.convertPxToTicks(noteElement.attrs.x),
+                duration: this._conversionManager.convertPxToTicks(noteElement.attrs.width),
+                velocity: velocityMarkerElement.attrs.velocity,
+                id: noteElement.attrs.id
+            }
+        });
+        
+        const selectedNoteIds = this._noteSelection.retrieveAll();
+        const serializedState = {
+            notes: serializedNotes,
+            selectedNoteIds
+        };
+        
+        this._historyStack.addEntry(serializedState);
     }
 
-    addNoteToAudioEngine(noteId) {
+    _forceToState(state) {
+        const noteElements = this._noteLayer.forceToState(state);
+        const velocityMarkerElements = this._velocityLayer.forceToState(state);
+        this._noteCache.forceToState(noteElements);
+        this._velocityMarkerCache.forceToState(velocityMarkerElements);
+        this._noteSelection.forceToState(state.selectedNoteIds);
+        this._audioReconciler.forceToState(state.notes);
+    }
+
+    _addNoteToAudioEngine(noteId) {
         const noteElement = this._noteCache.retrieveOne(noteId);
         const velocityMarkerElement = this._velocityMarkerCache.retrieveOne(noteId);
         console.log(noteElement, velocityMarkerElement);
         this._audioReconciler.addNote(noteElement, velocityMarkerElement);
     }
 
-    addLayer(layerClass) {
-        this._stage.add(layerClass.layer);
-    }
+    _addNewNote(x, y) {
+        const id = genId();
+        const newNote = this._noteLayer.addNewNote(x, y, id);
+        const newVelocityMarker = this._velocityLayer.addNewVelocityMarker(x, id);
+        this._noteCache.add(newNote);
+        this._velocityMarkerCache.add(newVelocityMarker);
+        this._noteSelection.add(newNote);
+    }    
 
     _deleteSelectedNotes() {
         const selectedNoteIds = this._noteSelection.retrieveAll();
@@ -285,21 +335,12 @@ export default class PianoRoll {
         });
     }
 
-    _addNewNote(x, y) {
-        const id = genId();
-        const newNote = this._noteLayer.addNewNote(x, y, id);
-        const newVelocityMarker = this._velocityLayer.addNewVelocityMarker(x, id);
-        this._noteCache.add(newNote);
-        this._velocityMarkerCache.add(newVelocityMarker);
-        this._noteSelection.add(newNote);
-    }
-
     _shiftSelectionUp() {
         const selectedNoteIds = this._noteSelection.retrieveAll();
         const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
         if (canShiftUp(selectedNoteElements)) {
             this._noteLayer.shiftNotesUp(selectedNoteElements);
-            selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
+            selectedNoteIds.forEach(id => this._addNoteToAudioEngine(id));
             this._serializeState();
         }
     }
@@ -309,7 +350,7 @@ export default class PianoRoll {
         const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
         if (canShiftDown(selectedNoteElements, this._conversionManager.gridHeight)) {
             this._noteLayer.shiftNotesDown(selectedNoteElements);
-            selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
+            selectedNoteIds.forEach(id => this._addNoteToAudioEngine(id));
             this._serializeState();
         }
     }
@@ -323,7 +364,7 @@ export default class PianoRoll {
         if (canShiftLeft(selectedNoteElements)) {
             this._noteLayer.shiftNotesLeft(selectedNoteElements);
             this._velocityLayer.shiftVelocityMarkersLeft(selectedVelocityMarkerElements);
-            selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
+            selectedNoteIds.forEach(id => this._addNoteToAudioEngine(id));
             this._serializeState();
         }
     }
@@ -337,89 +378,9 @@ export default class PianoRoll {
         if (canShiftRight(selectedNoteElements, this._conversionManager.gridWidth)) {
             this._noteLayer.shiftNotesRight(selectedNoteElements);
             this._velocityLayer.shiftVelocityMarkersRight(selectedVelocityMarkerElements);
-            selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
+            selectedNoteIds.forEach(id => this._addNoteToAudioEngine(id));
             this._serializeState();
         }
-    }
-
-    _handleVelocityMarkerAreaMouseDown(offsetY, roundedX) {
-        const pxFromBottom = Math.min(
-            this._conversionManager.stageHeight - offsetY - SCROLLBAR_WIDTH,
-            this._conversionManager.velocityAreaHeight - 10
-        );
-        const velocityValue = pxFromBottom / (this._conversionManager.velocityAreaHeight - 10);
-        const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
-        const matchingMarkers = allVelocityMarkers.filter(el => el.x() === roundedX);
-        const selectedMatchingMarkers = matchingMarkers.filter(el => {
-            return this._noteSelection.has(el);
-        });
-        let velocityMarkersToUpdate;
-        if (matchingMarkers.length === 0) {
-            return;
-        } else if (selectedMatchingMarkers.length === 0) {
-            velocityMarkersToUpdate = matchingMarkers;
-        } else {
-            velocityMarkersToUpdate = selectedMatchingMarkers;
-        }
-        this._velocityLayer.updateVelocityMarkersHeight(velocityMarkersToUpdate, velocityValue);
-        velocityMarkersToUpdate.forEach(velocityRect => {
-            const id = velocityRect.getAttr('id');
-            //this._audioReconciler.updateNoteVelocity(id, velocityValue);
-            this.addNoteToAudioEngine(id);
-            this._serializeState();
-        });
-    }
-
-    _handleNoteMouseDown(noteElement, evtX) {
-        const { x: rectX, width: rectWidth } = noteElement.attrs;
-        const isEdgeClick = rectWidth + rectX - evtX < 10;
-        const isSelected = this._noteSelection.has(noteElement);
-        if (isEdgeClick) {
-            if (!isSelected) {
-                this._clearSelection();
-                this._addNoteToSelection(noteElement);
-            } 
-            this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
-        } else {
-            this._dragMode = DRAG_MODE_ADJUST_NOTE_POSITION;
-        }
-    }
-
-    _serializeState() {
-        // grab all of the noteElements
-        // grab all of the velocityMarkerElements
-        // for each pair of noteElement & velocityMarkerElement, produce a plain object
-        // representing that note. 
-        // grab the ids of all selected notes. 
-        // use all of this information to produce the complete serialized state. Return it. 
-        const serializedNotes = this._noteCache.retrieveAll().map(noteElement => {
-            const velocityMarkerElement = this._velocityMarkerCache.retrieveOne(
-                noteElement.attrs.id
-            );
-            return {
-                note: this._conversionManager.derivePitchFromY(noteElement.attrs.y),
-                time: this._conversionManager.convertPxToTicks(noteElement.attrs.x),
-                duration: this._conversionManager.convertPxToTicks(noteElement.attrs.width),
-                velocity: velocityMarkerElement.attrs.velocity,
-                id: noteElement.attrs.id
-            }
-        });
-        const selectedNoteIds = this._noteSelection.retrieveAll();
-        const serializedState = {
-            notes: serializedNotes,
-            selectedNoteIds
-        };
-        //console.log(serializedState);
-        this._historyStack.addEntry(serializedState);
-    }
-
-    _forceToState(state) {
-        const noteElements = this._noteLayer.forceToState(state);
-        const velocityMarkerElements = this._velocityLayer.forceToState(state);
-        this._noteCache.forceToState(noteElements);
-        this._velocityMarkerCache.forceToState(velocityMarkerElements);
-        this._noteSelection.forceToState(state.selectedNoteIds);
-        this._audioReconciler.forceToState(state.notes);
     }
 
     _undo() {
@@ -486,114 +447,153 @@ export default class PianoRoll {
         this._serializeState();
     }
 
-
-    /******************
-     Mouse down logic
-    *******************/
-    _handleMouseDown(e) {
+    _extractInfoFromEventObject(e) {
         const { evt, target } = e;
-        const { offsetX, offsetY } = evt;
-        const evtX = offsetX - this._scrollManager.x;
-        const evtY = offsetY - this._scrollManager.y;
-        const roundedX = this._conversionManager.roundDownToGridCol(evtX);
-        const roundedY = this._conversionManager.roundDownToGridRow(evtY);
+        const isTouchEvent = Boolean(evt.touches);
+        let rawX;
+        let rawY;
+        if (isTouchEvent) {
+            const { clientX, clientY } = evt.touches[0];
+            const { top, left } = this._stage.container().getBoundingClientRect();
+            rawX = clientX - left;
+            rawY = clientY - top;
+        } else {
+            rawX = evt.offsetX;
+            rawY = evt.offsetY;
+        }
+        return {
+            isTouchEvent,
+            target,
+            rawX, 
+            rawY
+        }
+    }
 
-        const isVelocityLayerClick = this._conversionManager.stageHeight - offsetY <= this._conversionManager.velocityAreaHeight + SCROLLBAR_WIDTH;
-        this._mouseStateManager.addMouseDownEvent(evtX, evtY);
-        //this._mouseStateManager.addMouseDownEvent(evtX, evtY);
-        
-        // If marquee tool is active, a mousedown will always result in a transition to the
-        // selection mode
+    _handleInteractionStart(e) {
+        const { rawX, rawY, isTouchEvent, target } = this._extractInfoFromEventObject(e);
+        const xWithScroll = rawX - this._scrollManager.x;
+        const yWithScroll = rawY - this._scrollManager.y;
+        const roundedX = this._conversionManager.roundDownToGridCol(xWithScroll);
+        const roundedY = this._conversionManager.roundDownToGridRow(yWithScroll);
+
+        const isVelocityAreaClick = this._conversionManager.stageHeight - rawY <= this._conversionManager.velocityAreaHeight + SCROLLBAR_WIDTH;
+        this._mouseStateManager.addMouseDownEvent(xWithScroll, yWithScroll);
+
         if (this._activeTool === 'marquee') {
-            // As a future enhancement, I would like a velocity layer interaction whilst the marquee tool
-            // is active to result in selecting all of the notes that fit within the horizontal space
-            // covered by the interaction, regardless of vertical space (so as if the top vertical edge
-            // was the top of the note grid and the bottom vertical edge was the bottom of note grid).
-            if (isVelocityLayerClick) {
-                //const topOfVelocityLayer = this._conversionManager.stageHeight - VELOCITY_LAYER_HEIGHT - SCROLLBAR_WIDTH;
-                //const yRelativeToVelocityLayer = offsetY - topOfVelocityLayer;
-                this._mouseStateManager.addMouseDownEvent(evtX, offsetY);
+            if (isVelocityAreaClick) {
+                this._mouseStateManager.addMouseDownEvent(xWithScroll, rawY);
                 this._dragMode = DRAG_MODE_ADJUST_SELECTION_FROM_VELOCITY_AREA;
             } else {
                 this._dragMode = DRAG_MODE_ADJUST_SELECTION;
             }
-            // else if pencil tool is active, a mousedown will always result in a transition to the
-            // adjust note size drag mode
         } else if (this._activeTool === 'pencil') {
-            if (isVelocityLayerClick) {
-                this._handleVelocityMarkerAreaMouseDown(offsetY, roundedX);
+            if (isVelocityAreaClick) {
+                this._handleVelocityAreaInteractionStart(rawY, roundedX);
             } else {
                 this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
                 this._clearSelection();
-                this._addNewNote(roundedX, roundedY);
+                this._addNewNote(roundedX, roundedY); 
             }
-            // else if cursor tool is active, a mousedown can result in transitioning to the adjust
-            // note size state, adjust note position state, or no transtition at all, depending on the
-            // events target and location.
         } else if (this._activeTool === 'cursor') {
-            if (isVelocityLayerClick) {
+            if (isVelocityAreaClick) {
                 if (target.id() === 'VELOCITY_BORDER') {
                     this._dragMode = DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT;
                 } else {
-                    this._handleVelocityMarkerAreaMouseDown(offsetY, roundedX);
+                    this._handleVelocityAreaInteractionStart(rawY, roundedX);
                 }
             } else {
                 const targetIsNote = Boolean(target.getAttr('isNoteRect'));
                 if (targetIsNote) {
-                    this._handleNoteMouseDown(target, evtX);
+                    this._handleNoteInteractionStart(target, xWithScroll);
                 }
-            }   
+            }  
+        }
+
+    }
+
+    _handleNoteInteractionStart(noteElement, xWithScroll) {
+        const { x: rectX, width: rectWidth } = noteElement.attrs;
+        const isEdgeClick = rectWidth + rectX - xWithScroll < 10;
+        const isSelected = this._noteSelection.has(noteElement);
+        if (isEdgeClick) {
+            if (!isSelected) {
+                this._clearSelection();
+                this._addNoteToSelection(noteElement);
+            } 
+            this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
+        } else {
+            this._dragMode = DRAG_MODE_ADJUST_NOTE_POSITION;
         }
     }
 
+    _handleVelocityAreaInteractionStart(rawY, roundedX) {
+        const pxFromBottom = Math.min(
+            this._conversionManager.stageHeight - rawY - SCROLLBAR_WIDTH,
+            this._conversionManager.velocityAreaHeight - 10
+        );
+        const velocityValue = pxFromBottom / (this._conversionManager.velocityAreaHeight - 10);
+        const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
+        const matchingMarkers = allVelocityMarkers.filter(el => el.x() === roundedX);
+        const selectedMatchingMarkers = matchingMarkers.filter(el => {
+            return this._noteSelection.has(el);
+        });
+        let velocityMarkersToUpdate;
+        if (matchingMarkers.length === 0) {
+            return;
+        } else if (selectedMatchingMarkers.length === 0) {
+            velocityMarkersToUpdate = matchingMarkers;
+        } else {
+            velocityMarkersToUpdate = selectedMatchingMarkers;
+        }
+        this._velocityLayer.updateVelocityMarkersHeight(velocityMarkersToUpdate, velocityValue);
+        velocityMarkersToUpdate.forEach(velocityRect => {
+            const id = velocityRect.getAttr('id');
+            //this._audioReconciler.updateNoteVelocity(id, velocityValue);
+            this._addNoteToAudioEngine(id);
+            this._serializeState();
+        });
+    }
 
-
-
-
-
-    /*****************
-     Mouse move logic
-    ******************/
-    handleMouseMove(e) {
+    _handleInteractionUpdate(e) {
         switch (this._dragMode) {
             case DRAG_MODE_ADJUST_NOTE_SIZE:
-                this.handleAdjustNoteSizeMouseMove(e);
+                this._handleAdjustNoteSizeInteractionUpdate(e);
                 break;
             case DRAG_MODE_ADJUST_NOTE_POSITION:
-                this.handleAdjustNotePositionMouseMove(e);
+                this._handleAdjustNotePositionInteractionUpdate(e);
                 break;
             case DRAG_MODE_ADJUST_SELECTION:
-                this.handleAdjustSelectionMouseMove(e);
+                this._handleAdjustSelectionInteractionUpdate(e);
                 break;
             case DRAG_MODE_ADJUST_SELECTION_FROM_VELOCITY_AREA:
-                this.handleAdjustSelectionFromVelocityMouseMove(e);
+                this._handleAdjustSelectionFromVelocityInteractionUpdate(e);
                 break;
             case DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT:
-                this.handleAdjustVelocityAreaHeightMouseMove(e);
+                this._handleAdjustVelocityAreaHeightInteractionUpdate(e);
                 break;
             default:
                 return;
         }
     }
 
-    handleAdjustNoteSizeMouseMove(e) {
-        const { offsetX } = e.evt;
-        const x = offsetX - this._gridLayer.layer.x();
+    _handleAdjustNoteSizeInteractionUpdate(e) {
+        const { rawX } = this._extractInfoFromEventObject(e);
+        const xWithScroll = rawX - this._scrollManager.x;
         const selectedNoteIds = this._noteSelection.retrieveAll();
         const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
-        this._noteLayer.updateNoteDurations(x, selectedNoteElements);
+        this._noteLayer.updateNoteDurations(xWithScroll, selectedNoteElements);
     }
 
-    handleAdjustNotePositionMouseMove(e) {
-        const { offsetX, offsetY } = e.evt;
-        const x = offsetX - this._gridLayer.layer.x();
-        const y = offsetY - this._gridLayer.layer.y();
-        this._mouseStateManager.updateHasTravelled(x, y);
+    _handleAdjustNotePositionInteractionUpdate(e) {
+        const { rawX, rawY } = this._extractInfoFromEventObject(e);
+        const xWithScroll = rawX - this._scrollManager.x;
+        const yWithScroll = rawY - this._scrollManager.y;
+        this._mouseStateManager.updateHasTravelled(xWithScroll, yWithScroll);
         const xDelta = this._conversionManager.roundToGridCol(
-            x - this._mouseStateManager.x
+            xWithScroll - this._mouseStateManager.x
         );
         const yDelta = this._conversionManager.roundToGridRow(
-            y - this._mouseStateManager.y
+            yWithScroll - this._mouseStateManager.y
         );
         const selectedNoteIds = this._noteSelection.retrieveAll();
         const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
@@ -602,83 +602,76 @@ export default class PianoRoll {
         this._velocityLayer.repositionVelocityMarkers(xDelta, selectedVelocityMarkerElements);
     }
 
-    handleAdjustSelectionMouseMove(e) {
-        const { offsetX, offsetY } = e.evt;
-        const currentX = offsetX - this._scrollManager.x;
-        const currentY = offsetY - this._scrollManager.y;
+    _handleAdjustSelectionInteractionUpdate(e) {
+        const { rawX, rawY } = this._extractInfoFromEventObject(e);
+        const currentX = rawX - this._scrollManager.x;
+        const currentY = rawY - this._scrollManager.y;
         const mouseDownX = this._mouseStateManager.x;
         const mouseDownY = this._mouseStateManager.y;
         const selectionX1 = Math.min(mouseDownX, currentX);
         const selectionX2 = Math.max(mouseDownX, currentX);
         const selectionY1 = Math.min(mouseDownY, currentY);
         const selectionY2 = Math.max(mouseDownY, currentY);
-        
         this._noteLayer.updateSelectionMarquee(selectionX1, selectionY1, selectionX2, selectionY2);
         this._reconcileNoteSelectionWithSelectionArea(selectionX1, selectionY1, selectionX2, selectionY2);
     }
 
-    handleAdjustSelectionFromVelocityMouseMove(e) {
-        const evtX = e.evt.offsetX - this._scrollManager.x;
-        const evtY = e.evt.offsetY;
+    _handleAdjustSelectionFromVelocityInteractionUpdate(e) {
+        const { rawX, rawY } = this._extractInfoFromEventObject(e);
+        const xWithScroll = rawX - this._scrollManager.x;
         const mouseDownX = this._mouseStateManager.x;
         const mouseDownY = this._mouseStateManager.y;
         const topOfVelocityArea = this._conversionManager.stageHeight - this._conversionManager.velocityAreaHeight - SCROLLBAR_WIDTH;
         const bottomofVelocityArea = this._conversionManager.stageHeight - SCROLLBAR_WIDTH;
-        const x1 = Math.min(mouseDownX, evtX);
-        const x2 = Math.max(mouseDownX, evtX);
-        const y1 = Math.max(topOfVelocityArea, Math.min(mouseDownY, evtY) );
-        const y2 = Math.min(bottomofVelocityArea, Math.max(mouseDownY, evtY) );
+        const x1 = Math.min(mouseDownX, xWithScroll);
+        const x2 = Math.max(mouseDownX, xWithScroll);
+        const y1 = Math.max(topOfVelocityArea, Math.min(mouseDownY, rawY) );
+        const y2 = Math.min(bottomofVelocityArea, Math.max(mouseDownY, rawY) );
         this._velocityLayer.updateSelectionMarquee(x1, y1, x2, y2);
         this._reconcileNoteSelectionWithSelectionArea(x1, 0, x2, this._conversionManager.gridHeight);
     }
 
-    handleAdjustVelocityAreaHeightMouseMove(e) {
-        const { offsetY } = e.evt;
-        const newHeight = (this._conversionManager.stageHeight - SCROLLBAR_WIDTH) - offsetY;
+    _handleAdjustVelocityAreaHeightInteractionUpdate(e) {
+        const { rawY } = this._extractInfoFromEventObject(e);
+        const newHeight = (this._conversionManager.stageHeight - SCROLLBAR_WIDTH) - rawY;
         this._velocityLayer.redrawOnHeightChange(newHeight);
         this._conversionManager.velocityAreaHeight = newHeight;
     }
 
-
-
-
-    /***************
-     Mouse up logic
-    ****************/
-    handleMouseUp(e) {
+    _handleInteractionEnd(e) {
         switch (this._dragMode) {
             case DRAG_MODE_ADJUST_NOTE_SIZE:
-                this.handleAdjustNoteSizeMouseUp(e);
+                this._handleAdjustNoteSizeInteractionEnd(e);
                 break;
             case DRAG_MODE_ADJUST_NOTE_POSITION:
-                this.handleAdjustNotePositionMouseUp(e);
+                this._handleAdjustNotePositionInteractionEnd(e);
                 break;
             case DRAG_MODE_ADJUST_SELECTION:
-                this.handleAdjustSelectionMouseUp(e);
+                this._handleAdjustSelectionInteractionEnd(e);
                 break;
             case DRAG_MODE_ADJUST_SELECTION_FROM_VELOCITY_AREA:
-                this.handleAdjustSelectionFromVelocityMouseUp(e);
+                this._handleAdjustSelectionFromVelocityInteractionEnd(e);
                 break;
             case DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT:
-                this.handleAdjustVelocityAreaHeightMouseUp(e);
+                this._handleAdjustVelocityAreaHeightInteractionEnd(e);
                 break;
             default:
                 return;
         }
     }
 
-    handleAdjustNoteSizeMouseUp(e) {
+    _handleAdjustNoteSizeInteractionEnd(e) {
         this._dragMode = null;
         const selectedNoteIds = this._noteSelection.retrieveAll();
         const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
         const selectedVelocityMarkerElements = this._velocityMarkerCache.retrieve(selectedNoteIds);
         this._noteLayer.updateNotesAttributeCaches(selectedNoteElements);
         this._velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
-        selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
+        selectedNoteIds.forEach(id => this._addNoteToAudioEngine(id));
         this._serializeState();
     }
 
-    handleAdjustNotePositionMouseUp(e) {
+    _handleAdjustNotePositionInteractionEnd(e) {
         if (!this._mouseStateManager.hasTravelled) {
             const { target } = e;
             const isCurrentlySelected = this._noteSelection.has(target);
@@ -700,23 +693,22 @@ export default class PianoRoll {
         const selectedVelocityMarkerElements = this._velocityMarkerCache.retrieve(selectedNoteIds);
         this._noteLayer.updateNotesAttributeCaches(selectedNoteElements);
         this._velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
-        selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
+        selectedNoteIds.forEach(id => this._addNoteToAudioEngine(id));
         this._serializeState();
         this._dragMode = null;
     }
 
-    handleAdjustSelectionMouseUp(e) {
+    _handleAdjustSelectionInteractionEnd(e) {
         this._noteLayer.clearSelectionMarquee();
         this._dragMode = null;
     }
 
-    handleAdjustSelectionFromVelocityMouseUp(e) {
+    _handleAdjustSelectionFromVelocityInteractionEnd(e) {
         this._velocityLayer.clearSelectionMarquee();
         this._dragMode = null;
     }
 
-    handleAdjustVelocityAreaHeightMouseUp(e) {
-        console.log('adjust velocity area height mouseup');
+    _handleAdjustVelocityAreaHeightInteractionEnd(e) {
         this._dragMode = null;
     }
 
