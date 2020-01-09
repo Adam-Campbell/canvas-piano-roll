@@ -45,6 +45,7 @@ import { genId } from '../genId';
 import HistoryStack from '../HistoryStack';
 import Clipboard from '../Clipboard';
 import { clamp } from '../utils';
+import SeekerLayer from '../SeekerLayer';
 
 export default class PianoRoll {
 
@@ -83,11 +84,13 @@ export default class PianoRoll {
         );
         this._velocityLayer = new VelocityLayer(this._conversionManager);
         this._pianoKeyLayer = new PianoKeyLayer();
+        this._seekerLayer = new SeekerLayer(this._conversionManager);
         this._scrollManager = new ScrollManager(
             this._gridLayer,
             this._noteLayer,
             this._velocityLayer,
-            this._pianoKeyLayer
+            this._pianoKeyLayer,
+            this._seekerLayer
         );
         this._scrollbarLayer = new ScrollbarLayer(
             this._scrollManager,
@@ -147,11 +150,13 @@ export default class PianoRoll {
         this._addLayer(this._gridLayer);
         this._addLayer(this._noteLayer);
         this._addLayer(this._velocityLayer);
+        this._addLayer(this._seekerLayer);
         this._addLayer(this._pianoKeyLayer);
         this._addLayer(this._scrollbarLayer);
         this._gridLayer.draw();
         this._noteLayer.draw();
         this._velocityLayer.draw();
+        this._seekerLayer.draw();
         this._pianoKeyLayer.draw();
         this._scrollbarLayer.draw();
     }
