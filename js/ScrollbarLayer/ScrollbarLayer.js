@@ -27,7 +27,7 @@ export default class ScrollbarLayer {
     }
 
     get verticalScrollRange() {
-        return this._conversionManager.gridHeight - this._conversionManager.stageHeight + SCROLLBAR_WIDTH + this._conversionManager.velocityAreaHeight;
+        return this._conversionManager.gridHeight - this._conversionManager.stageHeight + SCROLLBAR_WIDTH + this._conversionManager.velocityAreaHeight + this._conversionManager.seekerAreaHeight;
     }
 
     get verticalThumbMovementRange() {
@@ -74,7 +74,7 @@ export default class ScrollbarLayer {
         verticalThumb.on('dragmove', e => {
             const yPos = e.target.attrs.y - SCROLLBAR_GUTTER;
             const yDecimal = yPos / this.verticalThumbMovementRange;
-            const newLayerY = -1 * yDecimal * this.verticalScrollRange;
+            const newLayerY = (-1 * yDecimal * this.verticalScrollRange) + this._conversionManager.seekerAreaHeight;
             this._scrollManager.y = newLayerY;
         });
         return verticalThumb
@@ -122,6 +122,7 @@ export default class ScrollbarLayer {
         // calculate scroll position as decimal and multiply by the total movement range of the 
         // thumb to get its new position.
         const scrollPositionAsDecimal = Math.abs(this._scrollManager.y / this.verticalScrollRange);
+        //const scrollPositionAsDecimal = Math.abs((this._scrollManager.y - this._conversionManager.velocityAreaHeight) / this.verticalScrollRange);
         const newThumbY = this.verticalThumbMovementRange * scrollPositionAsDecimal + SCROLLBAR_GUTTER;
         // Update the thumb with the newly calculate position, and update various other elements
         // according to the new stage height

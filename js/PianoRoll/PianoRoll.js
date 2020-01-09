@@ -45,6 +45,7 @@ import { genId } from '../genId';
 import HistoryStack from '../HistoryStack';
 import Clipboard from '../Clipboard';
 import { clamp } from '../utils';
+import SeekerLayer from '../SeekerLayer';
 
 export default class PianoRoll {
 
@@ -83,11 +84,13 @@ export default class PianoRoll {
         );
         this._velocityLayer = new VelocityLayer(this._conversionManager);
         this._pianoKeyLayer = new PianoKeyLayer();
+        this._seekerLayer = new SeekerLayer(this._conversionManager);
         this._scrollManager = new ScrollManager(
             this._gridLayer,
             this._noteLayer,
             this._velocityLayer,
-            this._pianoKeyLayer
+            this._pianoKeyLayer,
+            this._seekerLayer
         );
         this._scrollbarLayer = new ScrollbarLayer(
             this._scrollManager,
@@ -147,11 +150,13 @@ export default class PianoRoll {
         this._addLayer(this._gridLayer);
         this._addLayer(this._noteLayer);
         this._addLayer(this._velocityLayer);
+        this._addLayer(this._seekerLayer);
         this._addLayer(this._pianoKeyLayer);
         this._addLayer(this._scrollbarLayer);
         this._gridLayer.draw();
         this._noteLayer.draw();
         this._velocityLayer.draw();
+        this._seekerLayer.draw();
         this._pianoKeyLayer.draw();
         this._scrollbarLayer.draw();
     }
@@ -174,6 +179,7 @@ export default class PianoRoll {
             this._gridLayer.draw();
             this._noteLayer.redrawOnZoomAdjustment(isZoomingIn);
             this._velocityLayer.redrawOnZoomAdjustment(isZoomingIn);
+            this._seekerLayer.redrawOnZoomAdjustment();
         }
     }
 
@@ -208,7 +214,7 @@ export default class PianoRoll {
             this._stage.height(clientHeight - 50);
             const willExposeOutOfBounds = this._scrollManager.y * -1 >= this._scrollbarLayer.verticalScrollRange;
             if (willExposeOutOfBounds) {
-                const newYScroll = -1 * (this._scrollbarLayer.verticalScrollRange);
+                const newYScroll = (-1 * this._scrollbarLayer.verticalScrollRange) + this._conversionManager.seekerAreaHeight;
                 this._scrollManager.y = newYScroll;
             }
         }
@@ -477,7 +483,16 @@ export default class PianoRoll {
         const roundedY = this._conversionManager.roundDownToGridRow(yWithScroll);
 
         const isVelocityAreaClick = this._conversionManager.stageHeight - rawY <= this._conversionManager.velocityAreaHeight + SCROLLBAR_WIDTH;
+        const isTransportAreaClick = rawY <= 30;
         this._mouseStateManager.addMouseDownEvent(xWithScroll, yWithScroll);
+
+        if (isTransportAreaClick) {
+            const positionAsTicks = this._conversionManager.convertPxToTicks(roundedX);
+            const positionAsBBS = Tone.Ticks(positionAsTicks).toBarsBeatsSixteenths();
+            Tone.Transport.position = positionAsBBS;
+            this._seekerLayer.updateSeekerLinePosition();
+            return;
+        }
 
         if (this._activeTool === 'marquee') {
             if (isVelocityAreaClick) {

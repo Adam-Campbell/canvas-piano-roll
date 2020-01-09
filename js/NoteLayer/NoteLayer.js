@@ -42,7 +42,7 @@ marquee tool
 export default class NoteLayer {
 
     constructor(conversionManager, mouseStateManager) {
-        this.layer = new Layer({ x: 120 });
+        this.layer = new Layer({ x: 120, y: 30 });
         this._conversionManager = conversionManager;
         this._mouseStateManager = mouseStateManager;
     }

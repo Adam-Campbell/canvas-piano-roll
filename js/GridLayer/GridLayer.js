@@ -20,7 +20,7 @@ import {
 export default class GridLayer {
     
     constructor(conversionManager) {
-        this.layer = new Layer({ x: 120 });
+        this.layer = new Layer({ x: 120, y: 30 });
         this._conversionManager = conversionManager;
         this.unsubscribe1 = emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
             this.draw();
