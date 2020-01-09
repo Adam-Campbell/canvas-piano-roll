@@ -10,6 +10,7 @@ export const SCROLLBAR_WIDTH = 24;
 export const SCROLLBAR_THUMB_LENGTH = 40;
 export const SCROLLBAR_GUTTER = 4;
 export const VELOCITY_LAYER_HEIGHT = 60;
+export const SEEKER_AREA_HEIGHT = 30;
 
 
 export const DRAG_MODE_ADJUST_NEW_NOTE_SIZE = 'DRAG_MODE_ADJUST_NEW_NOTE_SIZE';

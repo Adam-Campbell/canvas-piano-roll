@@ -2,7 +2,8 @@ import emitter from '../EventEmitter';
 import {
     BAR_WIDTH,
     ROW_HEIGHT,
-    VELOCITY_LAYER_HEIGHT
+    VELOCITY_LAYER_HEIGHT,
+    SEEKER_AREA_HEIGHT
 } from '../constants';
 import {
     QUANTIZE_VALUE_UPDATE,
@@ -119,6 +120,10 @@ export default class ConversionManager {
 
     set velocityAreaHeight(height) {
         this._velocityAreaHeight = height;
+    }
+
+    get seekerAreaHeight() {
+        return SEEKER_AREA_HEIGHT;
     }
 
     get numBars() {

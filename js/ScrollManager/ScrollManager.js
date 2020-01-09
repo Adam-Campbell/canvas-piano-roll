@@ -6,7 +6,7 @@ export default class ScrollManager {
         this._pianoKeyLayer = pianoKeyLayer;
         this._seekerLayer = seekerLayer;
         this._x = 120;
-        this._y = 0;
+        this._y = 30;
     }
 
     get x() {

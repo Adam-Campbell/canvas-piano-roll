@@ -24,7 +24,7 @@ the keys when using touch (must not affect the way they work when using mouse).
 
 export default class PianoKeyLayer {
     constructor() {
-        this.layer = new Layer();
+        this.layer = new Layer({ y: 30 });
         this._instrument = new Tone.PolySynth(12, Tone.Synth).toMaster();
         this._instrument.set({
             envelope: {

@@ -179,6 +179,7 @@ export default class PianoRoll {
             this._gridLayer.draw();
             this._noteLayer.redrawOnZoomAdjustment(isZoomingIn);
             this._velocityLayer.redrawOnZoomAdjustment(isZoomingIn);
+            this._seekerLayer.redrawOnZoomAdjustment();
         }
     }
 
@@ -213,7 +214,7 @@ export default class PianoRoll {
             this._stage.height(clientHeight - 50);
             const willExposeOutOfBounds = this._scrollManager.y * -1 >= this._scrollbarLayer.verticalScrollRange;
             if (willExposeOutOfBounds) {
-                const newYScroll = -1 * (this._scrollbarLayer.verticalScrollRange);
+                const newYScroll = (-1 * this._scrollbarLayer.verticalScrollRange) + this._conversionManager.seekerAreaHeight;
                 this._scrollManager.y = newYScroll;
             }
         }
@@ -482,7 +483,16 @@ export default class PianoRoll {
         const roundedY = this._conversionManager.roundDownToGridRow(yWithScroll);
 
         const isVelocityAreaClick = this._conversionManager.stageHeight - rawY <= this._conversionManager.velocityAreaHeight + SCROLLBAR_WIDTH;
+        const isTransportAreaClick = rawY <= 30;
         this._mouseStateManager.addMouseDownEvent(xWithScroll, yWithScroll);
+
+        if (isTransportAreaClick) {
+            const positionAsTicks = this._conversionManager.convertPxToTicks(roundedX);
+            const positionAsBBS = Tone.Ticks(positionAsTicks).toBarsBeatsSixteenths();
+            Tone.Transport.position = positionAsBBS;
+            this._seekerLayer.updateSeekerLinePosition();
+            return;
+        }
 
         if (this._activeTool === 'marquee') {
             if (isVelocityAreaClick) {
