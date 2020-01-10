@@ -59,12 +59,21 @@ export default class NoteLayer {
 
     redrawOnZoomAdjustment(isZoomingIn) {
         const noteElements = this.layer.find('.NOTE');
+        const multiplier = isZoomingIn ? 2 : 0.5;
         noteElements.forEach(noteElement => {
             noteElement.x(
-                isZoomingIn ? noteElement.x() * 2 : noteElement.x() * 0.5
+                noteElement.x() * multiplier
             );
             noteElement.width(
-                isZoomingIn ? noteElement.width() * 2 : noteElement.width() * 0.5
+                noteElement.width() * multiplier
+            );
+            noteElement.setAttr(
+                'cachedX', 
+                noteElement.attrs.cachedX * multiplier
+            );
+            noteElement.setAttr(
+                'cachedWidth',
+                noteElement.attrs.cachedWidth * multiplier
             );
         });
         this.layer.batchDraw();

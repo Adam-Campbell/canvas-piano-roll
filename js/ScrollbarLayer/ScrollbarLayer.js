@@ -145,6 +145,21 @@ export default class ScrollbarLayer {
         this._horizontalTrack.width(this._conversionManager.stageWidth);
         this._verticalTrack.x(this._conversionManager.stageWidth - SCROLLBAR_WIDTH);
         this._verticalThumb.x(this._conversionManager.stageWidth - 20);
+        this.layer.batchDraw();
+    }
+
+    syncHorizontalThumbToScrollPosition() {
+        const scrollPositionAsDecimal = Math.abs((this._scrollManager.x - PIANO_KEY_WIDTH) / this.horizontalScrollRange);
+        const newThumbX = this.horizontalThumbMovementRange * scrollPositionAsDecimal + SCROLLBAR_GUTTER;
+        this._horizontalThumb.x(newThumbX);
+        this.layer.batchDraw();
+    }
+
+    syncVerticalThumbToScrollPosition() {
+        const scrollPositionAsDecimal = Math.abs(this._scrollManager.y / this.verticalScrollRange);
+        const newThumbY = this.verticalThumbMovementRange * scrollPositionAsDecimal + SCROLLBAR_GUTTER;
+        this._verticalThumb.y(newThumbY);
+        this.layer.batchDraw();
     }
 
     draw() {
