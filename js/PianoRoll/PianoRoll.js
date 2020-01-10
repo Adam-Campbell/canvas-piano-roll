@@ -133,6 +133,9 @@ export default class PianoRoll {
         this._keyboardStateManager.addKeyListener('o', () => {
             this._keyboardStateManager.altKey && this._handleZoomAdjustment(false);
         });
+        this._keyboardStateManager.addKeyListener('m', () => {
+            this._scrollManager.x = this._scrollManager.x - 100;
+        })
         emitter.subscribe(ACTIVE_TOOL_UPDATE, tool => {
             this._activeTool = tool;
             console.log(this._activeTool);
@@ -144,6 +147,8 @@ export default class PianoRoll {
         emitter.subscribe(PASTE_FROM_CLIPBOARD, () => this._paste());
         
         window.addEventListener('resize', e => this._handleResize(e));
+
+        this._previousBumpTimestamp = null;
     }
 
     init() {
@@ -221,6 +226,47 @@ export default class PianoRoll {
         this._velocityLayer.redrawOnVerticalResize();
         this._scrollbarLayer.redrawOnHorizontalResize();
         this._scrollbarLayer.redrawOnVerticalResize();
+    }
+
+    // Valid values for nudgeDirection are 'BOTH', 'VERTICAL' and 'HORIZONTAL'
+    _nudgeGridIfRequired(x, y, nudgeDirection = 'BOTH') {
+        const now = Date.now();
+        if (now - this._previousBumpTimestamp <= 67) {
+            return;
+        }
+        this._previousBumpTimestamp = now;
+        const triggerThreshold = 24;
+        
+        if (nudgeDirection === 'BOTH' || nudgeDirection === 'HORIZONTAL') {
+            const isAtLeftEdge = x < PIANO_KEY_WIDTH + triggerThreshold;
+            const isAtRightEdge = this._conversionManager.stageWidth - SCROLLBAR_WIDTH - x < triggerThreshold;
+            if (isAtLeftEdge) {
+                const scrollLimit = PIANO_KEY_WIDTH;
+                this._scrollManager.x = Math.min(scrollLimit, this._scrollManager.x + 100);
+                this._scrollbarLayer.syncHorizontalThumbToScrollPosition();
+            } else if (isAtRightEdge) {
+                const scrollLimit = -1 * (this._conversionManager.gridWidth - this._conversionManager.stageWidth + SCROLLBAR_WIDTH);
+                this._scrollManager.x = Math.max(scrollLimit, this._scrollManager.x - 100);
+                this._scrollbarLayer.syncHorizontalThumbToScrollPosition();
+            }
+        }
+
+        if (nudgeDirection === 'BOTH' || nudgeDirection === 'VERTICAL') {
+            const isAtTopEdge = y < this._conversionManager.seekerAreaHeight + triggerThreshold;
+            const isAtBottomEdge = this._conversionManager.stageHeight - SCROLLBAR_WIDTH - this._conversionManager.velocityAreaHeight - y < triggerThreshold;
+            if (isAtTopEdge) {
+                const scrollLimit = this._conversionManager.seekerAreaHeight;
+                this._scrollManager.y = Math.min(scrollLimit, this._scrollManager.y + 100);
+                this._scrollbarLayer.syncVerticalThumbToScrollPosition();
+            } else if (isAtBottomEdge) {
+                const scrollLimit = -1 * (
+                    this._conversionManager.gridHeight - this._conversionManager.stageHeight + 
+                    SCROLLBAR_WIDTH + this._conversionManager.velocityAreaHeight
+                );
+                this._scrollManager.y = Math.max(scrollLimit, this._scrollManager.y - 100);
+                this._scrollbarLayer.syncVerticalThumbToScrollPosition();
+            }
+        }
     }
 
     _serializeState() {
@@ -592,7 +638,8 @@ export default class PianoRoll {
     }
 
     _handleAdjustNoteSizeInteractionUpdate(e) {
-        const { rawX } = this._extractInfoFromEventObject(e);
+        const { rawX, rawY } = this._extractInfoFromEventObject(e);
+        this._nudgeGridIfRequired(rawX, rawY, 'HORIZONTAL');
         const xWithScroll = rawX - this._scrollManager.x;
         const selectedNoteIds = this._noteSelection.retrieveAll();
         const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
@@ -601,6 +648,7 @@ export default class PianoRoll {
 
     _handleAdjustNotePositionInteractionUpdate(e) {
         const { rawX, rawY } = this._extractInfoFromEventObject(e);
+        this._nudgeGridIfRequired(rawX, rawY);
         const xWithScroll = rawX - this._scrollManager.x;
         const yWithScroll = rawY - this._scrollManager.y;
         this._mouseStateManager.updateHasTravelled(xWithScroll, yWithScroll);
@@ -619,6 +667,7 @@ export default class PianoRoll {
 
     _handleAdjustSelectionInteractionUpdate(e) {
         const { rawX, rawY } = this._extractInfoFromEventObject(e);
+        this._nudgeGridIfRequired(rawX, rawY);
         const currentX = rawX - this._scrollManager.x;
         const currentY = rawY - this._scrollManager.y;
         const mouseDownX = this._mouseStateManager.x;
@@ -633,6 +682,7 @@ export default class PianoRoll {
 
     _handleAdjustSelectionFromVelocityInteractionUpdate(e) {
         const { rawX, rawY } = this._extractInfoFromEventObject(e);
+        this._nudgeGridIfRequired(rawX, rawY, 'HORIZONTAL');
         const xWithScroll = rawX - this._scrollManager.x;
         const mouseDownX = this._mouseStateManager.x;
         const mouseDownY = this._mouseStateManager.y;
