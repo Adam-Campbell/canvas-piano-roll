@@ -82,13 +82,13 @@ export default class PianoKeyLayer {
     _activateKey(pianoKeyElement) {
         const { pitch } = pianoKeyElement.attrs;
         this._addActiveAppearance(pianoKeyElement);
-        this._instrument.triggerAttack(pitch);
+        this._instrument.triggerAttack(pitch.full);
     }
 
     _deactivateKey(pianoKeyElement) {
         const { pitch } = pianoKeyElement.attrs;
         this._removeActiveAppearance(pianoKeyElement);
-        this._instrument.triggerRelease(pitch);
+        this._instrument.triggerRelease(pitch.full);
     }
 
     draw() {

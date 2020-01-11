@@ -6,8 +6,14 @@ import {
 import emitter from '../EventEmitter'; 
 import { 
     QUANTIZE_VALUE_UPDATE,
-    NOTE_DURATION_UPDATE
+    NOTE_DURATION_UPDATE,
+    SCALE_TYPE_UPDATE
 } from '../events';
+import { pitchesArray } from '../pitches';
+import { scale } from '@tonaljs/scale';
+import { note } from '@tonaljs/tonal';
+
+const isSameNote = (noteA, noteB) => note(noteA).chroma === note(noteB).chroma;
 
 export default class NoteGridLayer {
 
@@ -16,7 +22,13 @@ export default class NoteGridLayer {
         this._gridContainer = new Group();
         this._notesContainer = new Group();
         this._conversionManager = conversionManager;
+        this._scaleType = 'C major';
         this._unsubscribe1 = emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
+            this._drawGrid();
+        });
+        this._unsubscribe2 = emitter.subscribe(SCALE_TYPE_UPDATE, scaleType => {
+            this._scaleType = scaleType;
+            console.log(scaleType);
             this._drawGrid();
         });
     }
@@ -31,7 +43,32 @@ export default class NoteGridLayer {
         this.layer.batchDraw();
     }
 
+    _drawHighlights(scaleName) {
+        const scaleObject = scale(scaleName);
+        console.log(scaleObject);
+        let chromaValues = [];
+        scaleObject.chroma.split('').forEach((binary, idx) => {
+            if (binary === '1') {
+                chromaValues.push(idx);
+            }
+        });
+        const notesArray = scaleObject.notes;
+        pitchesArray.forEach((noteObj, idx) => {
+            if (scaleObject.notes.find((scaleNote, idx) => isSameNote(scaleNote, noteObj.note))) {
+                const highlightRect = new Rect({
+                    x: 0,
+                    y: idx * this._conversionManager.rowHeight,
+                    width: this._conversionManager.stageWidth,
+                    height: this._conversionManager.rowHeight,
+                    fill: 'pink',
+                });
+                highlightRect.moveTo(this._gridContainer);
+            }
+        })
+    }
+
     _drawGrid() {
+        console.log('_drawGrid was called')
         this._gridContainer.destroyChildren();
         const background = new Rect({
             x: 0,
@@ -41,6 +78,7 @@ export default class NoteGridLayer {
             fill: '#dadada'
         });
         background.moveTo(this._gridContainer);
+        this._drawHighlights(this._scaleType);
         const horizontalLinesData = getHorizontalLinesData(this._conversionManager.gridWidth);
         const verticalLinesData = getVerticalLinesData(
             this._conversionManager.numBars, 
