@@ -1,4 +1,3 @@
-import Tone from 'tone';
 import { genId } from '../genId';
 
 export default class Clipboard {
@@ -23,12 +22,8 @@ export default class Clipboard {
             const velocity = velocityMarkerElement.attrs.height / 50;
             const { x, y, width, id } = noteElement.attrs;
             const note = this._conversionManager.derivePitchFromY(y);
-            const time = Tone.Ticks(
-                this._conversionManager.convertPxToTicks(x)
-            ).toTicks();
-            const duration = Tone.Ticks(
-                this._conversionManager.convertPxToTicks(width)
-            ).toTicks();
+            const time = this._conversionManager.convertPxToTicks(x);
+            const duration = this._conversionManager.convertPxToTicks(width);
             return {
                 note,
                 time, 
@@ -42,17 +37,23 @@ export default class Clipboard {
     }
 
     produceCopy(roundedStartTime) {
-        // Map over _noteData to produce the new note data. For each note, keep the note, duration
-        // and velocity properties the same, but generate a new id, and calculate a new time based
-        // off of the notes original time property and the startTime argument. 
-
-        // Once this new data has been produced simply return it.
+        // Iterate over the notes data to get the earliest time value found in any of the notes. The delta
+        // between this earliest time value and the time value for a given note will be combined with the
+        // roundedStartTime to calculate the new time value for the copy being produced. 
+        let earliestStartTime = null;
+        this._notesData.forEach(noteObject => {
+            if (earliestStartTime === null || noteObject.time < earliestStartTime) {
+                earliestStartTime = noteObject.time;
+            }
+        });
+        // Then map over the notes data and produce a copy using the same note, duration and velocity 
+        // values, but with new id and time values.  
         return this._notesData.map(noteObject => ({
             note: noteObject.note,
             duration: noteObject.duration,
             velocity: noteObject.velocity,
             id: genId(),
-            time: roundedStartTime + noteObject.time
+            time: roundedStartTime + (noteObject.time - earliestStartTime)
         })); 
     }
 
