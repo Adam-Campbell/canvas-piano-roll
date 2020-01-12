@@ -147,13 +147,16 @@ export default class ConversionManager {
     }
     
     derivePitchFromY(y) {
-        const idx = y / ROW_HEIGHT;
-        return pitchesArray[idx];
+        const idx = y / this.rowHeight;
+        //return pitchesArray[idx];
+        const noteObj = pitchesArray[idx];
+        return noteObj.full
     }
 
     deriveYFromPitch(pitch) {
         const rowNumber = Math.max(
-            pitchesArray.indexOf(pitch),
+            //pitchesArray.indexOf(pitch),
+            pitchesArray.findIndex(noteObj => noteObj.full === pitch),
             0
         );
         return rowNumber * this.rowHeight

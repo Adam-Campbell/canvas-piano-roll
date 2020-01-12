@@ -6,11 +6,14 @@ import emitter from './EventEmitter';
 import PianoRoll from './PianoRoll/index.js';
 import { initButtons } from './buttons';
 import { initToolSelect } from './toolSelect';
+import { initScaleSelect } from './scaleSelect';
+
 
 initQuantizeSelect();
 initNoteDurationSelect();
 initButtons();
 initToolSelect();
+initScaleSelect();
 
 const initialWidth = document.documentElement.clientWidth;
 const initialHeight = document.documentElement.clientHeight - 50;
