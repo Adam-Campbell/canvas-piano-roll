@@ -691,6 +691,48 @@ export default class PianoRoll {
         this._humanizeNoteVelocities(selectedMarkers, 0.1);
     }
 
+    _transformSelection() {
+        const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
+        const selectedMarkers = allVelocityMarkers.filter(el => this._noteSelection.has(el));
+        this._linearTransform(selectedMarkers);
+    }
+
+    _linearTransform(velocityMarkerElements) {
+        
+        let originX;
+        let terminalX;
+        let originVelocity;
+        let terminalVelocity;
+
+        velocityMarkerElements.forEach(el => {
+            if (originX === undefined || el.attrs.x < originX) {
+                originX = el.attrs.x;
+                originVelocity = el.attrs.velocity;
+            }
+            if (terminalX === undefined || el.attrs.x > terminalX) {
+                terminalX = el.attrs.x;
+                terminalVelocity = el.attrs.velocity;
+            }
+        });
+        const xDelta = Math.abs(originX - terminalX);
+        const velocityDelta = terminalVelocity - originVelocity;
+
+        const getPosInRange = x => (x - originX) / xDelta;
+        const linear = x => (x * velocityDelta) + originVelocity;
+
+        const squared = x => (x * x * velocityDelta) + originVelocity; 
+
+        velocityMarkerElements.forEach(velocityElement => {
+            const { x, id } = velocityElement.attrs;
+            const posInRange = getPosInRange(x);
+            const newVelocityValue = linear(posInRange);
+            //const newVelocityValue = squared(posInRange);
+            this._velocityLayer.updateVelocityMarkersHeight([ velocityElement ], newVelocityValue);
+            this._addNoteToAudioEngine(id);
+        });
+        this._serializeState();
+    }
+
     _handleInteractionUpdate(e) {
         switch (this._dragMode) {
             case DRAG_MODE_ADJUST_NOTE_SIZE:
