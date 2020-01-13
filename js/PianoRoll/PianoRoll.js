@@ -541,7 +541,8 @@ export default class PianoRoll {
             }
         } else if (this._activeTool === 'pencil') {
             if (isVelocityAreaClick) {
-                this._handleVelocityAreaInteractionStart(rawY, roundedX);
+                //this._handleVelocityAreaInteractionStart(rawY, roundedX);
+                this._handleVelocityAreaPencilInteraction(roundedX, rawY);
             } else {
                 this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
                 this._clearSelection();
@@ -549,11 +550,12 @@ export default class PianoRoll {
             }
         } else if (this._activeTool === 'cursor') {
             if (isVelocityAreaClick) {
-                if (target.id() === 'VELOCITY_BORDER') {
-                    this._dragMode = DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT;
-                } else {
-                    this._handleVelocityAreaInteractionStart(rawY, roundedX);
-                }
+                this._handleVelocityAreaCursorInteraction(roundedX, target);
+                // if (target.id() === 'VELOCITY_BORDER') {
+                //     this._dragMode = DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT;
+                // } else {
+                //     this._handleVelocityAreaInteractionStart(rawY, roundedX);
+                // }
             } else {
                 const targetIsNote = Boolean(target.getAttr('isNoteRect'));
                 if (targetIsNote) {
@@ -579,32 +581,114 @@ export default class PianoRoll {
         }
     }
 
-    _handleVelocityAreaInteractionStart(rawY, roundedX) {
+    // _handleVelocityAreaInteractionStart(rawY, roundedX) {
+    //     const pxFromBottom = Math.min(
+    //         this._conversionManager.stageHeight - rawY - SCROLLBAR_WIDTH,
+    //         this._conversionManager.velocityAreaHeight - 10
+    //     );
+    //     const velocityValue = pxFromBottom / (this._conversionManager.velocityAreaHeight - 10);
+    //     const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
+    //     const matchingMarkers = allVelocityMarkers.filter(el => el.x() === roundedX);
+    //     const selectedMatchingMarkers = matchingMarkers.filter(el => {
+    //         return this._noteSelection.has(el);
+    //     });
+    //     let velocityMarkersToUpdate;
+    //     if (matchingMarkers.length === 0) {
+    //         return;
+    //     } else if (selectedMatchingMarkers.length === 0) {
+    //         velocityMarkersToUpdate = matchingMarkers;
+    //     } else {
+    //         velocityMarkersToUpdate = selectedMatchingMarkers;
+    //     }
+    //     this._velocityLayer.updateVelocityMarkersHeight(velocityMarkersToUpdate, velocityValue);
+    //     velocityMarkersToUpdate.forEach(velocityRect => {
+    //         const id = velocityRect.getAttr('id');
+    //         //this._audioReconciler.updateNoteVelocity(id, velocityValue);
+    //         this._addNoteToAudioEngine(id);
+    //         this._serializeState();
+    //     });
+    // }
+
+    _handleVelocityAreaCursorInteraction(roundedX, target) {
+        // Test if the target is the border, and if so enter height change drag mode. 
+        if (target.id() === 'VELOCITY_BORDER') {
+            this._dragMode = DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT;
+            return;
+        }
+        // If not, select / deselect notes based on the current selection state, click location and
+        // shift key state.
+        const allNoteElements = this._noteCache.retrieveAll();
+        const matchingNotes = allNoteElements.filter(el => el.x() === roundedX);
+        const selectedMatchingNotes = matchingNotes.filter(el => {
+            return this._noteSelection.has(el);
+        });
+        
+        if (matchingNotes.length === 0 || !this._keyboardStateManager.shiftKey) {
+            // clear selection
+            this._clearSelection();
+        }
+
+        if (matchingNotes.length !== selectedMatchingNotes.length) {
+            matchingNotes.forEach(noteElement => this._addNoteToSelection(noteElement));
+        } else {
+            matchingNotes.forEach(noteElement => this._removeNoteFromSelection(noteElement));
+        }
+    }
+
+    _handleVelocityAreaPencilInteraction(roundedX, rawY) {
+        // Calculate the new velocity
         const pxFromBottom = Math.min(
             this._conversionManager.stageHeight - rawY - SCROLLBAR_WIDTH,
             this._conversionManager.velocityAreaHeight - 10
         );
         const velocityValue = pxFromBottom / (this._conversionManager.velocityAreaHeight - 10);
+        // Determine which notes should be updated based on the click location, the current selection
+        // state and the shift key state.
         const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
         const matchingMarkers = allVelocityMarkers.filter(el => el.x() === roundedX);
+        const selectedMarkers = allVelocityMarkers.filter(el => this._noteSelection.has(el));
         const selectedMatchingMarkers = matchingMarkers.filter(el => {
             return this._noteSelection.has(el);
         });
+        const shiftKeyIsPressed = this._keyboardStateManager.shiftKey;
         let velocityMarkersToUpdate;
         if (matchingMarkers.length === 0) {
             return;
         } else if (selectedMatchingMarkers.length === 0) {
             velocityMarkersToUpdate = matchingMarkers;
         } else {
-            velocityMarkersToUpdate = selectedMatchingMarkers;
+            velocityMarkersToUpdate = shiftKeyIsPressed ? selectedMarkers : selectedMatchingMarkers;
         }
+        // Once the relevant notes have been found, iterate over them and update each of them. 
         this._velocityLayer.updateVelocityMarkersHeight(velocityMarkersToUpdate, velocityValue);
         velocityMarkersToUpdate.forEach(velocityRect => {
             const id = velocityRect.getAttr('id');
-            //this._audioReconciler.updateNoteVelocity(id, velocityValue);
             this._addNoteToAudioEngine(id);
-            this._serializeState();
         });
+        this._serializeState();
+    }
+
+    _humanizeNoteVelocities(velocityMarkerElements, range = 0.1) {
+        velocityMarkerElements.forEach(velocityElement => {
+            const { velocity, id } = velocityElement.attrs;
+            // Ensure the the velocity value that we randomize is at least `range` distance
+            // from the highest legal value (1) and the lowest legal value (0).
+            const safeVelocityValue = clamp(
+                velocity,
+                range,
+                1 - range
+            );
+            const newVelocityValue = safeVelocityValue + (Math.random() * range * 2) - range;
+            this._velocityLayer.updateVelocityMarkersHeight([ velocityElement ], newVelocityValue);
+            this._addNoteToAudioEngine(id);
+        });
+        this._serializeState();
+    }
+
+    _TEMP_humanizeSelection() {
+        const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
+        const selectedMarkers = allVelocityMarkers.filter(el => this._noteSelection.has(el));
+        this._humanizeNoteVelocities(selectedMarkers, 0.1);
     }
 
     _handleInteractionUpdate(e) {
