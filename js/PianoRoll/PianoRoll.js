@@ -144,6 +144,8 @@ export default class PianoRoll {
         window.addEventListener('resize', e => this._handleResize(e));
 
         this._previousBumpTimestamp = null;
+
+        this._stage.on('contextmenu', e => this._handleContextMenu(e));
     }
 
     init() {
@@ -492,6 +494,39 @@ export default class PianoRoll {
         this._serializeState();
     }
 
+    _handleContextMenu(e) {
+        const { rawX, rawY } = this._extractInfoFromEventObject(e);
+        //const xWithScroll = rawX - this._scrollManager.x;
+        const isVelocityAreaClick = this._conversionManager.stageHeight - rawY <= this._conversionManager.velocityAreaHeight + SCROLLBAR_WIDTH;
+        if (isVelocityAreaClick) {
+            e.evt.preventDefault();
+            console.log('open velocity area context menu');
+            const options = [
+                { 
+                    label: 'Humanize',
+                    callback: () => this._humanizeSelection() 
+                },
+                { 
+                    label: 'Transform - linear',
+                    callback: () => this._transformSelection('linear') 
+                },
+                { 
+                    label: 'Transform - ease in',
+                    callback: () => this._transformSelection('easeIn')
+                },
+                { 
+                    label: 'Transform - ease out',
+                    callback: () => this._transformSelection('easeOut') 
+                },
+                { 
+                    label: 'Transform - ease in out',
+                    callback: () => this._transformSelection('easeInOut') 
+                }
+            ];
+            this._velocityLayer.addContextMenu(rawX, rawY, this._scrollManager.x, options);
+        }
+    }
+
     _extractInfoFromEventObject(e) {
         const { evt, target } = e;
         const isTouchEvent = Boolean(evt.touches);
@@ -515,6 +550,11 @@ export default class PianoRoll {
     }
 
     _handleInteractionStart(e) {
+        //console.log('handleInteractionStart called')
+        this._velocityLayer.removeContextMenu();
+        if (e.evt.button !== 0) {
+            return;
+        }
         const { rawX, rawY, isTouchEvent, target } = this._extractInfoFromEventObject(e);
         const xWithScroll = rawX - this._scrollManager.x;
         const yWithScroll = rawY - this._scrollManager.y;
@@ -686,19 +726,19 @@ export default class PianoRoll {
         this._serializeState();
     }
 
-    _TEMP_humanizeSelection() {
+    _humanizeSelection() {
         const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
         const selectedMarkers = allVelocityMarkers.filter(el => this._noteSelection.has(el));
         this._humanizeNoteVelocities(selectedMarkers, 0.1);
     }
 
-    _transformSelection() {
+    _transformSelection(easing = 'linear') {
         const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
         const selectedMarkers = allVelocityMarkers.filter(el => this._noteSelection.has(el));
-        this._linearTransform(selectedMarkers, 'easeInOut');
+        this._transformNoteVelocities(selectedMarkers, easing);
     }
 
-    _linearTransform(velocityMarkerElements, easingFnName) {
+    _transformNoteVelocities(velocityMarkerElements, easingFnName) {
         
         let originX;
         let terminalX;
