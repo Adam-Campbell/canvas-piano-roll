@@ -36,13 +36,14 @@ import {
     canShiftUp,
     canShiftDown,
     canShiftLeft,
-    canShiftRight
+    canShiftRight,
+    easingFns
 } from './utils';
 import CanvasElementCache from '../CanvasElementCache';
 import { genId } from '../genId';
 import HistoryStack from '../HistoryStack';
 import Clipboard from '../Clipboard';
-import { clamp } from '../utils';
+import { clamp, pipe } from '../utils';
 import SeekerLayer from '../SeekerLayer';
 import NoteGridLayer from '../NoteGridLayer';
 
@@ -694,10 +695,10 @@ export default class PianoRoll {
     _transformSelection() {
         const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
         const selectedMarkers = allVelocityMarkers.filter(el => this._noteSelection.has(el));
-        this._linearTransform(selectedMarkers);
+        this._linearTransform(selectedMarkers, 'easeInOut');
     }
 
-    _linearTransform(velocityMarkerElements) {
+    _linearTransform(velocityMarkerElements, easingFnName) {
         
         let originX;
         let terminalX;
@@ -718,15 +719,19 @@ export default class PianoRoll {
         const velocityDelta = terminalVelocity - originVelocity;
 
         const getPosInRange = x => (x - originX) / xDelta;
-        const linear = x => (x * velocityDelta) + originVelocity;
+        const adjustForFnRange = x => x * velocityDelta + originVelocity;
 
-        const squared = x => (x * x * velocityDelta) + originVelocity; 
+        const easingFn = easingFns[easingFnName] || easingFns.linear;
+
+        const transformFn = pipe(
+            getPosInRange,
+            easingFn,
+            adjustForFnRange
+        );
 
         velocityMarkerElements.forEach(velocityElement => {
             const { x, id } = velocityElement.attrs;
-            const posInRange = getPosInRange(x);
-            const newVelocityValue = linear(posInRange);
-            //const newVelocityValue = squared(posInRange);
+            const newVelocityValue = transformFn(x);
             this._velocityLayer.updateVelocityMarkersHeight([ velocityElement ], newVelocityValue);
             this._addNoteToAudioEngine(id);
         });

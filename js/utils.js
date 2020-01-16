@@ -3,4 +3,6 @@ export const clamp = (num, lowerBound, upperBound) => {
         lowerBound,
         Math.min(upperBound, num)
     );
-}
+};
+
+export const pipe = (...fns) => (input) => fns.reduce((total, fn) => fn(total), input);
