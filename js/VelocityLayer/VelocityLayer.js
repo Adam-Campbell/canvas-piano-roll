@@ -5,6 +5,7 @@ import {
 import { createContextMenu } from '../createContextMenu';
 
 export default class VelocityLayer {
+    
     constructor(conversionManager) {
         this.layer = new Layer({ x: 120 });
         this._conversionManager = conversionManager;
@@ -229,82 +230,6 @@ export default class VelocityLayer {
         });
         this.layer.batchDraw();
     }
-
-    // addContextMenu(rawX, rawY, xScroll, options) {
-
-    //     const expectedHeight = options.length * 30;
-    //     const expectedWidth = 150;
-
-    //     const hasRoomBelow = this._conversionManager.stageHeight - SCROLLBAR_WIDTH - rawY > expectedHeight;
-    //     const hasRoomToRight = this._conversionManager.stageWidth - SCROLLBAR_WIDTH - rawX > expectedWidth;
-
-    //     const xCoord = hasRoomToRight ? rawX - xScroll : rawX - xScroll - expectedWidth;
-    //     const yCoord = hasRoomBelow ? rawY : rawY - expectedHeight
-
-    //     const contextMenuGroup = new Group({ 
-    //         id: 'CONTEXT_MENU_GROUP',
-    //         x: xCoord,
-    //         y: yCoord
-    //     });
-    //     options.forEach((option, idx) => {
-    //         let cornerRadiusArray;
-    //         if (idx === 0) {
-    //             cornerRadiusArray = [3, 3, 0, 0]
-    //         } else if (idx === options.length - 1) {
-    //             cornerRadiusArray = [0, 0, 3, 3];
-    //         } else {
-    //             cornerRadiusArray = [0, 0, 0, 0];
-    //         }
-    //         const menuItem = new Rect({
-    //             x: 0,
-    //             y: idx * 30,
-    //             width: 150,
-    //             height: 30,
-    //             fill: '#555',
-    //             name: 'MENU_ITEM',
-    //             cornerRadius: cornerRadiusArray,
-    //             idx
-    //         });
-    //         const label = new Text({
-    //             text: option.label,
-    //             fill: '#fff',
-    //             x: 10,
-    //             y: (idx * 30) + 10
-    //         });
-    //         menuItem.moveTo(contextMenuGroup);
-    //         label.moveTo(contextMenuGroup);
-    //     });
-    //     this.layer.add(contextMenuGroup);
-    //     contextMenuGroup.on('mousedown', e => {
-    //         e.cancelBubble = true;
-    //         const { offsetY } = e.evt;
-    //         const groupY = contextMenuGroup.y();
-    //         const relativeY = offsetY - groupY;
-    //         const idxClicked = Math.floor(relativeY / 30);
-    //         const itemClicked = options[idxClicked];
-    //         console.log(itemClicked);
-    //         itemClicked.callback();
-    //         this.removeContextMenu()
-    //     });
-    //     contextMenuGroup.on('mouseover', e => {
-    //         const menuItems = [...contextMenuGroup.find('.MENU_ITEM')];
-    //         const relativeY = e.evt.offsetY - contextMenuGroup.y();
-    //         const idx = Math.floor(relativeY / 30);
-    //         const activeMenuItem = menuItems.find(item => item.attrs.idx === idx);
-    //         if (activeMenuItem) {
-    //             activeMenuItem.fill('#666');
-    //             //this.layer.batchDraw();
-    //             contextMenuGroup.draw();
-    //         }
-    //     });
-    //     contextMenuGroup.on('mouseout', e => {
-    //         const menuItems = contextMenuGroup.find('.MENU_ITEM');
-    //         menuItems.forEach(item => item.fill('#555'));
-    //         //this.layer.batchDraw();
-    //         contextMenuGroup.draw();
-    //     });
-    //     this.layer.batchDraw();
-    // }
 
     addContextMenu(rawX, rawY, xScroll, menuItems) {
         const contextMenuGroup = createContextMenu({

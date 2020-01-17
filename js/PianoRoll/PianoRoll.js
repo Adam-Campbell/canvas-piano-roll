@@ -73,10 +73,6 @@ export default class PianoRoll {
         this._noteSelection = new NoteSelection();
         this._historyStack = new HistoryStack({ notes: [], selectedNoteIds: [] });
         this._clipboard = new Clipboard(this._conversionManager);
-        window.historyStack = this._historyStack;
-        window.noteCache = this._noteCache;
-        window.velocityCache = this._velocityMarkerCache;
-        window.noteSelection = this._noteSelection;
         this._noteGridLayer = new NoteGridLayer(this._conversionManager);
         this._velocityLayer = new VelocityLayer(this._conversionManager);
         this._pianoKeyLayer = new PianoKeyLayer();
@@ -496,7 +492,6 @@ export default class PianoRoll {
 
     _handleContextMenu(e) {
         const { rawX, rawY, target } = this._extractInfoFromEventObject(e);
-        //const xWithScroll = rawX - this._scrollManager.x;
         e.evt.preventDefault();
         const isVelocityAreaClick = this._conversionManager.stageHeight - rawY <= this._conversionManager.velocityAreaHeight + SCROLLBAR_WIDTH;
         const targetIsNote = target.name() === 'NOTE';
@@ -535,12 +530,53 @@ export default class PianoRoll {
         this._velocityLayer.addContextMenu(rawX, rawY, this._scrollManager.x, menuItems);
     }
 
-    _addGridContextMenu() {
-
+    _addGridContextMenu(rawX, rawY) {
+        const menuItems = [
+            {
+                label: 'Zoom in',
+                callback: () => this._handleZoomAdjustment(true)
+            },
+            {
+                label: 'Zoom out',
+                callback: () => this._handleZoomAdjustment(false)
+            },
+            {
+                label: 'Paste',
+                callback: () => this._paste()
+            }
+        ];
+        this._noteGridLayer.addContextMenu(
+            rawX, 
+            rawY, 
+            this._scrollManager.x, 
+            this._scrollManager.y,
+            menuItems,
+            true
+        );
     }
 
-    _addNoteContextMenu() {
-
+    _addNoteContextMenu(rawX, rawY) {
+        const menuItems = [
+            {
+                label: 'Cut',
+                callback: () => this._cut()
+            },
+            {
+                label: 'Copy',
+                callback: () => this._copy()
+            },
+            {
+                label: 'Delete',
+                callback: () => this._deleteSelectedNotes()
+            }
+        ];
+        this._noteGridLayer.addContextMenu(
+            rawX, 
+            rawY, 
+            this._scrollManager.x, 
+            this._scrollManager.y,
+            menuItems
+        );
     }
 
     _extractInfoFromEventObject(e) {
@@ -566,8 +602,8 @@ export default class PianoRoll {
     }
 
     _handleInteractionStart(e) {
-        //console.log('handleInteractionStart called')
         this._velocityLayer.removeContextMenu();
+        this._noteGridLayer.removeContextMenu();
         if (e.evt.button !== 0) {
             return;
         }
@@ -598,7 +634,6 @@ export default class PianoRoll {
             }
         } else if (this._activeTool === 'pencil') {
             if (isVelocityAreaClick) {
-                //this._handleVelocityAreaInteractionStart(rawY, roundedX);
                 this._handleVelocityAreaPencilInteraction(roundedX, rawY);
             } else {
                 this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
@@ -608,11 +643,6 @@ export default class PianoRoll {
         } else if (this._activeTool === 'cursor') {
             if (isVelocityAreaClick) {
                 this._handleVelocityAreaCursorInteraction(roundedX, target);
-                // if (target.id() === 'VELOCITY_BORDER') {
-                //     this._dragMode = DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT;
-                // } else {
-                //     this._handleVelocityAreaInteractionStart(rawY, roundedX);
-                // }
             } else {
                 const targetIsNote = Boolean(target.getAttr('isNoteRect'));
                 if (targetIsNote) {
@@ -637,34 +667,6 @@ export default class PianoRoll {
             this._dragMode = DRAG_MODE_ADJUST_NOTE_POSITION;
         }
     }
-
-    // _handleVelocityAreaInteractionStart(rawY, roundedX) {
-    //     const pxFromBottom = Math.min(
-    //         this._conversionManager.stageHeight - rawY - SCROLLBAR_WIDTH,
-    //         this._conversionManager.velocityAreaHeight - 10
-    //     );
-    //     const velocityValue = pxFromBottom / (this._conversionManager.velocityAreaHeight - 10);
-    //     const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
-    //     const matchingMarkers = allVelocityMarkers.filter(el => el.x() === roundedX);
-    //     const selectedMatchingMarkers = matchingMarkers.filter(el => {
-    //         return this._noteSelection.has(el);
-    //     });
-    //     let velocityMarkersToUpdate;
-    //     if (matchingMarkers.length === 0) {
-    //         return;
-    //     } else if (selectedMatchingMarkers.length === 0) {
-    //         velocityMarkersToUpdate = matchingMarkers;
-    //     } else {
-    //         velocityMarkersToUpdate = selectedMatchingMarkers;
-    //     }
-    //     this._velocityLayer.updateVelocityMarkersHeight(velocityMarkersToUpdate, velocityValue);
-    //     velocityMarkersToUpdate.forEach(velocityRect => {
-    //         const id = velocityRect.getAttr('id');
-    //         //this._audioReconciler.updateNoteVelocity(id, velocityValue);
-    //         this._addNoteToAudioEngine(id);
-    //         this._serializeState();
-    //     });
-    // }
 
     _handleVelocityAreaCursorInteraction(roundedX, target) {
         // Test if the target is the border, and if so enter height change drag mode. 
