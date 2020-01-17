@@ -337,7 +337,6 @@ export default class NoteGridLayer {
             bottomBoundary: this._conversionManager.stageHeight - this._conversionManager.velocityAreaHeight - SCROLLBAR_WIDTH,
             xScroll,
             yScroll,
-            layerOffsetY: 30,
             accountForScrollDirection: 'both',
             batchDrawCallback: () => this.layer.batchDraw(),
             menuItems
