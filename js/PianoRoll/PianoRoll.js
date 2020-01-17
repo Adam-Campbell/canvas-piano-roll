@@ -495,36 +495,52 @@ export default class PianoRoll {
     }
 
     _handleContextMenu(e) {
-        const { rawX, rawY } = this._extractInfoFromEventObject(e);
+        const { rawX, rawY, target } = this._extractInfoFromEventObject(e);
         //const xWithScroll = rawX - this._scrollManager.x;
+        e.evt.preventDefault();
         const isVelocityAreaClick = this._conversionManager.stageHeight - rawY <= this._conversionManager.velocityAreaHeight + SCROLLBAR_WIDTH;
+        const targetIsNote = target.name() === 'NOTE';
         if (isVelocityAreaClick) {
-            e.evt.preventDefault();
-            console.log('open velocity area context menu');
-            const options = [
-                { 
-                    label: 'Humanize',
-                    callback: () => this._humanizeSelection() 
-                },
-                { 
-                    label: 'Transform - linear',
-                    callback: () => this._transformSelection('linear') 
-                },
-                { 
-                    label: 'Transform - ease in',
-                    callback: () => this._transformSelection('easeIn')
-                },
-                { 
-                    label: 'Transform - ease out',
-                    callback: () => this._transformSelection('easeOut') 
-                },
-                { 
-                    label: 'Transform - ease in out',
-                    callback: () => this._transformSelection('easeInOut') 
-                }
-            ];
-            this._velocityLayer.addContextMenu(rawX, rawY, this._scrollManager.x, options);
+            this._addVelocityContextMenu(rawX, rawY);
+        } else if (targetIsNote) {
+            this._addNoteContextMenu(rawX, rawY);
+        } else {
+            this._addGridContextMenu(rawX, rawY);
         }
+    }
+
+    _addVelocityContextMenu(rawX, rawY) {
+        const menuItems = [
+            { 
+                label: 'Humanize',
+                callback: () => this._humanizeSelection() 
+            },
+            { 
+                label: 'Transform - linear',
+                callback: () => this._transformSelection('linear') 
+            },
+            { 
+                label: 'Transform - ease in',
+                callback: () => this._transformSelection('easeIn')
+            },
+            { 
+                label: 'Transform - ease out',
+                callback: () => this._transformSelection('easeOut') 
+            },
+            { 
+                label: 'Transform - ease in out',
+                callback: () => this._transformSelection('easeInOut') 
+            }
+        ];
+        this._velocityLayer.addContextMenu(rawX, rawY, this._scrollManager.x, menuItems);
+    }
+
+    _addGridContextMenu() {
+
+    }
+
+    _addNoteContextMenu() {
+
     }
 
     _extractInfoFromEventObject(e) {
