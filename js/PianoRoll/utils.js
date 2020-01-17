@@ -46,3 +46,10 @@ export const canShiftRight = (notes, limit) => {
     }
     return true;
 };
+
+export const easingFns = {
+    linear: x => x,
+    easeIn: x => x * x,
+    easeOut: x => x * (2 - x),
+    easeInOut: x => x < 0.5 ? 2 * x * x : -1 + (4 - 2 * x) * x
+};

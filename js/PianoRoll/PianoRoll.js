@@ -36,13 +36,14 @@ import {
     canShiftUp,
     canShiftDown,
     canShiftLeft,
-    canShiftRight
+    canShiftRight,
+    easingFns
 } from './utils';
 import CanvasElementCache from '../CanvasElementCache';
 import { genId } from '../genId';
 import HistoryStack from '../HistoryStack';
 import Clipboard from '../Clipboard';
-import { clamp } from '../utils';
+import { clamp, pipe } from '../utils';
 import SeekerLayer from '../SeekerLayer';
 import NoteGridLayer from '../NoteGridLayer';
 
@@ -72,10 +73,6 @@ export default class PianoRoll {
         this._noteSelection = new NoteSelection();
         this._historyStack = new HistoryStack({ notes: [], selectedNoteIds: [] });
         this._clipboard = new Clipboard(this._conversionManager);
-        window.historyStack = this._historyStack;
-        window.noteCache = this._noteCache;
-        window.velocityCache = this._velocityMarkerCache;
-        window.noteSelection = this._noteSelection;
         this._noteGridLayer = new NoteGridLayer(this._conversionManager);
         this._velocityLayer = new VelocityLayer(this._conversionManager);
         this._pianoKeyLayer = new PianoKeyLayer();
@@ -143,6 +140,8 @@ export default class PianoRoll {
         window.addEventListener('resize', e => this._handleResize(e));
 
         this._previousBumpTimestamp = null;
+
+        this._stage.on('contextmenu', e => this._handleContextMenu(e));
     }
 
     init() {
@@ -491,6 +490,95 @@ export default class PianoRoll {
         this._serializeState();
     }
 
+    _handleContextMenu(e) {
+        const { rawX, rawY, target } = this._extractInfoFromEventObject(e);
+        e.evt.preventDefault();
+        const isVelocityAreaClick = this._conversionManager.stageHeight - rawY <= this._conversionManager.velocityAreaHeight + SCROLLBAR_WIDTH;
+        const targetIsNote = target.name() === 'NOTE';
+        if (isVelocityAreaClick) {
+            this._addVelocityContextMenu(rawX, rawY);
+        } else if (targetIsNote) {
+            this._addNoteContextMenu(rawX, rawY);
+        } else {
+            this._addGridContextMenu(rawX, rawY);
+        }
+    }
+
+    _addVelocityContextMenu(rawX, rawY) {
+        const menuItems = [
+            { 
+                label: 'Humanize',
+                callback: () => this._humanizeSelection() 
+            },
+            { 
+                label: 'Transform - linear',
+                callback: () => this._transformSelection('linear') 
+            },
+            { 
+                label: 'Transform - ease in',
+                callback: () => this._transformSelection('easeIn')
+            },
+            { 
+                label: 'Transform - ease out',
+                callback: () => this._transformSelection('easeOut') 
+            },
+            { 
+                label: 'Transform - ease in out',
+                callback: () => this._transformSelection('easeInOut') 
+            }
+        ];
+        this._velocityLayer.addContextMenu(rawX, rawY, this._scrollManager.x, menuItems);
+    }
+
+    _addGridContextMenu(rawX, rawY) {
+        const menuItems = [
+            {
+                label: 'Zoom in',
+                callback: () => this._handleZoomAdjustment(true)
+            },
+            {
+                label: 'Zoom out',
+                callback: () => this._handleZoomAdjustment(false)
+            },
+            {
+                label: 'Paste',
+                callback: () => this._paste()
+            }
+        ];
+        this._noteGridLayer.addContextMenu(
+            rawX, 
+            rawY, 
+            this._scrollManager.x, 
+            this._scrollManager.y,
+            menuItems,
+            true
+        );
+    }
+
+    _addNoteContextMenu(rawX, rawY) {
+        const menuItems = [
+            {
+                label: 'Cut',
+                callback: () => this._cut()
+            },
+            {
+                label: 'Copy',
+                callback: () => this._copy()
+            },
+            {
+                label: 'Delete',
+                callback: () => this._deleteSelectedNotes()
+            }
+        ];
+        this._noteGridLayer.addContextMenu(
+            rawX, 
+            rawY, 
+            this._scrollManager.x, 
+            this._scrollManager.y,
+            menuItems
+        );
+    }
+
     _extractInfoFromEventObject(e) {
         const { evt, target } = e;
         const isTouchEvent = Boolean(evt.touches);
@@ -514,6 +602,11 @@ export default class PianoRoll {
     }
 
     _handleInteractionStart(e) {
+        this._velocityLayer.removeContextMenu();
+        this._noteGridLayer.removeContextMenu();
+        if (e.evt.button !== 0) {
+            return;
+        }
         const { rawX, rawY, isTouchEvent, target } = this._extractInfoFromEventObject(e);
         const xWithScroll = rawX - this._scrollManager.x;
         const yWithScroll = rawY - this._scrollManager.y;
@@ -541,7 +634,7 @@ export default class PianoRoll {
             }
         } else if (this._activeTool === 'pencil') {
             if (isVelocityAreaClick) {
-                this._handleVelocityAreaInteractionStart(rawY, roundedX);
+                this._handleVelocityAreaPencilInteraction(roundedX, rawY);
             } else {
                 this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
                 this._clearSelection();
@@ -549,11 +642,7 @@ export default class PianoRoll {
             }
         } else if (this._activeTool === 'cursor') {
             if (isVelocityAreaClick) {
-                if (target.id() === 'VELOCITY_BORDER') {
-                    this._dragMode = DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT;
-                } else {
-                    this._handleVelocityAreaInteractionStart(rawY, roundedX);
-                }
+                this._handleVelocityAreaCursorInteraction(roundedX, target);
             } else {
                 const targetIsNote = Boolean(target.getAttr('isNoteRect'));
                 if (targetIsNote) {
@@ -579,32 +668,132 @@ export default class PianoRoll {
         }
     }
 
-    _handleVelocityAreaInteractionStart(rawY, roundedX) {
+    _handleVelocityAreaCursorInteraction(roundedX, target) {
+        // Test if the target is the border, and if so enter height change drag mode. 
+        if (target.id() === 'VELOCITY_BORDER') {
+            this._dragMode = DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT;
+            return;
+        }
+        // If not, select / deselect notes based on the current selection state, click location and
+        // shift key state.
+        const allNoteElements = this._noteCache.retrieveAll();
+        const matchingNotes = allNoteElements.filter(el => el.x() === roundedX);
+        const selectedMatchingNotes = matchingNotes.filter(el => {
+            return this._noteSelection.has(el);
+        });
+        
+        if (matchingNotes.length === 0 || !this._keyboardStateManager.shiftKey) {
+            // clear selection
+            this._clearSelection();
+        }
+
+        if (matchingNotes.length !== selectedMatchingNotes.length) {
+            matchingNotes.forEach(noteElement => this._addNoteToSelection(noteElement));
+        } else {
+            matchingNotes.forEach(noteElement => this._removeNoteFromSelection(noteElement));
+        }
+    }
+
+    _handleVelocityAreaPencilInteraction(roundedX, rawY) {
+        // Calculate the new velocity
         const pxFromBottom = Math.min(
             this._conversionManager.stageHeight - rawY - SCROLLBAR_WIDTH,
             this._conversionManager.velocityAreaHeight - 10
         );
         const velocityValue = pxFromBottom / (this._conversionManager.velocityAreaHeight - 10);
+        // Determine which notes should be updated based on the click location, the current selection
+        // state and the shift key state.
         const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
         const matchingMarkers = allVelocityMarkers.filter(el => el.x() === roundedX);
+        const selectedMarkers = allVelocityMarkers.filter(el => this._noteSelection.has(el));
         const selectedMatchingMarkers = matchingMarkers.filter(el => {
             return this._noteSelection.has(el);
         });
+        const shiftKeyIsPressed = this._keyboardStateManager.shiftKey;
         let velocityMarkersToUpdate;
         if (matchingMarkers.length === 0) {
             return;
         } else if (selectedMatchingMarkers.length === 0) {
             velocityMarkersToUpdate = matchingMarkers;
         } else {
-            velocityMarkersToUpdate = selectedMatchingMarkers;
+            velocityMarkersToUpdate = shiftKeyIsPressed ? selectedMarkers : selectedMatchingMarkers;
         }
+        // Once the relevant notes have been found, iterate over them and update each of them. 
         this._velocityLayer.updateVelocityMarkersHeight(velocityMarkersToUpdate, velocityValue);
         velocityMarkersToUpdate.forEach(velocityRect => {
             const id = velocityRect.getAttr('id');
-            //this._audioReconciler.updateNoteVelocity(id, velocityValue);
             this._addNoteToAudioEngine(id);
-            this._serializeState();
         });
+        this._serializeState();
+    }
+
+    _humanizeNoteVelocities(velocityMarkerElements, range = 0.1) {
+        velocityMarkerElements.forEach(velocityElement => {
+            const { velocity, id } = velocityElement.attrs;
+            // Ensure the the velocity value that we randomize is at least `range` distance
+            // from the highest legal value (1) and the lowest legal value (0).
+            const safeVelocityValue = clamp(
+                velocity,
+                range,
+                1 - range
+            );
+            const newVelocityValue = safeVelocityValue + (Math.random() * range * 2) - range;
+            this._velocityLayer.updateVelocityMarkersHeight([ velocityElement ], newVelocityValue);
+            this._addNoteToAudioEngine(id);
+        });
+        this._serializeState();
+    }
+
+    _humanizeSelection() {
+        const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
+        const selectedMarkers = allVelocityMarkers.filter(el => this._noteSelection.has(el));
+        this._humanizeNoteVelocities(selectedMarkers, 0.1);
+    }
+
+    _transformSelection(easing = 'linear') {
+        const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
+        const selectedMarkers = allVelocityMarkers.filter(el => this._noteSelection.has(el));
+        this._transformNoteVelocities(selectedMarkers, easing);
+    }
+
+    _transformNoteVelocities(velocityMarkerElements, easingFnName) {
+        
+        let originX;
+        let terminalX;
+        let originVelocity;
+        let terminalVelocity;
+
+        velocityMarkerElements.forEach(el => {
+            if (originX === undefined || el.attrs.x < originX) {
+                originX = el.attrs.x;
+                originVelocity = el.attrs.velocity;
+            }
+            if (terminalX === undefined || el.attrs.x > terminalX) {
+                terminalX = el.attrs.x;
+                terminalVelocity = el.attrs.velocity;
+            }
+        });
+        const xDelta = Math.abs(originX - terminalX);
+        const velocityDelta = terminalVelocity - originVelocity;
+
+        const getPosInRange = x => (x - originX) / xDelta;
+        const adjustForFnRange = x => x * velocityDelta + originVelocity;
+
+        const easingFn = easingFns[easingFnName] || easingFns.linear;
+
+        const transformFn = pipe(
+            getPosInRange,
+            easingFn,
+            adjustForFnRange
+        );
+
+        velocityMarkerElements.forEach(velocityElement => {
+            const { x, id } = velocityElement.attrs;
+            const newVelocityValue = transformFn(x);
+            this._velocityLayer.updateVelocityMarkersHeight([ velocityElement ], newVelocityValue);
+            this._addNoteToAudioEngine(id);
+        });
+        this._serializeState();
     }
 
     _handleInteractionUpdate(e) {

@@ -10,9 +10,13 @@ import {
     SCALE_TYPE_UPDATE,
     DISPLAY_SCALE_UPDATE
 } from '../events';
+import {
+    SCROLLBAR_WIDTH
+} from '../constants';
 import { pitchesArray } from '../pitches';
 import { scale } from '@tonaljs/scale';
 import { note } from '@tonaljs/tonal';
+import { createContextMenu } from '../createContextMenu';
 
 const isSameNote = (noteA, noteB) => note(noteA).chroma === note(noteB).chroma;
 
@@ -49,6 +53,11 @@ export default class NoteGridLayer {
     updateY(y) {
         this.layer.y(y);
         this.layer.batchDraw();
+    }
+
+    _toggleScaleHighlights() {
+        this._shouldDisplayScaleHighlighting = !this._shouldDisplayScaleHighlighting;
+        this._drawScaleHighlights();
     }
 
     _drawScaleHighlights() {
@@ -312,6 +321,37 @@ export default class NoteGridLayer {
         });
         this.layer.batchDraw();
         this.updateNotesAttributeCaches(noteRectsArray);
+    }
+
+    addContextMenu(rawX, rawY, xScroll, yScroll, menuItems, shouldIncludeScaleHighlightItem) {
+        if (shouldIncludeScaleHighlightItem) {
+            menuItems.push({
+                label: this._shouldDisplayScaleHighlighting ? 'Hide scale highlighting' : 'Show scale highlighting',
+                callback: () => this._toggleScaleHighlights()
+            })
+        }
+        const contextMenuGroup = createContextMenu({
+            rawX,
+            rawY,
+            rightBoundary: this._conversionManager.stageWidth - SCROLLBAR_WIDTH,
+            bottomBoundary: this._conversionManager.stageHeight - this._conversionManager.velocityAreaHeight - SCROLLBAR_WIDTH,
+            xScroll,
+            yScroll,
+            layerOffsetY: 30,
+            accountForScrollDirection: 'both',
+            batchDrawCallback: () => this.layer.batchDraw(),
+            menuItems
+        });
+        this.layer.add(contextMenuGroup);
+        this.layer.batchDraw();
+    }
+
+    removeContextMenu() {
+        const contextMenu = this.layer.findOne('#CONTEXT_MENU_GROUP');
+        if (contextMenu) {
+            contextMenu.destroy();
+            this.layer.batchDraw();
+        }
     }
 
     forceToState(state) {
