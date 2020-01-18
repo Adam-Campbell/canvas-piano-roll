@@ -19,7 +19,7 @@ export default class Clipboard {
             const velocityMarkerElement = velocityMarkerElements.find(el => { 
                 return el.getAttr('id') === noteElement.getAttr('id');
             });
-            const velocity = velocityMarkerElement.attrs.height / 50;
+            const velocity = velocityMarkerElement.attrs.height / (this._conversionManager.velocityAreaHeight - 10);
             const { x, y, width, id } = noteElement.attrs;
             const note = this._conversionManager.derivePitchFromY(y);
             const time = this._conversionManager.convertPxToTicks(x);
