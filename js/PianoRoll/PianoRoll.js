@@ -369,9 +369,10 @@ export default class PianoRoll {
                 selectionY1,
                 selectionY2
             );
-            if (overlapsWithSelection) {
-                this._addNoteToSelection(noteRect);
-            } else {
+            const isSelected = this._noteSelection.has(noteRect);
+            if (overlapsWithSelection && !isSelected) {
+                    this._addNoteToSelection(noteRect);
+            } else if (!overlapsWithSelection && isSelected) {
                 this._removeNoteFromSelection(noteRect);
             }
         });
