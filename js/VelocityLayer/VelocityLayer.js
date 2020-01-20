@@ -6,18 +6,18 @@ import { createContextMenu } from '../createContextMenu';
 
 export default class VelocityLayer {
     
-    constructor(conversionManager) {
-        this.layer = new Layer({ x: 120 });
+    constructor(conversionManager, layerRef) {
+        this.layer = layerRef;
         this._conversionManager = conversionManager;
+        this._layerGroup = new Group({ x: 120 });
         this._background = this._constructBackground();
         this._border = this._constructBorder();
         this._unselectedGroup = new Group();
         this._selectedGroup = new Group();
-        this._hasActiveInteraction = true;
     }
 
     updateX(x) {
-        this.layer.x(x);
+        this._layerGroup.x(x);
         this.layer.batchDraw();
     }
 
@@ -192,8 +192,8 @@ export default class VelocityLayer {
                 fill: '#08b5d3',
                 opacity: 0.4,
                 id: 'MARQUEE'
-            });
-            this.layer.add(newMarquee); 
+            }); 
+            newMarquee.moveTo(this._layerGroup);
         } else {
             marquee.x(x1);
             marquee.y(y1);
@@ -212,11 +212,11 @@ export default class VelocityLayer {
     }
 
     draw() {
-        this.layer.removeChildren();
-        this.layer.add(this._background);
-        this.layer.add(this._border);
-        this.layer.add(this._unselectedGroup);
-        this.layer.add(this._selectedGroup);
+        this._background.moveTo(this._layerGroup);
+        this._border.moveTo(this._layerGroup);
+        this._unselectedGroup.moveTo(this._layerGroup);
+        this._selectedGroup.moveTo(this._unselectedGroup);
+        this.layer.add(this._layerGroup);
         this.layer.batchDraw();
     }
 
@@ -231,14 +231,12 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
-    addContextMenu(rawX, rawY, xScroll, menuItems) {
+    addContextMenu(rawX, rawY, menuItems) {
         const contextMenuGroup = createContextMenu({
             rawX,
             rawY,
             rightBoundary: this._conversionManager.stageWidth - SCROLLBAR_WIDTH,
             bottomBoundary: this._conversionManager.stageHeight - SCROLLBAR_WIDTH,
-            xScroll,
-            accountForScrollDirection: 'horizontal',
             batchDrawCallback: () => this.layer.batchDraw(),
             menuItems: menuItems
         });

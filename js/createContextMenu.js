@@ -5,9 +5,6 @@ export const createContextMenu = ({
     rawY,
     rightBoundary,
     bottomBoundary,
-    xScroll,
-    yScroll = 0,
-    accountForScrollDirection,
     batchDrawCallback,
     menuItems,
 }) => {
@@ -18,25 +15,8 @@ export const createContextMenu = ({
     const hasRoomBelow = bottomBoundary - rawY > expectedHeight;
     const hasRoomToRight = rightBoundary - rawX > expectedWidth;
 
-    let xCoord = rawX;
-    let yCoord = rawY;
-
-    if (accountForScrollDirection === 'both') {
-        xCoord = rawX - xScroll;
-        yCoord = rawY - yScroll;
-    } else if (accountForScrollDirection === 'horizontal') {
-        xCoord = rawX - xScroll;
-    } else if (accountForScrollDirection === 'vertical') {
-        yCoord = rawY - yScroll;
-    }
-
-
-    if (!hasRoomToRight) {
-        xCoord -= expectedWidth;
-    }
-    if (!hasRoomBelow) {
-        yCoord -= expectedHeight;
-    }
+    const xCoord = hasRoomToRight ? rawX : rawX - expectedWidth;
+    const yCoord = hasRoomBelow ? rawY : rawY - expectedHeight;
 
     const contextMenuGroup = new Group({ 
         id: 'CONTEXT_MENU_GROUP',
@@ -77,7 +57,7 @@ export const createContextMenu = ({
         e.cancelBubble = true;
         const { offsetY } = e.evt;
         const groupY = contextMenuGroup.y();
-        const relativeY = offsetY - groupY - yScroll;
+        const relativeY = offsetY - groupY;
         const idxClicked = Math.floor(relativeY / 30);
         const itemClicked = menuItems[idxClicked];
         console.log(itemClicked);
@@ -87,7 +67,7 @@ export const createContextMenu = ({
     });
     contextMenuGroup.on('mouseover', e => {
         const menuItemBackgrounds = [...contextMenuGroup.find('.MENU_ITEM_BACKGROUND')];
-        const relativeY = e.evt.offsetY - contextMenuGroup.y() - yScroll;
+        const relativeY = e.evt.offsetY - contextMenuGroup.y();
         const idx = Math.floor(relativeY / 30);
         const activeMenuItem = menuItemBackgrounds.find(item => item.attrs.idx === idx);
         if (activeMenuItem) {

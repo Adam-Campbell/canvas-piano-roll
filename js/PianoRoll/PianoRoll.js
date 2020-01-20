@@ -1,5 +1,5 @@
 import Tone from 'tone';
-import { Stage } from 'konva';
+import { Stage, Layer } from 'konva';
 import { 
     STAGE_WIDTH, 
     STAGE_HEIGHT,
@@ -73,8 +73,9 @@ export default class PianoRoll {
         this._noteSelection = new NoteSelection();
         this._historyStack = new HistoryStack({ notes: [], selectedNoteIds: [] });
         this._clipboard = new Clipboard(this._conversionManager);
-        this._noteGridLayer = new NoteGridLayer(this._conversionManager);
-        this._velocityLayer = new VelocityLayer(this._conversionManager);
+        this._noteGridVelocityLayer = new Layer();
+        this._noteGridLayer = new NoteGridLayer(this._conversionManager, this._noteGridVelocityLayer);
+        this._velocityLayer = new VelocityLayer(this._conversionManager, this._noteGridVelocityLayer);
         this._pianoKeyLayer = new PianoKeyLayer();
         this._seekerLayer = new SeekerLayer(this._conversionManager);
         this._scrollManager = new ScrollManager(
@@ -528,7 +529,7 @@ export default class PianoRoll {
                 callback: () => this._transformSelection('easeInOut') 
             }
         ];
-        this._velocityLayer.addContextMenu(rawX, rawY, this._scrollManager.x, menuItems);
+        this._velocityLayer.addContextMenu(rawX, rawY, menuItems);
     }
 
     _addGridContextMenu(rawX, rawY) {
@@ -549,8 +550,6 @@ export default class PianoRoll {
         this._noteGridLayer.addContextMenu(
             rawX, 
             rawY, 
-            this._scrollManager.x, 
-            this._scrollManager.y,
             menuItems,
             true
         );
@@ -574,8 +573,6 @@ export default class PianoRoll {
         this._noteGridLayer.addContextMenu(
             rawX, 
             rawY, 
-            this._scrollManager.x, 
-            this._scrollManager.y,
             menuItems
         );
     }
