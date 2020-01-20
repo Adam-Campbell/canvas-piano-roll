@@ -327,8 +327,8 @@ export default class NoteGridLayer {
         this.updateNotesAttributeCaches(noteRectsArray);
     }
 
-    addContextMenu(rawX, rawY, xScroll, yScroll, menuItems, shouldIncludeScaleHighlightItem) {
-        if (shouldIncludeScaleHighlightItem) {
+    addContextMenu(rawX, rawY, menuItems, isGridClick) {
+        if (isGridClick) {
             menuItems.push({
                 label: this._shouldDisplayScaleHighlighting ? 'Hide scale highlighting' : 'Show scale highlighting',
                 callback: () => this._toggleScaleHighlights()
@@ -339,9 +339,6 @@ export default class NoteGridLayer {
             rawY,
             rightBoundary: this._conversionManager.stageWidth - SCROLLBAR_WIDTH,
             bottomBoundary: this._conversionManager.stageHeight - this._conversionManager.velocityAreaHeight - SCROLLBAR_WIDTH,
-            xScroll,
-            yScroll,
-            accountForScrollDirection: 'both',
             batchDrawCallback: () => this.layer.batchDraw(),
             menuItems
         });

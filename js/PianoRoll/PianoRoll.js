@@ -528,7 +528,7 @@ export default class PianoRoll {
                 callback: () => this._transformSelection('easeInOut') 
             }
         ];
-        this._velocityLayer.addContextMenu(rawX, rawY, this._scrollManager.x, menuItems);
+        this._velocityLayer.addContextMenu(rawX, rawY, menuItems);
     }
 
     _addGridContextMenu(rawX, rawY) {
@@ -549,8 +549,6 @@ export default class PianoRoll {
         this._noteGridLayer.addContextMenu(
             rawX, 
             rawY, 
-            this._scrollManager.x, 
-            this._scrollManager.y,
             menuItems,
             true
         );
@@ -574,8 +572,6 @@ export default class PianoRoll {
         this._noteGridLayer.addContextMenu(
             rawX, 
             rawY, 
-            this._scrollManager.x, 
-            this._scrollManager.y,
             menuItems
         );
     }
@@ -611,7 +607,6 @@ export default class PianoRoll {
         const { rawX, rawY, isTouchEvent, target } = this._extractInfoFromEventObject(e);
         const xWithScroll = rawX - this._scrollManager.x;
         const yWithScroll = rawY - this._scrollManager.y;
-        console.log(rawY, yWithScroll);
         const roundedX = this._conversionManager.roundDownToGridCol(xWithScroll);
         const roundedY = this._conversionManager.roundDownToGridRow(yWithScroll);
 
