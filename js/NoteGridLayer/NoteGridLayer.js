@@ -22,8 +22,9 @@ const isSameNote = (noteA, noteB) => note(noteA).chroma === note(noteB).chroma;
 
 export default class NoteGridLayer {
 
-    constructor(conversionManager) {
-        this.layer = new Layer();
+    constructor(conversionManager, layerRef) {
+        //this.layer = new Layer();
+        this.layer = layerRef;
         this._gridContainer = new Group({ x: 120, y: 30 });
         this._scaleHighlightsSubContainer = null;
         this._gridLinesSubContainer = null;
@@ -222,7 +223,6 @@ export default class NoteGridLayer {
     }
 
     draw() {
-        this.layer.removeChildren();
         this.layer.add(this._gridContainer);
         this.layer.add(this._notesContainer);
         this._drawGrid();
@@ -338,7 +338,7 @@ export default class NoteGridLayer {
             rawX,
             rawY,
             rightBoundary: this._conversionManager.stageWidth - SCROLLBAR_WIDTH,
-            bottomBoundary: this._conversionManager.stageHeight - this._conversionManager.velocityAreaHeight - SCROLLBAR_WIDTH,
+            bottomBoundary: this._conversionManager.stageHeight - SCROLLBAR_WIDTH,
             batchDrawCallback: () => this.layer.batchDraw(),
             menuItems
         });

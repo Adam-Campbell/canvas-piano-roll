@@ -1,5 +1,5 @@
 import Tone from 'tone';
-import { Stage } from 'konva';
+import { Stage, Layer } from 'konva';
 import { 
     STAGE_WIDTH, 
     STAGE_HEIGHT,
@@ -73,8 +73,9 @@ export default class PianoRoll {
         this._noteSelection = new NoteSelection();
         this._historyStack = new HistoryStack({ notes: [], selectedNoteIds: [] });
         this._clipboard = new Clipboard(this._conversionManager);
-        this._noteGridLayer = new NoteGridLayer(this._conversionManager);
-        this._velocityLayer = new VelocityLayer(this._conversionManager);
+        this._noteGridVelocityLayer = new Layer();
+        this._noteGridLayer = new NoteGridLayer(this._conversionManager, this._noteGridVelocityLayer);
+        this._velocityLayer = new VelocityLayer(this._conversionManager, this._noteGridVelocityLayer);
         this._pianoKeyLayer = new PianoKeyLayer();
         this._seekerLayer = new SeekerLayer(this._conversionManager);
         this._scrollManager = new ScrollManager(

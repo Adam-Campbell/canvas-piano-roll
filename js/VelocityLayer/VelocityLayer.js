@@ -6,9 +6,8 @@ import { createContextMenu } from '../createContextMenu';
 
 export default class VelocityLayer {
     
-    constructor(conversionManager) {
-        //this.layer = new Layer({ x: 120 });
-        this.layer = new Layer();
+    constructor(conversionManager, layerRef) {
+        this.layer = layerRef;
         this._conversionManager = conversionManager;
         this._layerGroup = new Group({ x: 120 });
         this._background = this._constructBackground();
@@ -18,7 +17,6 @@ export default class VelocityLayer {
     }
 
     updateX(x) {
-        //this.layer.x(x);
         this._layerGroup.x(x);
         this.layer.batchDraw();
     }
@@ -214,7 +212,6 @@ export default class VelocityLayer {
     }
 
     draw() {
-        this.layer.removeChildren();
         this._background.moveTo(this._layerGroup);
         this._border.moveTo(this._layerGroup);
         this._unselectedGroup.moveTo(this._layerGroup);
