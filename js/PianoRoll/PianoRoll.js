@@ -44,8 +44,9 @@ import { genId } from '../genId';
 import HistoryStack from '../HistoryStack';
 import Clipboard from '../Clipboard';
 import { clamp, pipe } from '../utils';
-import SeekerLayer from '../SeekerLayer';
 import NoteGridLayer from '../NoteGridLayer';
+import TransportLayer from '../TransportLayer';
+import SeekerLineLayer from '../SeekerLineLayer';
 
 export default class PianoRoll {
 
@@ -73,16 +74,18 @@ export default class PianoRoll {
         this._noteSelection = new NoteSelection();
         this._historyStack = new HistoryStack({ notes: [], selectedNoteIds: [] });
         this._clipboard = new Clipboard(this._conversionManager);
-        this._noteGridVelocityLayer = new Layer();
-        this._noteGridLayer = new NoteGridLayer(this._conversionManager, this._noteGridVelocityLayer);
-        this._velocityLayer = new VelocityLayer(this._conversionManager, this._noteGridVelocityLayer);
+        this._primaryBackingLayer = new Layer();
+        this._noteGridLayer = new NoteGridLayer(this._conversionManager, this._primaryBackingLayer);
+        this._velocityLayer = new VelocityLayer(this._conversionManager, this._primaryBackingLayer);
+        this._transportLayer = new TransportLayer(this._conversionManager, this._primaryBackingLayer);
         this._pianoKeyLayer = new PianoKeyLayer();
-        this._seekerLayer = new SeekerLayer(this._conversionManager);
+        this._seekerLineLayer = new SeekerLineLayer(this._conversionManager);
         this._scrollManager = new ScrollManager(
             this._noteGridLayer,
             this._velocityLayer,
             this._pianoKeyLayer,
-            this._seekerLayer
+            this._transportLayer,
+            this._seekerLineLayer
         );
         this._scrollbarLayer = new ScrollbarLayer(
             this._scrollManager,
@@ -146,16 +149,16 @@ export default class PianoRoll {
     }
 
     init() {
-        this._addLayer(this._noteGridLayer);
-        this._addLayer(this._velocityLayer);
-        this._addLayer(this._seekerLayer);
+        this._stage.add(this._primaryBackingLayer);
         this._addLayer(this._pianoKeyLayer);
         this._addLayer(this._scrollbarLayer);
+        this._stage.add(this._seekerLineLayer.layer);
         this._noteGridLayer.draw();
         this._velocityLayer.draw();
-        this._seekerLayer.draw();
+        this._transportLayer.draw();
         this._pianoKeyLayer.draw();
         this._scrollbarLayer.draw();
+        this._seekerLineLayer.draw();
     }
 
     _addLayer(layerClass) {
@@ -175,7 +178,7 @@ export default class PianoRoll {
             this._conversionManager.tickToPxRatio = newZoomLevel;
             this._noteGridLayer.redrawOnZoomAdjustment(isZoomingIn);
             this._velocityLayer.redrawOnZoomAdjustment(isZoomingIn);
-            this._seekerLayer.redrawOnZoomAdjustment();
+            this._transportLayer.redrawOnZoomAdjustment();
         }
     }
 
@@ -619,7 +622,7 @@ export default class PianoRoll {
             const positionAsTicks = this._conversionManager.convertPxToTicks(roundedX);
             const positionAsBBS = Tone.Ticks(positionAsTicks).toBarsBeatsSixteenths();
             Tone.Transport.position = positionAsBBS;
-            this._seekerLayer.updateSeekerLinePosition();
+            this._seekerLineLayer.updateSeekerLinePosition();
             return;
         }
 
