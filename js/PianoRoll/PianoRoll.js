@@ -611,6 +611,7 @@ export default class PianoRoll {
         const { rawX, rawY, isTouchEvent, target } = this._extractInfoFromEventObject(e);
         const xWithScroll = rawX - this._scrollManager.x;
         const yWithScroll = rawY - this._scrollManager.y;
+        console.log(rawY, yWithScroll);
         const roundedX = this._conversionManager.roundDownToGridCol(xWithScroll);
         const roundedY = this._conversionManager.roundDownToGridRow(yWithScroll);
 

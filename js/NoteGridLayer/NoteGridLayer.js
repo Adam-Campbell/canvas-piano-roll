@@ -23,11 +23,11 @@ const isSameNote = (noteA, noteB) => note(noteA).chroma === note(noteB).chroma;
 export default class NoteGridLayer {
 
     constructor(conversionManager) {
-        this.layer = new Layer({ x: 120, y: 30 });
-        this._gridContainer = new Group();
+        this.layer = new Layer();
+        this._gridContainer = new Group({ x: 120, y: 30 });
         this._scaleHighlightsSubContainer = null;
         this._gridLinesSubContainer = null;
-        this._notesContainer = new Group();
+        this._notesContainer = new Group({ x: 120, y: 30 });
         this._conversionManager = conversionManager;
         this._scaleType = 'C major';
         this._shouldDisplayScaleHighlighting = false;
@@ -46,12 +46,15 @@ export default class NoteGridLayer {
     }
 
     updateX(x) {
-        this.layer.x(x);
+        //this.layer.x(x);
+        this._gridContainer.x(x);
+        this._notesContainer.x(x);
         this.layer.batchDraw();
     }
 
     updateY(y) {
-        this.layer.y(y);
+        this._gridContainer.y(y);
+        this._notesContainer.y(y);
         this.layer.batchDraw();
     }
 
@@ -255,7 +258,8 @@ export default class NoteGridLayer {
                 opacity: 0.4,
                 id: 'MARQUEE'
             });
-            this.layer.add(newMarquee); 
+            //this.layer.add(newMarquee); 
+            newMarquee.moveTo(this._notesContainer);
         } else {
             marquee.x(originX);
             marquee.y(originY);
