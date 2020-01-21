@@ -1,4 +1,4 @@
-import { Line, Rect, Layer } from 'konva';
+import { Line, Rect, Group } from 'konva';
 import { 
     NOTES_GRID_HEIGHT, 
     BAR_WIDTH,  
@@ -9,46 +9,90 @@ import {
 import emitter from '../EventEmitter'; 
 import { 
     QUANTIZE_VALUE_UPDATE,
-    NOTE_DURATION_UPDATE,
-    ADD_NOTE
+    SCALE_TYPE_UPDATE,
+    DISPLAY_SCALE_UPDATE
 } from '../events';
 import {  
     getHorizontalLinesData,
     getVerticalLinesData,
 } from './utils';
+import { pitchesArray } from '../pitches';
+import { scale } from '@tonaljs/scale';
+import { note } from '@tonaljs/tonal';
+
+const isSameNote = (noteA, noteB) => note(noteA).chroma === note(noteB).chroma;
 
 export default class GridLayer {
     
-    constructor(conversionManager) {
-        this.layer = new Layer({ x: 120, y: 30 });
+    constructor(conversionManager, layerRef) {
         this._conversionManager = conversionManager;
-        this.unsubscribe1 = emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
-            this.draw();
+        this.layer = layerRef;
+        this._gridContainer = new Group({ x: 120, y: 30 });
+        this._scaleHighlightsSubContainer = null;
+        this._gridLinesSubContainer = null;
+
+        this._scaleType = 'C major';
+        this._shouldDisplayScaleHighlighting = false;
+        this._unsubscribe1 = emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
+            this._drawGrid();
         });
+        this._unsubscribe2 = emitter.subscribe(SCALE_TYPE_UPDATE, scaleType => {
+            this._scaleType = scaleType;
+            console.log(scaleType);
+            this._drawScaleHighlights();
+        });
+        this._unsubscribe3 = emitter.subscribe(DISPLAY_SCALE_UPDATE, shouldDisplay => {
+            this._shouldDisplayScaleHighlighting = shouldDisplay;
+            this._drawScaleHighlights();
+        });
+
+    }
+
+    draw() {
+        this.layer.add(this._gridContainer);
+        this._drawGrid();
+        this.layer.batchDraw();
     }
 
     updateX(x) {
-        this.layer.x(x);
+        this._gridContainer.x(x);
         this.layer.batchDraw();
     }
 
     updateY(y) {
-        this.layer.y(y);
+        this._gridContainer.y(y);
         this.layer.batchDraw();
     }
 
-    _addBackgroundToLayer() {
-        const background = new Rect({
-            x: 0,
-            y: 0,
-            width: this._conversionManager.gridWidth,
-            height: this._conversionManager.gridHeight,
-            fill: '#dadada'
-        });
-        this.layer.add(background);
+    _toggleScaleHighlights() {
+        this._shouldDisplayScaleHighlighting = !this._shouldDisplayScaleHighlighting;
+        this._drawScaleHighlights();
     }
 
-    _addLinesToLayer() {
+    _drawScaleHighlights() {
+        this._scaleHighlightsSubContainer.destroyChildren();
+        if (this._shouldDisplayScaleHighlighting) {
+            const scaleObject = scale(this._scaleType);
+            console.log(scaleObject);
+            const { notes, tonic } = scaleObject;
+            pitchesArray.forEach((noteObj, idx) => {
+                if (notes.find((scaleNote) => isSameNote(scaleNote, noteObj.note))) {
+                    const isTonic = isSameNote(tonic, noteObj.note);
+                    const highlightRect = new Rect({
+                        x: 0,
+                        y: idx * this._conversionManager.rowHeight,
+                        width: this._conversionManager.gridWidth,
+                        height: this._conversionManager.rowHeight,
+                        fill: isTonic ? 'tomato' : 'pink',
+                    });
+                    highlightRect.moveTo(this._scaleHighlightsSubContainer);
+                }
+            });
+        }
+        this.layer.batchDraw();
+    }
+
+    _drawGridLines() {
         const horizontalLinesData = getHorizontalLinesData(this._conversionManager.gridWidth);
         const verticalLinesData = getVerticalLinesData(
             this._conversionManager.numBars, 
@@ -59,15 +103,70 @@ export default class GridLayer {
         [ ...horizontalLinesData, ...verticalLinesData ]
         .forEach(lineProps => {
             const line = new Line({ ...lineProps });
-            this.layer.add(line);
-        });
-    }
-
-    draw() {
-        this.layer.removeChildren();
-        this._addBackgroundToLayer();
-        this._addLinesToLayer();
+            line.moveTo(this._gridLinesSubContainer);
+        }); 
         this.layer.batchDraw();
     }
+
+    _drawGrid() {
+        this._gridContainer.destroyChildren();
+        const background = new Rect({
+            x: 0,
+            y: 0,
+            width: this._conversionManager.gridWidth,
+            height: this._conversionManager.gridHeight,
+            fill: '#dadada'
+        });
+        background.moveTo(this._gridContainer);
+        this._scaleHighlightsSubContainer = new Group();
+        this._scaleHighlightsSubContainer.moveTo(this._gridContainer);
+        if (this._shouldDisplayScaleHighlighting) {
+            this._drawScaleHighlights();
+        }
+        this._gridLinesSubContainer = new Group();
+        this._gridLinesSubContainer.moveTo(this._gridContainer);
+        this._drawGridLines();
+        this.layer.batchDraw();
+    }
+
+    redrawOnZoomAdjustment() {
+        this._drawGrid();
+    }
+
+
+
+
+    // _addBackgroundToLayer() {
+    //     const background = new Rect({
+    //         x: 0,
+    //         y: 0,
+    //         width: this._conversionManager.gridWidth,
+    //         height: this._conversionManager.gridHeight,
+    //         fill: '#dadada'
+    //     });
+    //     this.layer.add(background);
+    // }
+
+    // _addLinesToLayer() {
+    //     const horizontalLinesData = getHorizontalLinesData(this._conversionManager.gridWidth);
+    //     const verticalLinesData = getVerticalLinesData(
+    //         this._conversionManager.numBars, 
+    //         this._conversionManager.barWidth,
+    //         this._conversionManager.colWidth,
+    //         this._conversionManager.gridHeight
+    //     );
+    //     [ ...horizontalLinesData, ...verticalLinesData ]
+    //     .forEach(lineProps => {
+    //         const line = new Line({ ...lineProps });
+    //         this.layer.add(line);
+    //     });
+    // }
+
+    // draw() {
+    //     this.layer.removeChildren();
+    //     this._addBackgroundToLayer();
+    //     this._addLinesToLayer();
+    //     this.layer.batchDraw();
+    // }
 
 }
