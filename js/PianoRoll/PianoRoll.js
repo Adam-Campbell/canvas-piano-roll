@@ -75,11 +75,12 @@ export default class PianoRoll {
         this._historyStack = new HistoryStack({ notes: [], selectedNoteIds: [] });
         this._clipboard = new Clipboard(this._conversionManager);
         this._primaryBackingLayer = new Layer();
+        this._secondaryBackingLayer = new Layer();
         this._noteGridLayer = new NoteGridLayer(this._conversionManager, this._primaryBackingLayer);
         this._velocityLayer = new VelocityLayer(this._conversionManager, this._primaryBackingLayer);
         this._transportLayer = new TransportLayer(this._conversionManager, this._primaryBackingLayer);
-        this._pianoKeyLayer = new PianoKeyLayer();
         this._seekerLineLayer = new SeekerLineLayer(this._conversionManager);
+        this._pianoKeyLayer = new PianoKeyLayer(this._secondaryBackingLayer);
         this._scrollManager = new ScrollManager(
             this._noteGridLayer,
             this._velocityLayer,
@@ -89,7 +90,8 @@ export default class PianoRoll {
         );
         this._scrollbarLayer = new ScrollbarLayer(
             this._scrollManager,
-            this._conversionManager
+            this._conversionManager,
+            this._secondaryBackingLayer
         );
         this._stage.on('mousedown', e => this._handleInteractionStart(e));
         this._stage.on('mousemove', e => this._handleInteractionUpdate(e));
@@ -150,9 +152,9 @@ export default class PianoRoll {
 
     init() {
         this._stage.add(this._primaryBackingLayer);
-        this._addLayer(this._pianoKeyLayer);
-        this._addLayer(this._scrollbarLayer);
+        //this._addLayer(this._pianoKeyLayer);
         this._stage.add(this._seekerLineLayer.layer);
+        this._stage.add(this._secondaryBackingLayer);
         this._noteGridLayer.draw();
         this._velocityLayer.draw();
         this._transportLayer.draw();
