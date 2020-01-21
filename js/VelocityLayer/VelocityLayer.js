@@ -214,7 +214,7 @@ export default class VelocityLayer {
         this._background.moveTo(this._layerGroup);
         this._border.moveTo(this._layerGroup);
         this._unselectedGroup.moveTo(this._layerGroup);
-        this._selectedGroup.moveTo(this._unselectedGroup);
+        this._selectedGroup.moveTo(this._layerGroup);
         this.layer.add(this._layerGroup);
         this.layer.batchDraw();
     }
