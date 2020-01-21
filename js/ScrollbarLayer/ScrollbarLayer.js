@@ -1,4 +1,4 @@
-import { Rect, Layer } from 'konva';
+import { Rect, Group } from 'konva';
 import { 
     PIANO_KEY_WIDTH,
     SCROLLBAR_WIDTH,
@@ -10,18 +10,20 @@ import {
 import { clamp } from '../utils';
 
 export default class ScrollbarLayer {
-    constructor(scrollManager, conversionManager) {
-        this.layer = new Layer();
+    constructor(scrollManager, conversionManager, layerRef) {
+        //this.layer = new Layer();
+        this.layer = layerRef;
+        this._layerGroup = new Group();
         this._conversionManager = conversionManager;
         this._scrollManager = scrollManager;
         this._verticalTrack = this._constructVerticalTrack();
         this._verticalThumb = this._constructVerticalThumb();
         this._horizontalTrack = this._constructHorizontalTrack();
         this._horizontalThumb = this._constructHorizontalThumb();
-        this.layer.on('mousedown', e => {
+        this._layerGroup.on('mousedown', e => {
             e.cancelBubble = true;
         });
-        this.layer.on('touchstart', e => {
+        this._layerGroup.on('touchstart', e => {
             e.cancelBubble = true;
         });
     }
@@ -163,11 +165,12 @@ export default class ScrollbarLayer {
     }
 
     draw() {
-        this.layer.removeChildren();
-        this.layer.add(this._verticalTrack);
-        this.layer.add(this._verticalThumb);
-        this.layer.add(this._horizontalTrack);
-        this.layer.add(this._horizontalThumb);
+        this._layerGroup.removeChildren();
+        this._verticalTrack.moveTo(this._layerGroup);
+        this._verticalThumb.moveTo(this._layerGroup);
+        this._horizontalTrack.moveTo(this._layerGroup);
+        this._horizontalThumb.moveTo(this._layerGroup);
+        this.layer.add(this._layerGroup);
         this.layer.batchDraw();
     }
 }

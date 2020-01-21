@@ -1,8 +1,7 @@
-import { Layer, Rect, Group, Text } from 'konva';
+import { Rect, Group } from 'konva';
 import {
     SCROLLBAR_WIDTH
 } from '../constants';
-import { createContextMenu } from '../createContextMenu';
 
 export default class VelocityLayer {
     
@@ -229,27 +228,6 @@ export default class VelocityLayer {
             velocityRect.y(newY);
         });
         this.layer.batchDraw();
-    }
-
-    addContextMenu(rawX, rawY, menuItems) {
-        const contextMenuGroup = createContextMenu({
-            rawX,
-            rawY,
-            rightBoundary: this._conversionManager.stageWidth - SCROLLBAR_WIDTH,
-            bottomBoundary: this._conversionManager.stageHeight - SCROLLBAR_WIDTH,
-            batchDrawCallback: () => this.layer.batchDraw(),
-            menuItems: menuItems
-        });
-        this.layer.add(contextMenuGroup);
-        this.layer.batchDraw();
-    }
-
-    removeContextMenu() {
-        const contextMenu = this.layer.findOne('#CONTEXT_MENU_GROUP');
-        if (contextMenu) {
-            contextMenu.destroy();
-            this.layer.batchDraw();
-        }
     }
 
     forceToState(state) {

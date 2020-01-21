@@ -1,5 +1,5 @@
 import Tone from 'tone';
-import { Rect, Layer } from 'konva';
+import { Rect, Layer, Group } from 'konva';
 import { pitchesArray } from '../pitches';
 import { ROW_HEIGHT } from '../constants';
 import {
@@ -23,8 +23,9 @@ the keys when using touch (must not affect the way they work when using mouse).
 */
 
 export default class PianoKeyLayer {
-    constructor() {
-        this.layer = new Layer({ y: 30 });
+    constructor(layerRef) {
+        this.layer = layerRef;
+        this._layerGroup = new Group();
         this._instrument = new Tone.PolySynth(12, Tone.Synth).toMaster();
         this._instrument.set({
             envelope: {
@@ -36,34 +37,30 @@ export default class PianoKeyLayer {
                 type: 'amsawtooth'
             }
         });
-        this.layer.on('mousedown', e => {
+        this._layerGroup.on('mousedown', e => {
             e.cancelBubble = true;
             this._activateKey(e.target);
         });
-        this.layer.on('mouseup', e => {
+        this._layerGroup.on('mouseup', e => {
             e.cancelBubble = true;
             this._deactivateKey(e.target);
         });
-        this.layer.on('mouseout', e => {
+        this._layerGroup.on('mouseout', e => {
             e.cancelBubble = true;
             this._deactivateKey(e.target);
         });
-        this.layer.on('touchstart', e => {
+        this._layerGroup.on('touchstart', e => {
             e.cancelBubble = true;
-            //alert('touchstart')
-            //const a = Object.values(e).toString;
-            //alert(e.evt.touches[0].clientX);
-            //console.log(e.target);
             this._activateKey(e.target);
         });
-        this.layer.on('touchend', e => {
+        this._layerGroup.on('touchend', e => {
             e.cancelBubble = true;
             this._deactivateKey(e.target);
         });
     }
 
     updateY(y) {
-        this.layer.y(y);
+        this._layerGroup.y(y);
         this.layer.batchDraw();
     }
 
@@ -92,14 +89,15 @@ export default class PianoKeyLayer {
     }
 
     draw() {
-        this.layer.removeChildren();
+        this._layerGroup.removeChildren();
         pitchesArray
         .map(getKeyProps)
         .sort(sortByColor)
         .forEach(keyProps => {
             const pianoKey = new Rect({ ...keyProps });
-            this.layer.add(pianoKey);
+            pianoKey.moveTo(this._layerGroup);
         });
-        this.layer.draw();
+        this.layer.add(this._layerGroup);
+        this.layer.batchDraw();
     }
 }
