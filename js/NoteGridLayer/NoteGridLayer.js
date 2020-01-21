@@ -1,4 +1,4 @@
-import { Layer, Rect, Line, Group } from 'konva';
+import { Rect, Line, Group } from 'konva';
 import { 
     getHorizontalLinesData,
     getVerticalLinesData
@@ -16,14 +16,12 @@ import {
 import { pitchesArray } from '../pitches';
 import { scale } from '@tonaljs/scale';
 import { note } from '@tonaljs/tonal';
-import { createContextMenu } from '../createContextMenu';
 
 const isSameNote = (noteA, noteB) => note(noteA).chroma === note(noteB).chroma;
 
 export default class NoteGridLayer {
 
     constructor(conversionManager, layerRef) {
-        //this.layer = new Layer();
         this.layer = layerRef;
         this._gridContainer = new Group({ x: 120, y: 30 });
         this._scaleHighlightsSubContainer = null;
@@ -325,33 +323,6 @@ export default class NoteGridLayer {
         });
         this.layer.batchDraw();
         this.updateNotesAttributeCaches(noteRectsArray);
-    }
-
-    addContextMenu(rawX, rawY, menuItems, isGridClick) {
-        if (isGridClick) {
-            menuItems.push({
-                label: this._shouldDisplayScaleHighlighting ? 'Hide scale highlighting' : 'Show scale highlighting',
-                callback: () => this._toggleScaleHighlights()
-            })
-        }
-        const contextMenuGroup = createContextMenu({
-            rawX,
-            rawY,
-            rightBoundary: this._conversionManager.stageWidth - SCROLLBAR_WIDTH,
-            bottomBoundary: this._conversionManager.stageHeight - SCROLLBAR_WIDTH,
-            batchDrawCallback: () => this.layer.batchDraw(),
-            menuItems
-        });
-        this.layer.add(contextMenuGroup);
-        this.layer.batchDraw();
-    }
-
-    removeContextMenu() {
-        const contextMenu = this.layer.findOne('#CONTEXT_MENU_GROUP');
-        if (contextMenu) {
-            contextMenu.destroy();
-            this.layer.batchDraw();
-        }
     }
 
     forceToState(state) {

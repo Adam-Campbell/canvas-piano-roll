@@ -47,18 +47,26 @@ import { clamp, pipe } from '../utils';
 import NoteGridLayer from '../NoteGridLayer';
 import TransportLayer from '../TransportLayer';
 import SeekerLineLayer from '../SeekerLineLayer';
+import ContextMenuLayer from '../ContextMenuLayer';
 
 export default class PianoRoll {
 
     constructor(containerId, width = STAGE_WIDTH, height = STAGE_HEIGHT, initialQuantize = '16n', initialNoteDuration = '16n', numBars = 8) {
+        
+        // Initialize class properties
         window.pianoRoll = this;
         this._dragMode = null;
         this._activeTool = 'cursor';
+        this._previousBumpTimestamp = null;
+
+        // Initialize canvas stage
         this._stage = new Stage({
             container: containerId,
             width,
             height
         });
+
+        // Initialize non canvas layer related classes
         this._noteCache = new CanvasElementCache();
         this._velocityMarkerCache = new CanvasElementCache();
         this._keyboardStateManager = new KeyboardStateManager(this._stage.container());
@@ -74,6 +82,8 @@ export default class PianoRoll {
         this._noteSelection = new NoteSelection();
         this._historyStack = new HistoryStack({ notes: [], selectedNoteIds: [] });
         this._clipboard = new Clipboard(this._conversionManager);
+
+        // Initialize canvas layer related classes
         this._primaryBackingLayer = new Layer();
         this._secondaryBackingLayer = new Layer();
         this._noteGridLayer = new NoteGridLayer(this._conversionManager, this._primaryBackingLayer);
@@ -81,6 +91,7 @@ export default class PianoRoll {
         this._transportLayer = new TransportLayer(this._conversionManager, this._primaryBackingLayer);
         this._seekerLineLayer = new SeekerLineLayer(this._conversionManager);
         this._pianoKeyLayer = new PianoKeyLayer(this._secondaryBackingLayer);
+        this._contextMenuLayer = new ContextMenuLayer(this._conversionManager, this._secondaryBackingLayer);
         this._scrollManager = new ScrollManager(
             this._noteGridLayer,
             this._velocityLayer,
@@ -93,12 +104,17 @@ export default class PianoRoll {
             this._conversionManager,
             this._secondaryBackingLayer
         );
+
+        // add stage event listeners
         this._stage.on('mousedown', e => this._handleInteractionStart(e));
         this._stage.on('mousemove', e => this._handleInteractionUpdate(e));
         this._stage.on('mouseup', e => this._handleInteractionEnd(e));
         this._stage.on('touchstart', e => this._handleInteractionStart(e));
         this._stage.on('touchmove', e => this._handleInteractionUpdate(e));
         this._stage.on('touchend', e => this._handleInteractionEnd(e));
+        this._stage.on('contextmenu', e => this._handleContextMenu(e));
+
+        // Add keyboard event listeners
         this._keyboardStateManager.addKeyListener('Delete', () => this._deleteSelectedNotes());
         this._keyboardStateManager.addKeyListener('1', () => {
             if (this._keyboardStateManager.altKey) {
@@ -132,7 +148,9 @@ export default class PianoRoll {
         });
         this._keyboardStateManager.addKeyListener('m', () => {
             this._scrollManager.x = this._scrollManager.x - 100;
-        })
+        });
+
+        // Subscribe to global events
         emitter.subscribe(ACTIVE_TOOL_UPDATE, tool => {
             this._activeTool = tool;
             console.log(this._activeTool);
@@ -145,9 +163,7 @@ export default class PianoRoll {
         
         window.addEventListener('resize', e => this._handleResize(e));
 
-        this._previousBumpTimestamp = null;
-
-        this._stage.on('contextmenu', e => this._handleContextMenu(e));
+        
     }
 
     init() {
@@ -534,7 +550,7 @@ export default class PianoRoll {
                 callback: () => this._transformSelection('easeInOut') 
             }
         ];
-        this._velocityLayer.addContextMenu(rawX, rawY, menuItems);
+        this._contextMenuLayer.addContextMenu({ rawX, rawY, menuItems });
     }
 
     _addGridContextMenu(rawX, rawY) {
@@ -550,14 +566,13 @@ export default class PianoRoll {
             {
                 label: 'Paste',
                 callback: () => this._paste()
+            },
+            {
+                label: this._noteGridLayer._shouldDisplayScaleHighlighting ? 'Hide scale highlighting' : 'Show scale highlighting',
+                callback: () => this._noteGridLayer._toggleScaleHighlights()
             }
         ];
-        this._noteGridLayer.addContextMenu(
-            rawX, 
-            rawY, 
-            menuItems,
-            true
-        );
+        this._contextMenuLayer.addContextMenu({ rawX, rawY, menuItems });
     }
 
     _addNoteContextMenu(rawX, rawY) {
@@ -575,11 +590,7 @@ export default class PianoRoll {
                 callback: () => this._deleteSelectedNotes()
             }
         ];
-        this._noteGridLayer.addContextMenu(
-            rawX, 
-            rawY, 
-            menuItems
-        );
+        this._contextMenuLayer.addContextMenu({ rawX, rawY, menuItems });
     }
 
     _extractInfoFromEventObject(e) {
@@ -605,8 +616,7 @@ export default class PianoRoll {
     }
 
     _handleInteractionStart(e) {
-        this._velocityLayer.removeContextMenu();
-        this._noteGridLayer.removeContextMenu();
+        this._contextMenuLayer.removeContextMenu();
         if (e.evt.button !== 0) {
             return;
         }
