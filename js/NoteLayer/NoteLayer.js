@@ -210,20 +210,20 @@ export default class NoteLayer {
         this.layer.batchDraw();
     }
 
-    shiftNotesUp(noteRectsArray) {
+    shiftNotesUp(noteRectsArray, shiftAmount) {
         noteRectsArray.forEach(noteRect => {
             noteRect.y(
-                noteRect.y() - this._conversionManager.rowHeight
+                noteRect.y() - shiftAmount
             );
         });
         this.layer.batchDraw();
         this.updateNotesAttributeCaches(noteRectsArray);
     }
 
-    shiftNotesDown(noteRectsArray) {
+    shiftNotesDown(noteRectsArray, shiftAmount) {
         noteRectsArray.forEach(noteRect => {
             noteRect.y(
-                noteRect.y() + this._conversionManager.rowHeight
+                noteRect.y() + shiftAmount
             );
         });
         this.layer.batchDraw();

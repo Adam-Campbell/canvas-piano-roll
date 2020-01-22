@@ -134,8 +134,16 @@ export default class PianoRoll {
                 emitter.broadcast(ACTIVE_TOOL_UPDATE, 'marquee');
             }
         });
-        this._keyboardStateManager.addKeyListener('ArrowUp', () => this._shiftSelectionUp());
-        this._keyboardStateManager.addKeyListener('ArrowDown', () => this._shiftSelectionDown());
+        this._keyboardStateManager.addKeyListener('ArrowUp', () => {
+            this._shiftSelectionUp(
+                this._keyboardStateManager.shiftKey
+            );
+        });
+        this._keyboardStateManager.addKeyListener('ArrowDown', () => {
+            this._shiftSelectionDown(
+                this._keyboardStateManager.shiftKey
+            );
+        });
         this._keyboardStateManager.addKeyListener('ArrowLeft', () => this._shiftSelectionLeft());
         this._keyboardStateManager.addKeyListener('ArrowRight', () => this._shiftSelectionRight());
         this._keyboardStateManager.addKeyListener('z', () => this._keyboardStateManager.ctrlKey && this._undo());
@@ -400,21 +408,27 @@ export default class PianoRoll {
         });
     }
 
-    _shiftSelectionUp() {
+    _shiftSelectionUp(shiftByOctave) {
+        const shiftAmount = shiftByOctave ? 
+            this._conversionManager.rowHeight * 12 : 
+            this._conversionManager.rowHeight;
         const selectedNoteIds = this._noteSelection.retrieveAll();
         const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
-        if (canShiftUp(selectedNoteElements)) {
-            this._noteLayer.shiftNotesUp(selectedNoteElements);
+        if (canShiftUp(selectedNoteElements, shiftAmount)) {
+            this._noteLayer.shiftNotesUp(selectedNoteElements, shiftAmount);
             selectedNoteIds.forEach(id => this._addNoteToAudioEngine(id));
             this._serializeState();
         }
     }
 
-    _shiftSelectionDown() {
+    _shiftSelectionDown(shiftByOctave) {
+        const shiftAmount = shiftByOctave ?
+            this._conversionManager.rowHeight * 12 :
+            this._conversionManager.rowHeight;
         const selectedNoteIds = this._noteSelection.retrieveAll();
         const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
-        if (canShiftDown(selectedNoteElements, this._conversionManager.gridHeight)) {
-            this._noteLayer.shiftNotesDown(selectedNoteElements);
+        if (canShiftDown(selectedNoteElements, this._conversionManager.gridHeight, shiftAmount)) {
+            this._noteLayer.shiftNotesDown(selectedNoteElements, shiftAmount);
             selectedNoteIds.forEach(id => this._addNoteToAudioEngine(id));
             this._serializeState();
         }
