@@ -11,18 +11,18 @@ export const doesOverlap = (A_x1, A_x2, A_y1, A_y2, B_x1, B_x2, B_y1, B_y2) => {
         doesOverlapAlongAxis(A_y1, A_y2, B_y1, B_y2);
 }
 
-export const canShiftUp = (notes) => {
+export const canShiftUp = (notes, shiftAmount) => {
     for (let note of notes) {
-        if (note.attrs.y <= 0) {
+        if (note.attrs.y - shiftAmount < 0) {
             return false;
         }
     }
     return true;
 };
 
-export const canShiftDown = (notes, limit) => {
+export const canShiftDown = (notes, limit, shiftAmount) => {
     for (let note of notes) {
-        if (note.attrs.y + note.attrs.height + 1 >= limit) {
+        if (note.attrs.y + note.attrs.height + shiftAmount > limit) {
             return false;
         }
     }
