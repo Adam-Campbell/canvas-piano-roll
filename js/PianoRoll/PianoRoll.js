@@ -50,6 +50,7 @@ import ContextMenuLayer from '../ContextMenuLayer';
 import NoteLayer from '../NoteLayer';
 import GridLayer from '../GridLayer';
 import { pitchesArray } from '../pitches';
+import { chordType } from '@tonaljs/chord-dictionary';
 
 export default class PianoRoll {
 
@@ -60,6 +61,7 @@ export default class PianoRoll {
         this._dragMode = null;
         this._activeTool = 'cursor';
         this._previousBumpTimestamp = null;
+        this._chordType = 'major';
 
         // Initialize canvas stage
         this._stage = new Stage({
@@ -344,9 +346,9 @@ export default class PianoRoll {
         this._audioReconciler.addNote(noteElement, velocityMarkerElement);
     }
 
-    _addNewNote(x, y) {
+    _addNewNote(x, y, width) {
         const id = genId();
-        const newNote = this._noteLayer.addNewNote(x, y, id);
+        const newNote = this._noteLayer.addNewNote(x, y, id, width);
         const newVelocityMarker = this._velocityLayer.addNewVelocityMarker(x, id);
         this._noteCache.add(newNote);
         this._velocityMarkerCache.add(newVelocityMarker);
@@ -557,6 +559,40 @@ export default class PianoRoll {
         this._serializeState();
     }
 
+    _constructChordFromRoot() {
+        const { chroma } = chordType(this._chordType);
+        let relativePositions = [];
+        chroma.split('').forEach((binary, idx) => {
+            if (parseInt(binary) && idx > 0) {
+                relativePositions.push(idx);
+            }
+        });
+        const rootNote = this._noteCache.retrieve(
+            this._noteSelection.retrieveAll()
+        )[0];
+
+        if (!rootNote) {
+            return;
+        }
+
+        const rootX = rootNote.x();
+        const rootY = rootNote.y();
+        const rootWidth = rootNote.width();
+
+        relativePositions.forEach(relPos => {
+            this._addNewNote(
+                rootX,
+                rootY - relPos * this._conversionManager.rowHeight,
+                rootWidth
+            );
+        });
+
+        this._noteSelection.retrieveAll().forEach(id => this._addNoteToAudioEngine(id));
+
+        this._serializeState();
+
+    }
+
     _undo() {
         if (!this._historyStack.isAtStart) {
             const nextState = this._historyStack.goBackwards();
@@ -696,6 +732,10 @@ export default class PianoRoll {
             {
                 label: 'Delete',
                 callback: () => this._deleteSelectedNotes()
+            },
+            {
+                label: 'Generate chord',
+                callback: () => this._constructChordFromRoot()
             }
         ];
         this._contextMenuLayer.addContextMenu({ rawX, rawY, menuItems });
