@@ -1,3 +1,4 @@
+
 const isInRange = (point, rangeMin, rangeMax) => {
     return point >= rangeMin && point <= rangeMax;
 }

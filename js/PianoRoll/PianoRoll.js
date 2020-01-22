@@ -49,6 +49,7 @@ import SeekerLineLayer from '../SeekerLineLayer';
 import ContextMenuLayer from '../ContextMenuLayer';
 import NoteLayer from '../NoteLayer';
 import GridLayer from '../GridLayer';
+import { pitchesArray } from '../pitches';
 
 export default class PianoRoll {
 
@@ -135,14 +136,22 @@ export default class PianoRoll {
             }
         });
         this._keyboardStateManager.addKeyListener('ArrowUp', () => {
-            this._shiftSelectionUp(
-                this._keyboardStateManager.shiftKey
-            );
+            if (this._keyboardStateManager.altKey) {
+                this._moveUpwardsThroughInversions();
+            } else {
+                this._shiftSelectionUp(
+                    this._keyboardStateManager.shiftKey
+                );
+            }
         });
         this._keyboardStateManager.addKeyListener('ArrowDown', () => {
-            this._shiftSelectionDown(
-                this._keyboardStateManager.shiftKey
-            );
+            if (this._keyboardStateManager.altKey) {
+                this._moveDownwardsThroughInversions();
+            } else {
+                this._shiftSelectionDown(
+                    this._keyboardStateManager.shiftKey
+                );
+            }
         });
         this._keyboardStateManager.addKeyListener('ArrowLeft', () => this._shiftSelectionLeft());
         this._keyboardStateManager.addKeyListener('ArrowRight', () => this._shiftSelectionRight());
@@ -460,6 +469,92 @@ export default class PianoRoll {
             selectedNoteIds.forEach(id => this._addNoteToAudioEngine(id));
             this._serializeState();
         }
+    }
+
+    _moveUpwardsThroughInversions() {
+        const noteElements = this._noteCache.retrieve(
+            this._noteSelection.retrieveAll()
+        );
+
+        const sortedNotesAndRowIndexes = noteElements.map(noteElement => {
+            return {
+                noteElement,
+                rowIndex: Math.floor(noteElement.y() / this._conversionManager.rowHeight)
+            }
+        })
+        .sort((a,b) => {
+            if (a.rowIndex < b.rowIndex) {
+                return 1;
+            } else if (a.rowIndex > b.rowIndex) {
+                return -1;
+            } else {
+                return 0;
+            }
+        });
+
+        const noteElementToUpdate = sortedNotesAndRowIndexes[0].noteElement;
+        let newY = null;
+
+        for (let currNote of sortedNotesAndRowIndexes) {
+            const isTaken = sortedNotesAndRowIndexes.find(el => el.rowIndex === currNote.rowIndex - 12);
+            if (currNote.rowIndex >= 12 && !isTaken) {
+                newY = (currNote.rowIndex - 12) * this._conversionManager.rowHeight;
+                break;
+            }
+        }
+        
+        if (newY === null) {
+            return;
+        }
+
+        noteElementToUpdate.y(newY);
+        this._primaryBackingLayer.batchDraw();
+        this._noteLayer.updateNotesAttributeCaches([ noteElementToUpdate ]);
+        this._addNoteToAudioEngine(noteElementToUpdate.id());
+        this._serializeState();
+    }
+
+    _moveDownwardsThroughInversions() {
+        const noteElements = this._noteCache.retrieve(
+            this._noteSelection.retrieveAll()
+        );
+
+        const sortedNotesAndRowIndexes = noteElements.map(noteElement => {
+            return {
+                noteElement,
+                rowIndex: Math.floor(noteElement.y() / this._conversionManager.rowHeight)
+            }
+        })
+        .sort((a,b) => {
+            if (a.rowIndex < b.rowIndex) {
+                return -1;
+            } else if (a.rowIndex > b.rowIndex) {
+                return 1;
+            } else {
+                return 0;
+            }
+        });
+
+        const noteElementToUpdate = sortedNotesAndRowIndexes[0].noteElement;
+        let newY = null;
+
+        for (let currNote of sortedNotesAndRowIndexes) {
+            const isTaken = sortedNotesAndRowIndexes.find(el => el.rowIndex === currNote.rowIndex + 12);
+            if (currNote.rowIndex + 12 < pitchesArray.length && !isTaken) {
+                newY = (currNote.rowIndex + 12) * this._conversionManager.rowHeight;
+                break;
+            }
+        }
+        
+        if (newY === null) {
+            return;
+        }
+
+        noteElementToUpdate.y(newY);
+        this._primaryBackingLayer.batchDraw();
+        this._noteLayer.updateNotesAttributeCaches([ noteElementToUpdate ]);
+        this._addNoteToAudioEngine(noteElementToUpdate.id());
+        this._serializeState();
     }
 
     _undo() {
