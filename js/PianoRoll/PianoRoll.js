@@ -163,6 +163,9 @@ export default class PianoRoll {
         this._keyboardStateManager.addKeyListener('x', () => this._keyboardStateManager.ctrlKey && this._cut());
         this._keyboardStateManager.addKeyListener('c', () => this._keyboardStateManager.ctrlKey && this._copy());
         this._keyboardStateManager.addKeyListener('v', () => this._keyboardStateManager.ctrlKey && this._paste());
+        this._keyboardStateManager.addKeyListener('c', () => {
+            this._keyboardStateManager.altKey && this._constructChordsFromSelectedRootNotes();
+        });
         this._keyboardStateManager.addKeyListener('i', () => {
             this._keyboardStateManager.altKey && this._handleZoomAdjustment(true);
         });
@@ -357,6 +360,7 @@ export default class PianoRoll {
         this._noteCache.add(newNote);
         this._velocityMarkerCache.add(newVelocityMarker);
         this._noteSelection.add(newNote);
+        return newNote;
     }    
 
     _deleteSelectedNotes() {
@@ -563,7 +567,22 @@ export default class PianoRoll {
         this._serializeState();
     }
 
-    _constructChordFromRoot() {
+    _constructChordFromRootNote(rootNote, relativePositions) {
+        const rootX = rootNote.x();
+        const rootY = rootNote.y();
+        const rootWidth = rootNote.width();
+
+        relativePositions.forEach(relPos => {
+            const note = this._addNewNote(
+                rootX,
+                rootY - relPos * this._conversionManager.rowHeight,
+                rootWidth
+            );
+            this._addNoteToAudioEngine(note.id());
+        });
+    }
+
+    _constructChordsFromSelectedRootNotes() {
         const { chroma } = chordType(this._chordType);
         let relativePositions = [];
         chroma.split('').forEach((binary, idx) => {
@@ -571,30 +590,11 @@ export default class PianoRoll {
                 relativePositions.push(idx);
             }
         });
-        const rootNote = this._noteCache.retrieve(
+        const selectedNotes = this._noteCache.retrieve(
             this._noteSelection.retrieveAll()
-        )[0];
-
-        if (!rootNote) {
-            return;
-        }
-
-        const rootX = rootNote.x();
-        const rootY = rootNote.y();
-        const rootWidth = rootNote.width();
-
-        relativePositions.forEach(relPos => {
-            this._addNewNote(
-                rootX,
-                rootY - relPos * this._conversionManager.rowHeight,
-                rootWidth
-            );
-        });
-
-        this._noteSelection.retrieveAll().forEach(id => this._addNoteToAudioEngine(id));
-
+        );
+        selectedNotes.forEach(note => this._constructChordFromRootNote(note, relativePositions));
         this._serializeState();
-
     }
 
     _undo() {
@@ -739,7 +739,7 @@ export default class PianoRoll {
             },
             {
                 label: 'Generate chord',
-                callback: () => this._constructChordFromRoot()
+                callback: () => this._constructChordsFromSelectedRootNotes()
             }
         ];
         this._contextMenuLayer.addContextMenu({ rawX, rawY, menuItems });
