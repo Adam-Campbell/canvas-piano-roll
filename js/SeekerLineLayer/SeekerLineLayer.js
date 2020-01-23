@@ -10,7 +10,18 @@ export default class SeekerLineLayer {
         this._isPlaying = Tone.Transport.state === 'started';
         this.syncSeekerLineWithTransport = this._syncSeekerLineWithTransport.bind(this);
         this._animationFrameId = null;
+    }
 
+    init() {
+        this.layer.add(this._seekerLine);
+        this.layer.batchDraw();
+        if (this._isPlaying) {
+            this._beginSyncing();
+        }
+        this._registerGlobalEventSubscriptions();
+    }
+
+    _registerGlobalEventSubscriptions() {
         Tone.Transport.on('start', () => {
             console.log('transport was started');
             this._beginSyncing();
@@ -24,16 +35,6 @@ export default class SeekerLineLayer {
             console.log('transport was paused');
             this._stopSyncing();
         });
-
-        if (this._isPlaying) {
-            this._beginSyncing();
-        }
-
-    }
-
-    draw() {
-        this.layer.add(this._seekerLine);
-        this.layer.batchDraw();
     }
 
     updateX(x) {

@@ -1,24 +1,3 @@
-
-/*
-
-key
-code
-ctrlKey
-shiftKey
-altKey
-metaKey
-
-Key Names:
-
-Shift
-Control
-Alt
-Delete
-
-
-
-*/
-
 export default class KeyboardStateManager {
 
     constructor(stageContainer) {
@@ -30,7 +9,6 @@ export default class KeyboardStateManager {
         this._stageContainer.addEventListener('keydown', e => {
             const { key, code, keyCode, ctrlKey, shiftKey, altKey, metaKey } = e;
             console.log(key);
-            //console.log(e);
             const keyString = keyCode >= 65 && keyCode <= 90 ? key.toLowerCase() : key;
             this._updateKeyState(keyString, true);
             this._triggerKeyListeners(keyString);

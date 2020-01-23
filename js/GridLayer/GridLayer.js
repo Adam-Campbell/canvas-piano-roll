@@ -1,11 +1,4 @@
 import { Line, Rect, Group } from 'konva';
-import { 
-    NOTES_GRID_HEIGHT, 
-    BAR_WIDTH,  
-    DRAG_MODE_ADJUST_NEW_NOTE_SIZE,
-    DRAG_MODE_ADJUST_NOTE_SIZE,
-    DRAG_MODE_ADJUST_SELECTION
-} from '../constants';
 import emitter from '../EventEmitter'; 
 import { 
     QUANTIZE_VALUE_UPDATE,
@@ -15,7 +8,7 @@ import {
 import {  
     getHorizontalLinesData,
     getVerticalLinesData,
-} from './utils';
+} from './gridUtils';
 import { pitchesArray } from '../pitches';
 import { scale } from '@tonaljs/scale';
 import { note } from '@tonaljs/tonal';
@@ -30,28 +23,30 @@ export default class GridLayer {
         this._gridContainer = new Group({ x: 120, y: 30 });
         this._scaleHighlightsSubContainer = null;
         this._gridLinesSubContainer = null;
-
         this._scaleType = 'C major';
         this._shouldDisplayScaleHighlighting = false;
-        this._unsubscribe1 = emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
+    }
+
+    init() {
+        this.layer.add(this._gridContainer);
+        this._drawGrid();
+        this.layer.batchDraw();
+        this._registerGlobalEventSubscriptions();
+    }
+
+    _registerGlobalEventSubscriptions() {
+        emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
             this._drawGrid();
         });
-        this._unsubscribe2 = emitter.subscribe(SCALE_TYPE_UPDATE, scaleType => {
+        emitter.subscribe(SCALE_TYPE_UPDATE, scaleType => {
             this._scaleType = scaleType;
             console.log(scaleType);
             this._drawScaleHighlights();
         });
-        this._unsubscribe3 = emitter.subscribe(DISPLAY_SCALE_UPDATE, shouldDisplay => {
+        emitter.subscribe(DISPLAY_SCALE_UPDATE, shouldDisplay => {
             this._shouldDisplayScaleHighlighting = shouldDisplay;
             this._drawScaleHighlights();
         });
-
-    }
-
-    draw() {
-        this.layer.add(this._gridContainer);
-        this._drawGrid();
-        this.layer.batchDraw();
     }
 
     updateX(x) {
@@ -132,41 +127,5 @@ export default class GridLayer {
     redrawOnZoomAdjustment() {
         this._drawGrid();
     }
-
-
-
-
-    // _addBackgroundToLayer() {
-    //     const background = new Rect({
-    //         x: 0,
-    //         y: 0,
-    //         width: this._conversionManager.gridWidth,
-    //         height: this._conversionManager.gridHeight,
-    //         fill: '#dadada'
-    //     });
-    //     this.layer.add(background);
-    // }
-
-    // _addLinesToLayer() {
-    //     const horizontalLinesData = getHorizontalLinesData(this._conversionManager.gridWidth);
-    //     const verticalLinesData = getVerticalLinesData(
-    //         this._conversionManager.numBars, 
-    //         this._conversionManager.barWidth,
-    //         this._conversionManager.colWidth,
-    //         this._conversionManager.gridHeight
-    //     );
-    //     [ ...horizontalLinesData, ...verticalLinesData ]
-    //     .forEach(lineProps => {
-    //         const line = new Line({ ...lineProps });
-    //         this.layer.add(line);
-    //     });
-    // }
-
-    // draw() {
-    //     this.layer.removeChildren();
-    //     this._addBackgroundToLayer();
-    //     this._addLinesToLayer();
-    //     this.layer.batchDraw();
-    // }
 
 }

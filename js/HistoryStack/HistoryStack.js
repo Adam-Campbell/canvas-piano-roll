@@ -1,4 +1,5 @@
 export default class HistoryStack {
+    
     constructor(initialState = {}) {
         this._stack = [ initialState ];
         this._currentIndex = 0;
