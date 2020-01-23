@@ -230,7 +230,8 @@ export default class PianoRoll {
             this._gridLayer.redrawOnZoomAdjustment();
             this._noteLayer.redrawOnZoomAdjustment(isZoomingIn);
             this._velocityLayer.redrawOnZoomAdjustment(isZoomingIn);
-            this._transportLayer.redrawOnZoomAdjustment();
+            this._transportLayer.redrawOnZoomAdjustment(isZoomingIn);
+            this._seekerLineLayer.redrawOnZoomAdjustment();
         }
     }
 
@@ -797,6 +798,7 @@ export default class PianoRoll {
             );
             const positionAsTicks = this._conversionManager.convertPxToTicks(roundedX);
             this._playbackFromTicks = positionAsTicks;
+            this._transportLayer.repositionPlaybackMarker(positionAsTicks);
         }
     }
 
