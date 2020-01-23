@@ -124,6 +124,50 @@
 
             <label for="display-scale-toggle">Show Scale Highlighting</label>
             <input id="display-scale-toggle" type="checkbox" />
+
+            <label for="chord-type-select">Chord Type</label>
+            <select id="chord-type-select">
+                <optgroup label="Major">
+                    <option selected value="major">Major</option>
+                    <option value="major seventh">Major Seventh</option>
+                    <option value="major ninth">Major Ninth</option>
+                    <option value="major thirteenth">Major Thirteenth</option>
+                    <option value="sixth">Sixth</option>
+                    <option value="sixth/ninth">Six/Ninth</option>
+                    <option value="lydian">Lydian</option>
+                    <option value="major seventh b6">Major Seventh flat Six</option>
+                </optgroup>
+                <optgroup label="Minor">
+                    <option value="minor">Minor</option>
+                    <option value="minor seventh">Minor Seventh</option>
+                    <option value="minor/major seventh">Minor/Major Seventh</option>
+                    <option value="minor sixth">Minor Sixth</option>
+                    <option value="minor ninth">Minor Ninth</option>
+                    <option value="minor eleventh">Minor Eleventh</option>
+                    <option value="minor thirteenth">Minor Thirteenth</option>
+                    <option value="diminished">Diminished</option>
+                    <option value="diminished seventh">Diminished Seventh</option>
+                    <option value="half-diminished">Half-Diminished</option>
+                </optgroup>
+                <optgroup label="Dominant/Seventh">
+                    <option value="dominant seventh">Dominant Seventh</option>
+                    <option value="dominant ninth">Dominant Ninth</option>
+                    <option value="dominant thirteenth">Dominant Thirteenth</option>
+                    <option value="lydian dominant seventh">Lydian Dominant Seventh</option>
+                    <option value="dominant b9">Dominant flat Nine</option>
+                    <option value="dominant #9">Dominant sharp Nine</option>
+                    <option value="altered">Altered</option>
+                    <option value="suspended 4th">Suspended Fourth</option>
+                    <option value="suspended 2nd">Suspended Second</option>
+                    <option value="suspended 4th seventh">Suspended Fourth Seventh</option>
+                    <option value="eleventh">Eleventh</option>
+                    <option value="suspended 4th b9">Suspsended Fourth flat Nine</option>
+                    <option value="fifth">Fifth</option>
+                    <option value="augmented">Augmented</option>
+                    <option value="augmented seventh">Augmented Seventh</option>
+                    <option value="major #11 (lydian)">Major sharp Eleven</option>
+                </optgroup>
+            </select>
         </div>
         <div id="canvas-container" tabindex="0"></div>
     </div>

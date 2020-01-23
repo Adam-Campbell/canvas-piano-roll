@@ -19,7 +19,8 @@ import {
     REDO_ACTION,
     COPY_TO_CLIPBOARD,
     CUT_TO_CLIPBOARD,
-    PASTE_FROM_CLIPBOARD
+    PASTE_FROM_CLIPBOARD,
+    CHORD_TYPE_UPDATE
 } from '../events';
 import emitter from '../EventEmitter';
 import PianoKeyLayer from '../PianoKeyLayer';
@@ -176,6 +177,9 @@ export default class PianoRoll {
         emitter.subscribe(ACTIVE_TOOL_UPDATE, tool => {
             this._activeTool = tool;
             console.log(this._activeTool);
+        });
+        emitter.subscribe(CHORD_TYPE_UPDATE, chordType => {
+            this._chordType = chordType;
         });
         emitter.subscribe(UNDO_ACTION, () => this._undo());
         emitter.subscribe(REDO_ACTION, () => this._redo());
