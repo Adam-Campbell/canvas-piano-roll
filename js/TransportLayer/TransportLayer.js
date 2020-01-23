@@ -1,4 +1,4 @@
-import { Rect, Text, Group } from 'konva';
+import { Rect, Text, Group, RegularPolygon } from 'konva';
 
 export default class TransportLayer {
 
@@ -9,12 +9,14 @@ export default class TransportLayer {
         this._background = this._constructBackground();
         this._border = this._constructBorder();
         this._numberMarkersArray = this._constructNumberMarkersArray();
+        this._playbackMarker = this._constructPlaybackMarker();
     }
 
     init() {
         this._background.moveTo(this._layerGroup);
         this._border.moveTo(this._layerGroup);
         this._numberMarkersArray.forEach(marker => marker.moveTo(this._layerGroup));
+        this._playbackMarker.moveTo(this._layerGroup);
         this.layer.add(this._layerGroup);
         this.layer.batchDraw();
     }
@@ -49,22 +51,52 @@ export default class TransportLayer {
     _constructNumberMarkersArray() {
         let numberMarkersArray = [];
         for (let i = 0; i < this._conversionManager.numBars; i++) {
-            numberMarkersArray.push(new Text({
+            const numberMarker = new Text({
                 text: `${i+1}`,
                 fill: '#222',
                 x: i * this._conversionManager.barWidth,
                 y: 12
-            }));
+            });
+            if (i < 0) {
+                numberMarker.x(
+                    numberMarker.x() - numberMarker.width() / 2
+                );
+            }
+            numberMarkersArray.push(numberMarker);
+
         }
         return numberMarkersArray;
     }
 
-    redrawOnZoomAdjustment() {
+    _constructPlaybackMarker() {
+        const marker = new RegularPolygon({
+            sides: 3,
+            fill: '#fff',
+            x: 0,
+            y: 3,
+            radius: 6,
+            rotation: 180
+        });
+        return marker;
+    }
+
+    redrawOnZoomAdjustment(isZoomingIn) {
         this._background.width(this._conversionManager.gridWidth);
         this._border.width(this._conversionManager.gridWidth);
         this._numberMarkersArray.forEach((numberMarker, idx) => {
             numberMarker.x(idx * this._conversionManager.barWidth);
         });
+        const multiplier = isZoomingIn ? 2 : 0.5;
+        this._playbackMarker.x(
+            this._playbackMarker.x() * multiplier
+        );
+        this.layer.batchDraw();
+    }
+
+    repositionPlaybackMarker(ticks) {
+        this._playbackMarker.x(
+            this._conversionManager.convertTicksToPx(ticks)
+        );
         this.layer.batchDraw();
     }
 
