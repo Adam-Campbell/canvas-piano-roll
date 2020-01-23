@@ -1,5 +1,25 @@
 import Tone from 'tone';
 import { Stage, Layer } from 'konva';
+import emitter from '../EventEmitter';
+import ConversionManager from '../ConversionManager';
+import AudioReconciler from '../AudioReconciler';
+import NoteSelection from '../NoteSelection';
+import KeyboardStateManager from '../KeyboardStateManager';
+import MouseStateManager from '../MouseStateManager';
+import CanvasElementCache from '../CanvasElementCache';
+import HistoryStack from '../HistoryStack';
+import Clipboard from '../Clipboard';
+import ScrollManager from '../ScrollManager';
+
+import GridLayer from '../GridLayer';
+import NoteLayer from '../NoteLayer';
+import VelocityLayer from '../VelocityLayer';
+import TransportLayer from '../TransportLayer';
+import SeekerLineLayer from '../SeekerLineLayer';
+import PianoKeyLayer from '../PianoKeyLayer';
+import ScrollbarLayer from '../ScrollbarLayer';
+import ContextMenuLayer from '../ContextMenuLayer';
+
 import { 
     STAGE_WIDTH, 
     STAGE_HEIGHT,
@@ -8,10 +28,8 @@ import {
     DRAG_MODE_ADJUST_SELECTION,
     DRAG_MODE_ADJUST_SELECTION_FROM_VELOCITY_AREA,
     DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT,
-    VELOCITY_LAYER_HEIGHT,
     SCROLLBAR_WIDTH,
-    PIANO_KEY_WIDTH,
-    SCROLLBAR_GUTTER
+    PIANO_KEY_WIDTH
 } from '../constants';
 import {
     ACTIVE_TOOL_UPDATE,
@@ -22,16 +40,6 @@ import {
     PASTE_FROM_CLIPBOARD,
     CHORD_TYPE_UPDATE
 } from '../events';
-import emitter from '../EventEmitter';
-import PianoKeyLayer from '../PianoKeyLayer';
-import ScrollbarLayer from '../ScrollbarLayer';
-import ConversionManager from '../ConversionManager';
-import AudioReconciler from '../AudioReconciler';
-import NoteSelection from '../NoteSelection';
-import KeyboardStateManager from '../KeyboardStateManager';
-import MouseStateManager from '../MouseStateManager';
-import ScrollManager from '../ScrollManager';
-import VelocityLayer from '../VelocityLayer';
 import { 
     doesOverlap,
     canShiftUp,
@@ -39,17 +47,9 @@ import {
     canShiftLeft,
     canShiftRight,
     easingFns
-} from './utils';
-import CanvasElementCache from '../CanvasElementCache';
+} from './pianoRollUtils';
 import { genId } from '../genId';
-import HistoryStack from '../HistoryStack';
-import Clipboard from '../Clipboard';
 import { clamp, pipe } from '../utils';
-import TransportLayer from '../TransportLayer';
-import SeekerLineLayer from '../SeekerLineLayer';
-import ContextMenuLayer from '../ContextMenuLayer';
-import NoteLayer from '../NoteLayer';
-import GridLayer from '../GridLayer';
 import { pitchesArray } from '../pitches';
 import { chordType } from '@tonaljs/chord-dictionary';
 
@@ -111,8 +111,26 @@ export default class PianoRoll {
             this._conversionManager,
             this._secondaryBackingLayer
         );
+        
+    }
 
-        // add stage event listeners
+    init() {
+        this._stage.add(this._primaryBackingLayer);
+        this._stage.add(this._seekerLineLayer.layer);
+        this._stage.add(this._secondaryBackingLayer);
+        this._gridLayer.draw();
+        this._noteLayer.draw();
+        this._velocityLayer.draw();
+        this._transportLayer.draw();
+        this._pianoKeyLayer.draw();
+        this._scrollbarLayer.draw();
+        this._seekerLineLayer.draw();
+        this._registerStageSubscriptions();
+        this._registerKeyboardSubscriptions();
+        this._registerGlobalEventSubscriptions();
+    }
+
+    _registerStageSubscriptions() {
         this._stage.on('mousedown', e => this._handleInteractionStart(e));
         this._stage.on('mousemove', e => this._handleInteractionUpdate(e));
         this._stage.on('mouseup', e => this._handleInteractionEnd(e));
@@ -120,8 +138,9 @@ export default class PianoRoll {
         this._stage.on('touchmove', e => this._handleInteractionUpdate(e));
         this._stage.on('touchend', e => this._handleInteractionEnd(e));
         this._stage.on('contextmenu', e => this._handleContextMenu(e));
+    }
 
-        // Add keyboard event listeners
+    _registerKeyboardSubscriptions() {
         this._keyboardStateManager.addKeyListener('Delete', () => this._deleteSelectedNotes());
         this._keyboardStateManager.addKeyListener('1', () => {
             if (this._keyboardStateManager.altKey) {
@@ -175,8 +194,9 @@ export default class PianoRoll {
         this._keyboardStateManager.addKeyListener('m', () => {
             this._scrollManager.x = this._scrollManager.x - 100;
         });
+    }
 
-        // Subscribe to global events
+    _registerGlobalEventSubscriptions() {
         emitter.subscribe(ACTIVE_TOOL_UPDATE, tool => {
             this._activeTool = tool;
             console.log(this._activeTool);
@@ -191,21 +211,6 @@ export default class PianoRoll {
         emitter.subscribe(PASTE_FROM_CLIPBOARD, () => this._paste());
         
         window.addEventListener('resize', e => this._handleResize(e));
-
-        
-    }
-
-    init() {
-        this._stage.add(this._primaryBackingLayer);
-        this._stage.add(this._seekerLineLayer.layer);
-        this._stage.add(this._secondaryBackingLayer);
-        this._gridLayer.draw();
-        this._noteLayer.draw();
-        this._velocityLayer.draw();
-        this._transportLayer.draw();
-        this._pianoKeyLayer.draw();
-        this._scrollbarLayer.draw();
-        this._seekerLineLayer.draw();
     }
 
     _handleZoomAdjustment(isZoomingIn) {

@@ -3,15 +3,13 @@ import {
     PIANO_KEY_WIDTH,
     SCROLLBAR_WIDTH,
     SCROLLBAR_THUMB_LENGTH,
-    SCROLLBAR_GUTTER,
-    NOTES_GRID_WIDTH,
-    NOTES_GRID_HEIGHT
+    SCROLLBAR_GUTTER
 } from '../constants';
 import { clamp } from '../utils';
 
 export default class ScrollbarLayer {
+
     constructor(scrollManager, conversionManager, layerRef) {
-        //this.layer = new Layer();
         this.layer = layerRef;
         this._layerGroup = new Group();
         this._conversionManager = conversionManager;
@@ -124,7 +122,6 @@ export default class ScrollbarLayer {
         // calculate scroll position as decimal and multiply by the total movement range of the 
         // thumb to get its new position.
         const scrollPositionAsDecimal = Math.abs(this._scrollManager.y / this.verticalScrollRange);
-        //const scrollPositionAsDecimal = Math.abs((this._scrollManager.y - this._conversionManager.velocityAreaHeight) / this.verticalScrollRange);
         const newThumbY = this.verticalThumbMovementRange * scrollPositionAsDecimal + SCROLLBAR_GUTTER;
         // Update the thumb with the newly calculate position, and update various other elements
         // according to the new stage height
@@ -173,4 +170,5 @@ export default class ScrollbarLayer {
         this.layer.add(this._layerGroup);
         this.layer.batchDraw();
     }
+    
 }

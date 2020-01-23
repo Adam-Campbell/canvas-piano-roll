@@ -1,28 +1,14 @@
 import Tone from 'tone';
-import { Rect, Layer, Group } from 'konva';
+import { Rect, Group } from 'konva';
 import { pitchesArray } from '../pitches';
-import { ROW_HEIGHT } from '../constants';
 import {
     staticKeyProps,
     getKeyProps,
     sortByColor
-} from './utils';
-
-
-/*
-
-Touch bugs:
-
-- Because there is no touch equivalent to mouseout, if you activate a key with touchstart and then
-move the touch away from that key before touchend then the key will not be deactivated (you would then 
-have to trigger another touchstart and ensure the touchend occurs over the relevant key). To fix this
-either recreate the mouseout functionality using the touch events, or figure out a different way to manage
-the keys when using touch (must not affect the way they work when using mouse).
-
-
-*/
+} from './pianoKeyUtils';
 
 export default class PianoKeyLayer {
+
     constructor(layerRef) {
         this.layer = layerRef;
         this._layerGroup = new Group({ y: 30 });
@@ -100,4 +86,5 @@ export default class PianoKeyLayer {
         this.layer.add(this._layerGroup);
         this.layer.batchDraw();
     }
+    
 }

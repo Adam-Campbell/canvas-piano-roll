@@ -1,5 +1,6 @@
 
 export default class NoteSelection {
+
     constructor() {
         this._cache = new Set();
     }
@@ -13,7 +14,6 @@ export default class NoteSelection {
     }
 
     remove(canvasElement) {
-        console.log('noteSelection remove method called')
         this._cache.delete(canvasElement.attrs.id);
     }
 

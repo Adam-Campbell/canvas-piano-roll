@@ -1,4 +1,5 @@
 export default class ScrollManager {
+    
     constructor(gridLayer, noteLayer, velocityLayer, pianoKeyLayer, transportLayer, seekerLineLayer) {
         this._gridLayer = gridLayer;
         this._noteLayer = noteLayer;

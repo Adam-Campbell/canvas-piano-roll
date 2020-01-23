@@ -124,7 +124,6 @@ export default class VelocityLayer {
         return velocityMarker;
     }
 
-
     deleteVelocityMarkers(velocityRectsArray) {
         velocityRectsArray.forEach(velocityRect => {
             velocityRect.destroy();

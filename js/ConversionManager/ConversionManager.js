@@ -28,13 +28,13 @@ const noteDurationsMappedToTicks = {
 };
 
 export default class ConversionManager {
+    
     constructor(stageWidth, stageHeight, initialQuantize = '16n', initialNoteDuration = '16n', numBars = 4) {
         this._stageWidth = stageWidth;
         this._stageHeight = stageHeight;
         this._velocityAreaHeight = VELOCITY_LAYER_HEIGHT;
         this._quantize = initialQuantize;
         this._noteDuration = initialNoteDuration;
-        //this._tickToPxRatio = BAR_WIDTH / TICKS_PER_BAR;
         this._tickToPxRatio = 0.25;
         this._numBars = numBars;
         this.unsubscribe1 = emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
@@ -148,14 +148,12 @@ export default class ConversionManager {
     
     derivePitchFromY(y) {
         const idx = y / this.rowHeight;
-        //return pitchesArray[idx];
         const noteObj = pitchesArray[idx];
         return noteObj.full
     }
 
     deriveYFromPitch(pitch) {
         const rowNumber = Math.max(
-            //pitchesArray.indexOf(pitch),
             pitchesArray.findIndex(noteObj => noteObj.full === pitch),
             0
         );
