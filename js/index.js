@@ -7,6 +7,7 @@ import PianoRoll from './PianoRoll/index.js';
 import { initButtons } from './buttons';
 import { initToolSelect } from './toolSelect';
 import { initScaleSelect } from './scaleSelect';
+import { initChordTypeSelect } from './chordTypeSelect';
 
 
 initQuantizeSelect();
@@ -14,6 +15,7 @@ initNoteDurationSelect();
 initButtons();
 initToolSelect();
 initScaleSelect();
+initChordTypeSelect();
 
 const initialWidth = document.documentElement.clientWidth;
 const initialHeight = document.documentElement.clientHeight - 50;

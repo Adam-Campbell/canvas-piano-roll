@@ -104,11 +104,11 @@ export default class NoteLayer {
         });
     }
 
-    addNewNote(x, y, id) {
+    addNewNote(x, y, id, width) {
         const newNote = this._createNoteElement(
             x,
             y,
-            this._conversionManager.noteWidth,
+            width || this._conversionManager.noteWidth,
             id,
             true
         );
