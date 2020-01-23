@@ -23,28 +23,30 @@ export default class GridLayer {
         this._gridContainer = new Group({ x: 120, y: 30 });
         this._scaleHighlightsSubContainer = null;
         this._gridLinesSubContainer = null;
-
         this._scaleType = 'C major';
         this._shouldDisplayScaleHighlighting = false;
-        this._unsubscribe1 = emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
+    }
+
+    init() {
+        this.layer.add(this._gridContainer);
+        this._drawGrid();
+        this.layer.batchDraw();
+        this._registerGlobalEventSubscriptions();
+    }
+
+    _registerGlobalEventSubscriptions() {
+        emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
             this._drawGrid();
         });
-        this._unsubscribe2 = emitter.subscribe(SCALE_TYPE_UPDATE, scaleType => {
+        emitter.subscribe(SCALE_TYPE_UPDATE, scaleType => {
             this._scaleType = scaleType;
             console.log(scaleType);
             this._drawScaleHighlights();
         });
-        this._unsubscribe3 = emitter.subscribe(DISPLAY_SCALE_UPDATE, shouldDisplay => {
+        emitter.subscribe(DISPLAY_SCALE_UPDATE, shouldDisplay => {
             this._shouldDisplayScaleHighlighting = shouldDisplay;
             this._drawScaleHighlights();
         });
-
-    }
-
-    draw() {
-        this.layer.add(this._gridContainer);
-        this._drawGrid();
-        this.layer.batchDraw();
     }
 
     updateX(x) {

@@ -22,7 +22,16 @@ export default class PianoKeyLayer {
                 volume: -22,
                 type: 'amsawtooth'
             }
-        });
+        });  
+    }
+
+    init() {
+        this._drawPianoKeys();
+        this.layer.batchDraw();
+        this._registerGroupEventSubscriptions();
+    }
+
+    _registerGroupEventSubscriptions() {
         this._layerGroup.on('mousedown', e => {
             e.cancelBubble = true;
             this._activateKey(e.target);
@@ -74,8 +83,7 @@ export default class PianoKeyLayer {
         this._instrument.triggerRelease(pitch.full);
     }
 
-    draw() {
-        this._layerGroup.removeChildren();
+    _drawPianoKeys() {
         pitchesArray
         .map(getKeyProps)
         .sort(sortByColor)
@@ -84,7 +92,6 @@ export default class PianoKeyLayer {
             pianoKey.moveTo(this._layerGroup);
         });
         this.layer.add(this._layerGroup);
-        this.layer.batchDraw();
     }
     
 }

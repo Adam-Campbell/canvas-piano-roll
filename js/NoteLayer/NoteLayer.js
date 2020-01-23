@@ -8,6 +8,11 @@ export default class NoteLayer {
         this._notesContainer = new Group({ x: 120, y: 30 });
     }
 
+    init() {
+        this.layer.add(this._notesContainer);
+        this.layer.batchDraw();
+    }
+
     updateX(x) {
         this._notesContainer.x(x);
         this.layer.batchDraw();
@@ -15,11 +20,6 @@ export default class NoteLayer {
 
     updateY(y) {
         this._notesContainer.y(y);
-        this.layer.batchDraw();
-    }
-
-    draw() {
-        this.layer.add(this._notesContainer);
         this.layer.batchDraw();
     }
 

@@ -17,7 +17,21 @@ export default class ScrollbarLayer {
         this._verticalTrack = this._constructVerticalTrack();
         this._verticalThumb = this._constructVerticalThumb();
         this._horizontalTrack = this._constructHorizontalTrack();
-        this._horizontalThumb = this._constructHorizontalThumb();
+        this._horizontalThumb = this._constructHorizontalThumb();  
+    }
+
+    init() {
+        this._layerGroup.removeChildren();
+        this._verticalTrack.moveTo(this._layerGroup);
+        this._verticalThumb.moveTo(this._layerGroup);
+        this._horizontalTrack.moveTo(this._layerGroup);
+        this._horizontalThumb.moveTo(this._layerGroup);
+        this.layer.add(this._layerGroup);
+        this.layer.batchDraw();
+        this._registerGroupEventSubscriptions();
+    }
+
+    _registerGroupEventSubscriptions() {
         this._layerGroup.on('mousedown', e => {
             e.cancelBubble = true;
         });
@@ -158,16 +172,6 @@ export default class ScrollbarLayer {
         const scrollPositionAsDecimal = Math.abs(this._scrollManager.y / this.verticalScrollRange);
         const newThumbY = this.verticalThumbMovementRange * scrollPositionAsDecimal + SCROLLBAR_GUTTER;
         this._verticalThumb.y(newThumbY);
-        this.layer.batchDraw();
-    }
-
-    draw() {
-        this._layerGroup.removeChildren();
-        this._verticalTrack.moveTo(this._layerGroup);
-        this._verticalThumb.moveTo(this._layerGroup);
-        this._horizontalTrack.moveTo(this._layerGroup);
-        this._horizontalThumb.moveTo(this._layerGroup);
-        this.layer.add(this._layerGroup);
         this.layer.batchDraw();
     }
     

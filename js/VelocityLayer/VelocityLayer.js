@@ -15,6 +15,15 @@ export default class VelocityLayer {
         this._selectedGroup = new Group();
     }
 
+    init() {
+        this._background.moveTo(this._layerGroup);
+        this._border.moveTo(this._layerGroup);
+        this._unselectedGroup.moveTo(this._layerGroup);
+        this._selectedGroup.moveTo(this._layerGroup);
+        this.layer.add(this._layerGroup);
+        this.layer.batchDraw();
+    }
+
     updateX(x) {
         this._layerGroup.x(x);
         this.layer.batchDraw();
@@ -48,7 +57,6 @@ export default class VelocityLayer {
     }
 
     redrawOnHeightChange(height) {
-        console.log(`redrawOnHeightChange called with height: ${height}`);
         this._background.height(height);
         this._background.y(
             this._conversionManager.stageHeight - height - SCROLLBAR_WIDTH
@@ -207,15 +215,6 @@ export default class VelocityLayer {
             marquee.destroy();
             this.layer.batchDraw();
         }
-    }
-
-    draw() {
-        this._background.moveTo(this._layerGroup);
-        this._border.moveTo(this._layerGroup);
-        this._unselectedGroup.moveTo(this._layerGroup);
-        this._selectedGroup.moveTo(this._layerGroup);
-        this.layer.add(this._layerGroup);
-        this.layer.batchDraw();
     }
 
     updateVelocityMarkersHeight(velocityRectsArray, velocityValue) {

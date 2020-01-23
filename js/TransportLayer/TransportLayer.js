@@ -11,6 +11,14 @@ export default class TransportLayer {
         this._numberMarkersArray = this._constructNumberMarkersArray();
     }
 
+    init() {
+        this._background.moveTo(this._layerGroup);
+        this._border.moveTo(this._layerGroup);
+        this._numberMarkersArray.forEach(marker => marker.moveTo(this._layerGroup));
+        this.layer.add(this._layerGroup);
+        this.layer.batchDraw();
+    }
+
     updateX(x) {
         this._layerGroup.x(x);
         this.layer.batchDraw();
@@ -49,15 +57,6 @@ export default class TransportLayer {
             }));
         }
         return numberMarkersArray;
-    }
-
-    draw() {
-        this._layerGroup.removeChildren();
-        this._background.moveTo(this._layerGroup);
-        this._border.moveTo(this._layerGroup);
-        this._numberMarkersArray.forEach(marker => marker.moveTo(this._layerGroup));
-        this.layer.add(this._layerGroup);
-        this.layer.batchDraw();
     }
 
     redrawOnZoomAdjustment() {
