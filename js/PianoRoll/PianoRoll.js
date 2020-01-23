@@ -63,6 +63,7 @@ export default class PianoRoll {
         this._activeTool = 'cursor';
         this._previousBumpTimestamp = null;
         this._chordType = 'major';
+        this._playbackFromTicks = 0;
 
         // Initialize canvas stage
         this._stage = new Stage({
@@ -138,6 +139,7 @@ export default class PianoRoll {
         this._stage.on('touchmove', e => this._handleInteractionUpdate(e));
         this._stage.on('touchend', e => this._handleInteractionEnd(e));
         this._stage.on('contextmenu', e => this._handleContextMenu(e));
+        this._stage.on('dblclick', e => this._handleDoubleClick(e));
     }
 
     _registerKeyboardSubscriptions() {
@@ -194,6 +196,7 @@ export default class PianoRoll {
         this._keyboardStateManager.addKeyListener('m', () => {
             this._scrollManager.x = this._scrollManager.x - 100;
         });
+        this._keyboardStateManager.addKeyListener(' ', () => this._handleTogglePlayback());
     }
 
     _registerGlobalEventSubscriptions() {
@@ -269,6 +272,19 @@ export default class PianoRoll {
         this._velocityLayer.redrawOnVerticalResize();
         this._scrollbarLayer.redrawOnHorizontalResize();
         this._scrollbarLayer.redrawOnVerticalResize();
+    }
+
+    _handleTogglePlayback() {
+        if (Tone.Transport.state === 'started') {
+            if (this._keyboardStateManager.shiftKey) {
+                Tone.Transport.pause();
+            } else {
+                Tone.Transport.stop();
+                Tone.Transport.ticks = this._playbackFromTicks;
+            }
+        } else {
+            Tone.Transport.start();
+        }
     }
 
     // Valid values for nudgeDirection are 'BOTH', 'VERTICAL' and 'HORIZONTAL'
@@ -769,6 +785,18 @@ export default class PianoRoll {
             target,
             rawX, 
             rawY
+        }
+    }
+
+    _handleDoubleClick(e) {
+        const { rawX, rawY } = this._extractInfoFromEventObject(e);
+        const isTransportAreaClick = rawY <= 30;
+        if (isTransportAreaClick) {
+            const roundedX = this._conversionManager.roundDownToGridCol(
+                rawX - this._scrollManager.x
+            );
+            const positionAsTicks = this._conversionManager.convertPxToTicks(roundedX);
+            this._playbackFromTicks = positionAsTicks;
         }
     }
 
