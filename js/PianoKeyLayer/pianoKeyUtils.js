@@ -1,9 +1,9 @@
 import { ROW_HEIGHT } from '../constants';
-
+import colours from '../colours';
 
 export const staticKeyProps = {
     x: 0,
-    stroke: 'black',
+    stroke: colours.grayscale[8],
     strokeWidth: 2
 };
 
@@ -21,8 +21,9 @@ export const getKeyProps = (pitch, idx) => {
                 y: approxY,
                 width: 90,
                 height: 20,
-                fill: 'black',
-                originalFill: 'black',
+                fill: colours.grayscale[8],
+                originalFill: colours.grayscale[8],
+                cornerRadius: [0, 3, 3, 0],
                 pitch,
                 id: pitch
             };

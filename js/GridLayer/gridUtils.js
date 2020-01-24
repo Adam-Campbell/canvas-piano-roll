@@ -1,9 +1,11 @@
+import colours from '../colours';
+
 export const getHorizontalLinesData = (gridWidthPx) => {
     let linesArr = [];
     for (let i = 0; i < 109; i++) {
         linesArr.push({
             points: [ 0, i*20, gridWidthPx, i*20 ],
-            stroke: '#222',
+            stroke: colours.grayscale[7],
             strokeWidth: 1
         });
     }
@@ -25,9 +27,9 @@ export const getVerticalLinesData = (numBars, barWidthPx, colWidthPx, gridHeight
         }
         gridLines.push({
             points: [ total, 0, total, gridHeightPx ],
-            stroke: total % barWidthPx === 0 ? '#222' : '#666',
+            stroke: total % barWidthPx === 0 ? colours.grayscale[7] : colours.grayscale[4],
             strokeWidth
-        })
+        });
         total += colWidthPx;
         escapeHatch++;
     }

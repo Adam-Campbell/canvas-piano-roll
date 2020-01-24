@@ -15,6 +15,8 @@ export default class KeyboardStateManager {
         });
         this._stageContainer.addEventListener('keyup', e => {
             const { key, code, ctrlKey, shiftKey, altKey, metaKey } = e;
+            console.log(`Keyup called with key ${key}`);
+            console.log(e);
             this._updateKeyState(key, false);
         });
     }

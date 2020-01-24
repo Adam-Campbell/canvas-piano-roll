@@ -1,4 +1,5 @@
 import { Rect, Group } from 'konva';
+import colours from '../colours';
 
 export default class NoteLayer {
 
@@ -51,10 +52,10 @@ export default class NoteLayer {
             y,
             width,
             height: this._conversionManager.rowHeight,
-            fill: isSelected ? '#222' : 'green',
-            stroke: '#222',
+            fill: isSelected ? colours.grayscale[6] : colours.primary.main,
+            stroke: colours.grayscale[7],
             strokeWidth: 1,
-            cornerRadius: 1,
+            cornerRadius: 2,
             id,
             cachedWidth: width,
             cachedX: x, 
@@ -138,7 +139,7 @@ export default class NoteLayer {
                 y: originY,
                 width: terminalX - originX,
                 height: terminalY - originY,
-                fill: '#08b5d3',
+                fill: colours.tertiary.main,
                 opacity: 0.4,
                 id: 'MARQUEE'
             });
@@ -161,12 +162,12 @@ export default class NoteLayer {
     }
 
     addSelectedAppearance(noteRect) {
-        noteRect.fill('#222');
+        noteRect.fill(colours.grayscale[6]);
         this.layer.batchDraw();
     }
 
     removeSelectedAppearance(noteRect) {
-        noteRect.fill('green');
+        noteRect.fill(colours.primary.main);
         this.layer.batchDraw();
     }
 

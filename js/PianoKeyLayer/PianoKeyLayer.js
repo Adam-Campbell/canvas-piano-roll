@@ -6,12 +6,16 @@ import {
     getKeyProps,
     sortByColor
 } from './pianoKeyUtils';
+import colours from '../colours';
 
 export default class PianoKeyLayer {
 
-    constructor(layerRef) {
+    constructor(conversionManager, layerRef) {
+        this._conversionManager = conversionManager
         this.layer = layerRef;
-        this._layerGroup = new Group({ y: 30 });
+        this._layerGroup = new Group();
+        this._pianoKeyGroup = new Group({ y: 30 });
+        this._background = this._constructBackground();
         this._instrument = new Tone.PolySynth(12, Tone.Synth).toMaster();
         this._instrument.set({
             envelope: {
@@ -26,41 +30,50 @@ export default class PianoKeyLayer {
     }
 
     init() {
+        this._background.moveTo(this._layerGroup);
         this._drawPianoKeys();
+        this.layer.add(this._layerGroup);
         this.layer.batchDraw();
         this._registerGroupEventSubscriptions();
     }
 
     _registerGroupEventSubscriptions() {
-        this._layerGroup.on('mousedown', e => {
+        this._pianoKeyGroup.on('mousedown', e => {
             e.cancelBubble = true;
             this._activateKey(e.target);
         });
-        this._layerGroup.on('mouseup', e => {
+        this._pianoKeyGroup.on('mouseup', e => {
             e.cancelBubble = true;
             this._deactivateKey(e.target);
         });
-        this._layerGroup.on('mouseout', e => {
+        this._pianoKeyGroup.on('mouseout', e => {
             e.cancelBubble = true;
             this._deactivateKey(e.target);
         });
-        this._layerGroup.on('touchstart', e => {
+        this._pianoKeyGroup.on('touchstart', e => {
             e.cancelBubble = true;
             this._activateKey(e.target);
         });
-        this._layerGroup.on('touchend', e => {
+        this._pianoKeyGroup.on('touchend', e => {
             e.cancelBubble = true;
             this._deactivateKey(e.target);
         });
     }
 
     updateY(y) {
-        this._layerGroup.y(y);
+        this._pianoKeyGroup.y(y);
+        this.layer.batchDraw();
+    }
+
+    redrawOnVerticalResize() {
+        this._background.height(
+            this._conversionManager.stageHeight
+        );
         this.layer.batchDraw();
     }
 
     _addActiveAppearance(pianoKeyElement) {
-        pianoKeyElement.fill('blue');
+        pianoKeyElement.fill(colours.secondary.lightened);
         this.layer.batchDraw();
     }
 
@@ -89,9 +102,21 @@ export default class PianoKeyLayer {
         .sort(sortByColor)
         .forEach(keyProps => {
             const pianoKey = new Rect({ ...keyProps });
-            pianoKey.moveTo(this._layerGroup);
+            pianoKey.moveTo(this._pianoKeyGroup);
         });
-        this.layer.add(this._layerGroup);
+        this._pianoKeyGroup.moveTo(this._layerGroup);
+    }
+
+    _constructBackground() {
+        const background = new Rect({
+            x: 0,
+            y: 0,
+            height: this._conversionManager.stageHeight,
+            width: 120,
+            fill: colours.grayscale[7],
+            id: 'BACKGROUND'
+        });
+        return background;
     }
     
 }
