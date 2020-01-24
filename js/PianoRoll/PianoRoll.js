@@ -56,7 +56,6 @@ import { chordType } from '@tonaljs/chord-dictionary';
 export default class PianoRoll {
 
     constructor(containerId, width = STAGE_WIDTH, height = STAGE_HEIGHT, initialQuantize = '16n', initialNoteDuration = '16n', numBars = 8) {
-        
         // Initialize class properties
         window.pianoRoll = this;
         this._dragMode = null;
@@ -1153,11 +1152,13 @@ export default class PianoRoll {
     _handleAdjustSelectionInteractionEnd(e) {
         this._noteLayer.clearSelectionMarquee();
         this._dragMode = null;
+        this._serializeState();
     }
 
     _handleAdjustSelectionFromVelocityInteractionEnd(e) {
         this._velocityLayer.clearSelectionMarquee();
         this._dragMode = null;
+        this._serializeState();
     }
 
     _handleAdjustVelocityAreaHeightInteractionEnd(e) {

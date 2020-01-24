@@ -7,29 +7,34 @@ export default class KeyboardStateManager {
         this._altKey = false;
         this._keyListeners = {};
         this._stageContainer.addEventListener('keydown', e => {
-            const { key, code, keyCode, ctrlKey, shiftKey, altKey, metaKey } = e;
-            console.log(key);
+            const { key, code, repeat, keyCode } = e;
+            if (repeat) return;
+
             const keyString = keyCode >= 65 && keyCode <= 90 ? key.toLowerCase() : key;
-            this._updateKeyState(keyString, true);
+            this._updateKeyState(code, true);
             this._triggerKeyListeners(keyString);
         });
         this._stageContainer.addEventListener('keyup', e => {
-            const { key, code, ctrlKey, shiftKey, altKey, metaKey } = e;
-            console.log(`Keyup called with key ${key}`);
-            console.log(e);
-            this._updateKeyState(key, false);
+            const { code } = e;
+            this._updateKeyState(code, false);
         });
     }
 
     _updateKeyState(key, isPressed) {
         switch (key) {
             case 'Shift':
+            case 'ShiftLeft':
+            case 'ShiftRight':
                 this._shiftKey = isPressed;
                 break;
             case 'Control':
+            case 'ControlLeft':
+            case 'ControlRight':
                 this._ctrlKey = isPressed;
                 break;
             case 'Alt':
+            case 'AltLeft':
+            case 'AltRight':
                 this._altKey = isPressed;
                 break;
         }
