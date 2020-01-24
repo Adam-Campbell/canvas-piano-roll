@@ -1,4 +1,5 @@
 import { Rect, Text, Group } from 'konva';
+import colours from '../colours';
 
 export default class ContextMenuLayer {
 
@@ -37,7 +38,7 @@ export default class ContextMenuLayer {
                 y: idx * 30,
                 width: 150,
                 height: 30,
-                fill: '#555',
+                fill: colours.grayscale[5],
                 name: 'MENU_ITEM_BACKGROUND',
                 cornerRadius: cornerRadiusArray,
                 idx
@@ -70,13 +71,13 @@ export default class ContextMenuLayer {
             const idx = Math.floor(relativeY / 30);
             const activeMenuItem = menuItemBackgrounds.find(item => item.attrs.idx === idx);
             if (activeMenuItem) {
-                activeMenuItem.fill('#666');
+                activeMenuItem.fill(colours.grayscale[4]);
                 this.layer.batchDraw();
             }
         });
         contextMenuGroup.on('mouseout', e => {
             const menuItemBackgrounds = contextMenuGroup.find('.MENU_ITEM_BACKGROUND');
-            menuItemBackgrounds.forEach(item => item.fill('#555'));
+            menuItemBackgrounds.forEach(item => item.fill(colours.grayscale[5]));
             this.layer.batchDraw();
         });
 

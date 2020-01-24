@@ -97,7 +97,7 @@ export default class PianoRoll {
         this._velocityLayer = new VelocityLayer(this._conversionManager, this._primaryBackingLayer);
         this._transportLayer = new TransportLayer(this._conversionManager, this._primaryBackingLayer);
         this._seekerLineLayer = new SeekerLineLayer(this._conversionManager);
-        this._pianoKeyLayer = new PianoKeyLayer(this._secondaryBackingLayer);
+        this._pianoKeyLayer = new PianoKeyLayer(this._conversionManager, this._secondaryBackingLayer);
         this._contextMenuLayer = new ContextMenuLayer(this._conversionManager, this._secondaryBackingLayer);
         this._scrollManager = new ScrollManager(
             this._gridLayer,
@@ -270,9 +270,11 @@ export default class PianoRoll {
                 this._scrollManager.y = newYScroll;
             }
         }
+
         this._velocityLayer.redrawOnVerticalResize();
         this._scrollbarLayer.redrawOnHorizontalResize();
         this._scrollbarLayer.redrawOnVerticalResize();
+        this._pianoKeyLayer.redrawOnVerticalResize();
     }
 
     _handleTogglePlayback() {

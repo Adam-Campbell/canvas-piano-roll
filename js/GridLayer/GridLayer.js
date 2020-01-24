@@ -12,6 +12,7 @@ import {
 import { pitchesArray } from '../pitches';
 import { scale } from '@tonaljs/scale';
 import { note } from '@tonaljs/tonal';
+import colours from '../colours';
 
 const isSameNote = (noteA, noteB) => note(noteA).chroma === note(noteB).chroma;
 
@@ -78,7 +79,7 @@ export default class GridLayer {
                         y: idx * this._conversionManager.rowHeight,
                         width: this._conversionManager.gridWidth,
                         height: this._conversionManager.rowHeight,
-                        fill: isTonic ? 'tomato' : 'pink',
+                        fill: isTonic ? colours.secondary.main : colours.secondary.lightened,
                     });
                     highlightRect.moveTo(this._scaleHighlightsSubContainer);
                 }

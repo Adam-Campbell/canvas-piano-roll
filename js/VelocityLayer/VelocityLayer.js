@@ -2,6 +2,7 @@ import { Rect, Group } from 'konva';
 import {
     SCROLLBAR_WIDTH
 } from '../constants';
+import colours from '../colours';
 
 export default class VelocityLayer {
     
@@ -47,7 +48,7 @@ export default class VelocityLayer {
 
     redrawOnVerticalResize() {
         const delta = this._conversionManager.stageHeight - SCROLLBAR_WIDTH - this._conversionManager.velocityAreaHeight - this._background.attrs.y;
-        const allRects = this.layer.find('Rect');
+        const allRects = this._layerGroup.find('Rect');
         allRects.forEach(rect => {
             rect.y(
                 rect.y() + delta
@@ -81,7 +82,7 @@ export default class VelocityLayer {
             height: this._conversionManager.velocityAreaHeight,
             x: 0,
             y: this._conversionManager.stageHeight - SCROLLBAR_WIDTH - this._conversionManager.velocityAreaHeight,
-            fill: '#acacac',
+            fill: colours.grayscale[2],
             id: 'VELOCITY_BACKGROUND'
         });
         return background;
@@ -93,7 +94,7 @@ export default class VelocityLayer {
             height: 3,
             x: 0,
             y: this._conversionManager.stageHeight - SCROLLBAR_WIDTH - this._conversionManager.velocityAreaHeight,
-            fill: '#222',
+            fill: colours.grayscale[6],
             id: 'VELOCITY_BORDER'
         });
         return border;
@@ -105,7 +106,8 @@ export default class VelocityLayer {
             y,
             width: 8,
             height,
-            fill: isSelected ? '#222' : 'green',
+            fill: isSelected ? colours.grayscale[6] : colours.primary.darkened,
+            cornerRadius: [2,2,0,0],
             id,
             cachedX: x,
             name: 'VELOCITY_MARKER',
@@ -176,13 +178,13 @@ export default class VelocityLayer {
     }
 
     addSelectedAppearance(velocityRect) {
-        velocityRect.fill('#222');
+        velocityRect.fill(colours.grayscale[6]);
         velocityRect.moveTo(this._selectedGroup);
         this.layer.batchDraw();
     }
 
     removeSelectedAppearance(velocityRect) {
-        velocityRect.fill('green');
+        velocityRect.fill(colours.primary.darkened);
         velocityRect.moveTo(this._unselectedGroup);
         this.layer.batchDraw();
     }
@@ -195,7 +197,7 @@ export default class VelocityLayer {
                 y: y1,
                 width: x2 - x1,
                 height: y2 - y1,
-                fill: '#08b5d3',
+                fill: colours.tertiary.main,
                 opacity: 0.4,
                 id: 'MARQUEE'
             }); 

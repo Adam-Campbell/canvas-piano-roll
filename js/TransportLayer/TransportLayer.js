@@ -1,11 +1,12 @@
 import { Rect, Text, Group, RegularPolygon } from 'konva';
+import colours from '../colours';
 
 export default class TransportLayer {
 
     constructor(conversionManager, layerRef) {
         this._conversionManager = conversionManager;
         this.layer = layerRef;
-        this._layerGroup = new Group({ x: 120 });
+        this._layerGroup = new Group({ x: 120, y: 0 });
         this._background = this._constructBackground();
         this._border = this._constructBorder();
         this._numberMarkersArray = this._constructNumberMarkersArray();
@@ -32,7 +33,7 @@ export default class TransportLayer {
             y: 0,
             height: 30,
             width: this._conversionManager.gridWidth,
-            fill: '#acacac'
+            fill: colours.grayscale[2]
         });
         return background;
     }
@@ -43,7 +44,7 @@ export default class TransportLayer {
             y: 27,
             width: this._conversionManager.gridWidth,
             height: 3,
-            fill: '#222'
+            fill: colours.grayscale[7]
         });
         return border;
     }
@@ -53,7 +54,7 @@ export default class TransportLayer {
         for (let i = 0; i < this._conversionManager.numBars; i++) {
             const numberMarker = new Text({
                 text: `${i+1}`,
-                fill: '#222',
+                fill: colours.grayscale[7],
                 x: i * this._conversionManager.barWidth,
                 y: 12
             });

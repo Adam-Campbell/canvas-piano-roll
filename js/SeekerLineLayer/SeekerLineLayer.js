@@ -1,5 +1,6 @@
 import { Layer, Line } from 'konva';
 import Tone from 'tone';
+import colours from '../colours';
 
 export default class SeekerLineLayer {
 
@@ -51,7 +52,7 @@ export default class SeekerLineLayer {
         const currentPositionPx = this._conversionManager.convertTicksToPx(Tone.Transport.ticks);
         const seekerLine = new Line({
             points: [currentPositionPx, 0, currentPositionPx, this._conversionManager.gridHeight],
-            stroke: '#222',
+            stroke: colours.grayscale[7],
             strokeWidth: 2
         });
         return seekerLine;

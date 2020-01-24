@@ -6,6 +6,7 @@ import {
     SCROLLBAR_GUTTER
 } from '../constants';
 import { clamp } from '../utils';
+import colours from '../colours';
 
 export default class ScrollbarLayer {
 
@@ -62,7 +63,7 @@ export default class ScrollbarLayer {
             y: 0,
             width: SCROLLBAR_WIDTH,
             height: this._conversionManager.stageHeight,
-            fill: '#333'
+            fill: colours.grayscale[6]
         });
     }
 
@@ -72,7 +73,7 @@ export default class ScrollbarLayer {
             y: SCROLLBAR_GUTTER,
             width: 16,
             height: SCROLLBAR_THUMB_LENGTH,
-            fill: '#6d6d6d',
+            fill: colours.grayscale[3],
             cornerRadius: 3,
             draggable: true,
             dragBoundFunc: pos => {
@@ -100,7 +101,7 @@ export default class ScrollbarLayer {
             y: this._conversionManager.stageHeight - SCROLLBAR_WIDTH,
             width: this._conversionManager.stageWidth,
             height: SCROLLBAR_WIDTH,
-            fill: '#333'
+            fill: colours.grayscale[6]
         });
     }
 
@@ -110,7 +111,7 @@ export default class ScrollbarLayer {
             y: this._conversionManager.stageHeight - 20,
             width: SCROLLBAR_THUMB_LENGTH,
             height: 16,
-            fill: '#6d6d6d',
+            fill: colours.grayscale[3],
             cornerRadius: 3,
             draggable: true,
             dragBoundFunc: pos => {
