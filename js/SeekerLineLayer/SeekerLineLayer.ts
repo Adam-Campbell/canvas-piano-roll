@@ -6,7 +6,7 @@ import ConversionManager from '../ConversionManager';
 export default class SeekerLineLayer {
 
     private conversionManager: ConversionManager;
-    private layer: Konva.Layer;
+    layer: Konva.Layer;
     private seekerLine: Konva.Line;
     private isPlaying: boolean;
     private animationFrameId: number;
