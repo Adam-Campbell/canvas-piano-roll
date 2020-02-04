@@ -9,6 +9,7 @@ export default class NoteSelection {
     }
 
     add(canvasElement: Konva.Rect) : void {
+        console.log('add called')
         this.cache.add(canvasElement.attrs.id);
     }
 
@@ -22,10 +23,8 @@ export default class NoteSelection {
         return selected;
     }
 
-    retrieveAll() : string[] {
-        return [
-            ...this.cache.values()
-        ];
+    retrieveAll() {
+        return Array.from(this.cache.values());
     }
 
     forceToState(selectedNoteIdsState: string[] = []) : void {

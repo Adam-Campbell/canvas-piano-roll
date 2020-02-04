@@ -667,7 +667,7 @@ export default class PianoRoll {
             this._noteLayer.moveNoteToNotesContainer(noteElement);
             this._noteCache.add(noteElement);
             const velocityMarkerHeight = noteObject.velocity * (this._conversionManager.velocityAreaHeight - 10);
-            const velocityMarkerElement = this._velocityLayer._createVelocityMarker(
+            const velocityMarkerElement = this._velocityLayer.createVelocityMarker(
                 this._conversionManager.convertTicksToPx(noteObject.time),
                 this._conversionManager.stageHeight - SCROLLBAR_WIDTH - velocityMarkerHeight,
                 velocityMarkerHeight,
