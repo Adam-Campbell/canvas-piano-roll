@@ -30,7 +30,7 @@ import {
     DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT,
     SCROLLBAR_WIDTH,
     PIANO_KEY_WIDTH
-} from '../constants';
+} from '../Constants';
 import {
     ACTIVE_TOOL_UPDATE,
     UNDO_ACTION,
@@ -657,7 +657,7 @@ export default class PianoRoll {
         const newNoteData = this._clipboard.produceCopy(roundedStartTime);
         this._clearSelection();
         newNoteData.forEach(noteObject => {
-            const noteElement = this._noteLayer._createNoteElement(
+            const noteElement = this._noteLayer.createNoteElement(
                 this._conversionManager.convertTicksToPx(noteObject.time),
                 this._conversionManager.deriveYFromPitch(noteObject.note),
                 this._conversionManager.convertTicksToPx(noteObject.duration),

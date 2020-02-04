@@ -1,4 +1,8 @@
 export default class MouseStateManager {
+   
+    private _x: number;
+    private _y: number;
+    private _hasTravelled: boolean;
     
     constructor() {
         this._x = null;
@@ -6,13 +10,13 @@ export default class MouseStateManager {
         this._hasTravelled = null;
     }
 
-    addMouseDownEvent(x, y) {
+    addMouseDownEvent(x: number, y: number) : void {
         this._x = x;
         this._y = y;
         this._hasTravelled = false;
     }
 
-    updateHasTravelled(x, y) {
+    updateHasTravelled(x: number, y: number) : void {
         if (this._hasTravelled) return;
         const absX = Math.abs(this.x - x);
         const absY = Math.abs(this.y - y);
@@ -21,15 +25,15 @@ export default class MouseStateManager {
         }
     }
 
-    get x() {
+    get x() : number {
         return this._x;
     }
 
-    get y() {
+    get y() : number {
         return this._y;
     }
 
-    get hasTravelled() {
+    get hasTravelled() : boolean {
         return this._hasTravelled;
     }
 

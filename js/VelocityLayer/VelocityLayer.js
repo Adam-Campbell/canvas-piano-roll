@@ -1,7 +1,7 @@
 import { Rect, Group } from 'konva';
 import {
     SCROLLBAR_WIDTH
-} from '../constants';
+} from '../Constants';
 import colours from '../colours';
 
 export default class VelocityLayer {

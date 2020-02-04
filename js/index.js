@@ -1,5 +1,5 @@
 import { Stage, Layer, Shape, Rect, Tween, Easings } from 'konva';
-import { STAGE_WIDTH, STAGE_HEIGHT } from './constants';
+import { STAGE_WIDTH, STAGE_HEIGHT } from './Constants';
 import { initQuantizeSelect } from './quantizeSelect';
 import { initNoteDurationSelect } from './noteDurationSelect';
 import emitter from './EventEmitter';

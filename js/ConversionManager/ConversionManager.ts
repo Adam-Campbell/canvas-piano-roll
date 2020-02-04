@@ -4,7 +4,7 @@ import {
     ROW_HEIGHT,
     VELOCITY_LAYER_HEIGHT,
     SEEKER_AREA_HEIGHT
-} from '../constants';
+} from '../Constants';
 import {
     QUANTIZE_VALUE_UPDATE,
     NOTE_DURATION_UPDATE
@@ -28,8 +28,22 @@ const noteDurationsMappedToTicks = {
 };
 
 export default class ConversionManager {
+
+    private _stageWidth: number;
+    private _stageHeight: number;
+    private _velocityAreaHeight: number;
+    private _quantize: string;
+    private _noteDuration: string;
+    private _tickToPxRatio: number;
+    private _numBars: number;
     
-    constructor(stageWidth, stageHeight, initialQuantize = '16n', initialNoteDuration = '16n', numBars = 4) {
+    constructor(
+        stageWidth: number, 
+        stageHeight: number, 
+        initialQuantize = '16n', 
+        initialNoteDuration = '16n', 
+        numBars = 4
+    ) {
         this._stageWidth = stageWidth;
         this._stageHeight = stageHeight;
         this._velocityAreaHeight = VELOCITY_LAYER_HEIGHT;
@@ -37,122 +51,122 @@ export default class ConversionManager {
         this._noteDuration = initialNoteDuration;
         this._tickToPxRatio = 0.25;
         this._numBars = numBars;
-        this.unsubscribe1 = emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
+        emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
             this._quantize = qVal;
         });
-        this.unsubscribe2 = emitter.subscribe(NOTE_DURATION_UPDATE, nVal => {
+        emitter.subscribe(NOTE_DURATION_UPDATE, nVal => {
             this._noteDuration = nVal;
         });
     }
 
-    roundDown(total, divisor) {
+    roundDown(total: number, divisor: number) : number {
         return total - (total % divisor);
     }
 
-    round(total, divisor) {
+    round(total: number, divisor : number) : number {
         return Math.round(total / divisor) * divisor;
     }
 
-    convertDurationToPx(duration) {
+    convertDurationToPx(duration: string) : number {
         return noteDurationsMappedToTicks[duration] * this._tickToPxRatio;
     }
 
-    convertTicksToPx(ticks) {
+    convertTicksToPx(ticks: number) : number {
         return ticks * this._tickToPxRatio;
     }
 
-    convertPxToTicks(px) {
+    convertPxToTicks(px: number) : number {
         return px / this._tickToPxRatio;
     }
 
-    get tickToPxRatio() {
+    get tickToPxRatio() : number {
         return this._tickToPxRatio;
     }
 
-    set tickToPxRatio(ratio) {
+    set tickToPxRatio(ratio: number) {
         // legal ratios are 0.125, 0.25, 0.5 (default) and 1.
         this._tickToPxRatio = ratio;
     }
 
-    get colWidth() {
+    get colWidth() : number {
         return this.convertDurationToPx(this._quantize);
     }
 
-    get noteWidth() {
+    get noteWidth() : number {
         return this.convertDurationToPx(this._noteDuration);
     }
 
-    get barWidth() {
+    get barWidth() : number {
         return TICKS_PER_BAR * this.tickToPxRatio;
     }
 
-    get rowHeight() {
+    get rowHeight() : number {
         return ROW_HEIGHT;
     }
 
-    get gridHeight() {
+    get gridHeight() : number {
         return this.rowHeight * pitchesArray.length;
     }
 
-    get gridWidth() {
+    get gridWidth() : number {
         return this.numBars * this.barWidth;
     }
 
-    get stageWidth() {
+    get stageWidth() : number {
         return this._stageWidth;
     }
 
-    set stageWidth(width) {
+    set stageWidth(width: number) {
         this._stageWidth = width;
     }
 
-    get stageHeight() {
+    get stageHeight() : number {
         return this._stageHeight;
     }
 
-    set stageHeight(height) {
+    set stageHeight(height: number) {
         this._stageHeight = height;
     }
 
-    get velocityAreaHeight() {
+    get velocityAreaHeight() : number {
         return this._velocityAreaHeight;
     }
 
-    set velocityAreaHeight(height) {
+    set velocityAreaHeight(height: number) {
         this._velocityAreaHeight = height;
     }
 
-    get seekerAreaHeight() {
+    get seekerAreaHeight() : number {
         return SEEKER_AREA_HEIGHT;
     }
 
-    get numBars() {
+    get numBars() : number {
         return this._numBars;
     }
 
-    roundDownToGridRow(y) {
-        return this.roundDown(y, ROW_HEIGHT);
+    roundDownToGridRow(y: number) : number {
+        return this.roundDown(y, this.rowHeight);
     }
 
-    roundDownToGridCol(x) {
+    roundDownToGridCol(x: number) : number {
         return this.roundDown(x, this.colWidth);
     }
 
-    roundToGridRow(y) {
-        return this.round(y, ROW_HEIGHT);
+    roundToGridRow(y: number) : number {
+        return this.round(y, this.rowHeight);
     }
 
-    roundToGridCol(x) {
+    roundToGridCol(x: number) : number {
         return this.round(x, this.colWidth);
     }
     
-    derivePitchFromY(y) {
+    derivePitchFromY(y: number) : string {
         const idx = y / this.rowHeight;
         const noteObj = pitchesArray[idx];
         return noteObj.full
     }
 
-    deriveYFromPitch(pitch) {
+    deriveYFromPitch(pitch: string) : number {
         const rowNumber = Math.max(
             pitchesArray.findIndex(noteObj => noteObj.full === pitch),
             0

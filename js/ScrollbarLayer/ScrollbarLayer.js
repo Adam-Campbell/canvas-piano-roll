@@ -4,7 +4,7 @@ import {
     SCROLLBAR_WIDTH,
     SCROLLBAR_THUMB_LENGTH,
     SCROLLBAR_GUTTER
-} from '../constants';
+} from '../Constants';
 import { clamp } from '../utils';
 import colours from '../colours';
 
