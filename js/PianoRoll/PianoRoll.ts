@@ -1,6 +1,6 @@
 import Tone from 'tone';
 import Konva from 'konva';
-import emitter from '../EventEmitter';
+import EventEmitter from '../EventEmitter';
 import ConversionManager from './ConversionManager';
 import AudioReconciler from './AudioReconciler';
 import NoteSelection from './NoteSelection';
@@ -25,7 +25,8 @@ import {
     Events,
     StaticMeasurements,
     SerializedState,
-    KonvaEvent
+    KonvaEvent,
+    PianoRollOptions
 } from '../Constants';
 import { 
     doesOverlap,
@@ -81,15 +82,10 @@ export default class PianoRoll {
     private contextMenuLayer: ContextMenuLayer;
     private scrollManager: ScrollManager;
     private scrollbarLayer: ScrollbarLayer;
+    private emitter: EventEmitter;
+    private unsubscribeFns: Function[] = [];
 
-    constructor(
-        containerId: string, 
-        width: number = StaticMeasurements.stageWidth, 
-        height: number = StaticMeasurements.stageHeight, 
-        initialQuantize: string = '16n', 
-        initialNoteDuration: string = '16n', 
-        numBars: number = 8
-    ) {
+    constructor(eventEmitter: EventEmitter) {
         // Initialize class properties
         window.pianoRoll = this;
         this.dragMode = null;
@@ -97,22 +93,49 @@ export default class PianoRoll {
         this.previousBumpTimestamp = null;
         this.chordType = 'major';
         this.playbackFromTicks = 0;
+        this.emitter = eventEmitter;
+    }
 
-        // Initialize canvas stage
+    init(pianoRollOptions: PianoRollOptions) : void {
+        this.instantiateChildClasses(pianoRollOptions);
+        this.stage.add(this.primaryBackingLayer);
+        this.stage.add(this.seekerLineLayer.layer);
+        this.stage.add(this.secondaryBackingLayer);
+        this.gridLayer.init();
+        this.noteLayer.init();
+        this.velocityLayer.init();
+        this.transportLayer.init();
+        this.pianoKeyLayer.init();
+        this.scrollbarLayer.init();
+        this.seekerLineLayer.init();
+        this.registerStageSubscriptions();
+        this.registerKeyboardSubscriptions();
+        this.registerGlobalEventSubscriptions();
+    }
+
+    private instantiateChildClasses({
+        container, 
+        initialWidth, 
+        initialHeight, 
+        initialQuantize, 
+        initialNoteDuration, 
+        numBars
+    }: PianoRollOptions) : void {
+        // Instantiate canvas stage
         this.stage = new Konva.Stage({
-            container: containerId,
-            width,
-            height
+            container,
+            width: initialWidth,
+            height: initialHeight
         });
-
-        // Initialize non canvas layer related classes
+        // Instantiate non canvas layer related classes
         this.noteCache = new CanvasElementCache();
         this.velocityMarkerCache = new CanvasElementCache();
         this.keyboardStateManager = new KeyboardStateManager(this.stage.container());
         this.mouseStateManager = new MouseStateManager();
         this.conversionManager = new ConversionManager(
-            width, 
-            height,
+            initialWidth, 
+            initialHeight,
+            this.emitter,
             initialQuantize,
             initialNoteDuration,
             numBars
@@ -121,11 +144,10 @@ export default class PianoRoll {
         this.noteSelection = new NoteSelection();
         this.historyStack = new HistoryStack({ notes: [], selectedNoteIds: [] });
         this.clipboard = new Clipboard(this.conversionManager);
-
-        // Initialize canvas layer related classes
+        // Instantiate canvas layer related classes
         this.primaryBackingLayer = new Konva.Layer();
         this.secondaryBackingLayer = new Konva.Layer();
-        this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer);
+        this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer, this.emitter);
         this.noteLayer = new NoteLayer(this.conversionManager, this.primaryBackingLayer);
         this.velocityLayer = new VelocityLayer(this.conversionManager, this.primaryBackingLayer);
         this.transportLayer = new TransportLayer(this.conversionManager, this.primaryBackingLayer);
@@ -145,23 +167,6 @@ export default class PianoRoll {
             this.conversionManager,
             this.secondaryBackingLayer
         );
-        
-    }
-
-    init() : void {
-        this.stage.add(this.primaryBackingLayer);
-        this.stage.add(this.seekerLineLayer.layer);
-        this.stage.add(this.secondaryBackingLayer);
-        this.gridLayer.init();
-        this.noteLayer.init();
-        this.velocityLayer.init();
-        this.transportLayer.init();
-        this.pianoKeyLayer.init();
-        this.scrollbarLayer.init();
-        this.seekerLineLayer.init();
-        this.registerStageSubscriptions();
-        this.registerKeyboardSubscriptions();
-        this.registerGlobalEventSubscriptions();
     }
 
     private registerStageSubscriptions() : void {
@@ -179,17 +184,17 @@ export default class PianoRoll {
         this.keyboardStateManager.addKeyListener('Delete', () => this.deleteSelectedNotes());
         this.keyboardStateManager.addKeyListener('1', () => {
             if (this.keyboardStateManager.altKey) {
-                emitter.broadcast(Events.activeToolUpdate, 'cursor');
+                this.emitter.emit(Events.activeToolUpdate, 'cursor');
             }
         });
         this.keyboardStateManager.addKeyListener('2', () => {
             if (this.keyboardStateManager.altKey) {
-                emitter.broadcast(Events.activeToolUpdate, 'pencil');
+                this.emitter.emit(Events.activeToolUpdate, 'pencil');
             }
         });
         this.keyboardStateManager.addKeyListener('3', () => {
             if (this.keyboardStateManager.altKey) {
-                emitter.broadcast(Events.activeToolUpdate, 'marquee');
+                this.emitter.emit(Events.activeToolUpdate, 'marquee');
             }
         });
         this.keyboardStateManager.addKeyListener('ArrowUp', () => {
@@ -233,20 +238,24 @@ export default class PianoRoll {
     }
 
     private registerGlobalEventSubscriptions() : void {
-        emitter.subscribe(Events.activeToolUpdate, tool => {
+        this.emitter.subscribe(Events.activeToolUpdate, tool => {
             this.activeTool = tool;
             console.log(this.activeTool);
         });
-        emitter.subscribe(Events.chordTypeUpdate, chordType => {
+        this.emitter.subscribe(Events.chordTypeUpdate, chordType => {
             this.chordType = chordType;
         });
-        emitter.subscribe(Events.undoAction, () => this.undo());
-        emitter.subscribe(Events.redoAction, () => this.redo());
-        emitter.subscribe(Events.copyToClipboard, () => this.copy());
-        emitter.subscribe(Events.cutToClipboard, () => this.cut());
-        emitter.subscribe(Events.pasteFromClipboard, () => this.paste());
+        this.emitter.subscribe(Events.undoAction, () => this.undo());
+        this.emitter.subscribe(Events.redoAction, () => this.redo());
+        this.emitter.subscribe(Events.copyToClipboard, () => this.copy());
+        this.emitter.subscribe(Events.cutToClipboard, () => this.cut());
+        this.emitter.subscribe(Events.pasteFromClipboard, () => this.paste());
         
-        window.addEventListener('resize', e => this.handleResize(e));
+        //window.addEventListener('resize', e => this.handleResize(e));
+    }
+
+    cleanup() {
+        this.stage.destroy();
     }
 
     private handleZoomAdjustment(isZoomingIn: boolean) : void {
@@ -268,7 +277,7 @@ export default class PianoRoll {
         }
     }
 
-    private handleResize(e: UIEvent) : void {
+    handleResize(containerWidth: number, containerHeight: number) : void {
         // grab clientWidth and clientHeight from event
 
         // if clientWidth not equals stageWidth
@@ -281,29 +290,37 @@ export default class PianoRoll {
             // if new clientHeight would expose stage OOB
                 // adjust y scroll accordingly
             // call method to update scrollbar layer vertically
-        const window = e.target;
-        const { clientWidth, clientHeight } = window.document.documentElement;
+        //const window = e.target;
+        //const { clientWidth, clientHeight } = window.document.documentElement;
 
-        if (clientWidth !== this.conversionManager.stageWidth) {
-            this.conversionManager.stageWidth = clientWidth;
-            this.stage.width(clientWidth);
-            const willExposeOutOfBounds = this.scrollManager.x * -1 > this.conversionManager.gridWidth + StaticMeasurements.scrollbarWidth - clientWidth;
+        if (containerWidth !== this.conversionManager.stageWidth) {
+            this.conversionManager.stageWidth = containerWidth;
+            this.stage.width(containerWidth);
+            const willExposeOutOfBounds = this.scrollManager.x * -1 > this.conversionManager.gridWidth + StaticMeasurements.scrollbarWidth - containerWidth;
             if (willExposeOutOfBounds) {
                 const newXScroll = (-1 * (this.scrollbarLayer.horizontalScrollRange)) + StaticMeasurements.pianoKeyWidth;
                 this.scrollManager.x = newXScroll;
             }
             
         }
-        if (clientHeight - 50 !== this.conversionManager.stageHeight) {
-            this.conversionManager.stageHeight = clientHeight - 50;
-            this.stage.height(clientHeight - 50);
+        // if (clientHeight - 50 !== this.conversionManager.stageHeight) {
+        //     this.conversionManager.stageHeight = clientHeight - 50;
+        //     this.stage.height(clientHeight - 50);
+        //     const willExposeOutOfBounds = this.scrollManager.y * -1 >= this.scrollbarLayer.verticalScrollRange;
+        //     if (willExposeOutOfBounds) {
+        //         const newYScroll = (-1 * this.scrollbarLayer.verticalScrollRange) + this.conversionManager.seekerAreaHeight;
+        //         this.scrollManager.y = newYScroll;
+        //     }
+        // }
+        if (containerHeight !== this.conversionManager.stageHeight) {
+            this.conversionManager.stageHeight = containerHeight;
+            this.stage.height(containerHeight);
             const willExposeOutOfBounds = this.scrollManager.y * -1 >= this.scrollbarLayer.verticalScrollRange;
             if (willExposeOutOfBounds) {
                 const newYScroll = (-1 * this.scrollbarLayer.verticalScrollRange) + this.conversionManager.seekerAreaHeight;
                 this.scrollManager.y = newYScroll;
             }
         }
-
         this.velocityLayer.redrawOnVerticalResize();
         this.scrollbarLayer.redrawOnHorizontalResize();
         this.scrollbarLayer.redrawOnVerticalResize();
@@ -749,19 +766,19 @@ export default class PianoRoll {
             },
             { 
                 label: 'Transform - linear',
-                callback: () => this.transformSelection('linear') 
+                callback: () => this.transformSelection(EasingModes.linear) 
             },
             { 
                 label: 'Transform - ease in',
-                callback: () => this.transformSelection('easeIn')
+                callback: () => this.transformSelection(EasingModes.easeIn)
             },
             { 
                 label: 'Transform - ease out',
-                callback: () => this.transformSelection('easeOut') 
+                callback: () => this.transformSelection(EasingModes.easeOut) 
             },
             { 
                 label: 'Transform - ease in out',
-                callback: () => this.transformSelection('easeInOut') 
+                callback: () => this.transformSelection(EasingModes.easeInOut) 
             }
         ];
         this.contextMenuLayer.addContextMenu({ rawX, rawY, menuItems });

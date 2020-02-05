@@ -7,8 +7,10 @@ export default class KeyboardStateManager {
     private keyListeners = {};
 
     constructor(stageContainer: HTMLElement) {
+        console.log(stageContainer)
         this.stageContainer = stageContainer;
         this.stageContainer.addEventListener('keydown', e => {
+            console.log('keydown fired')
             const { key, code, repeat, keyCode } = e;
             if (repeat) return;
 

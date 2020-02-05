@@ -11,6 +11,7 @@ import App from './App';
 //console.log('Hello world')
 const app = new App();
 app.renderApp();
+app.addWindow();
 
 //app.addWindow();
 //app.renderApp();

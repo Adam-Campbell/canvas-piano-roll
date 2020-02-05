@@ -1,5 +1,5 @@
 import Konva from 'konva';
-import emitter from '../../EventEmitter'; 
+import EventEmitter from '../../EventEmitter'; 
 import {  
     getHorizontalLinesData,
     getVerticalLinesData,
@@ -23,14 +23,16 @@ export default class GridLayer {
     private scaleHighlightsSubContainer: Konva.Group;
     private gridLinesSubContainer: Konva.Group;
     private scaleType: string;
+    private emitter: EventEmitter;
     shouldDisplayScaleHighlighting: boolean;
 
-    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
+    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer, eventEmitter: EventEmitter) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
         this.gridContainer = new Konva.Group({ x: 120, y: 30 });
         this.scaleType = 'C major';
         this.shouldDisplayScaleHighlighting = false;
+        this.emitter = eventEmitter;
     }
 
     init() : void {
@@ -41,15 +43,15 @@ export default class GridLayer {
     }
 
     private registerGlobalEventSubscriptions() : void {
-        emitter.subscribe(Events.quantizeValueUpdate, qVal => {
+        this.emitter.subscribe(Events.quantizeValueUpdate, qVal => {
             this.drawGrid();
         });
-        emitter.subscribe(Events.scaleTypeUpdate, scaleType => {
+        this.emitter.subscribe(Events.scaleTypeUpdate, scaleType => {
             this.scaleType = scaleType;
             console.log(scaleType);
             this.drawScaleHighlights();
         });
-        emitter.subscribe(Events.displayScaleUpdate, shouldDisplay => {
+        this.emitter.subscribe(Events.displayScaleUpdate, shouldDisplay => {
             this.shouldDisplayScaleHighlighting = shouldDisplay;
             this.drawScaleHighlights();
         });

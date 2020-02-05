@@ -8,6 +8,7 @@ import {
 } from './templateFns';
 import { Events } from '../Constants';
 import CrazySquare from '../CrazySquare';
+import PianoRoll from '../PianoRoll';
 
 const windowsData = [
     { id: '0', title: 'Lead Synth' },
@@ -33,13 +34,15 @@ export default class App {
 
     addWindow = () => {
         const data = windowsData[idx++];
-        const newWindow = new Window(
-            data.id,
-            data.title,
-            this.eventEmitter,
-            this.activeWindows.length,
-            CrazySquare
-        );
+        const newWindow = new Window({
+            id: data.id,
+            title: data.title,
+            eventEmitter: this.eventEmitter,
+            initialZIndex: this.activeWindows.length,
+            childClass: PianoRoll,
+            defaultWidth: 650,
+            defaultHeight: 500
+        });
         this.activeWindows.push(newWindow);
         this.renderApp();
         newWindow.init();

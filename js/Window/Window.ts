@@ -4,7 +4,8 @@ import { styleMap } from 'lit-html/directives/style-map';
 import {
     WindowInteractionModes,
     WindowDisplayModes,
-    Events
+    Events,
+    WindowOptions
 } from '../Constants';
 
 export default class Window {
@@ -36,18 +37,18 @@ export default class Window {
     private evtYDelta: number | null;
     rafStamp: number;
 
-    private child;
+    private child: any;
+    private childConfig: any;
     
-
-    constructor(
-        id: string, 
-        title: string, 
-        eventEmitter: EventEmitter, 
-        zIndex: number, 
-        childBluePrint,
-        defaultWidth = 450, 
-        defaultHeight = 400
-    ) {
+    constructor({
+        id, 
+        title, 
+        eventEmitter, 
+        initialZIndex, 
+        childClass,
+        defaultWidth, 
+        defaultHeight
+    }: WindowOptions) {
         this.id = id;
         this.title = title;
         this.currentWidth = defaultWidth;
@@ -55,8 +56,8 @@ export default class Window {
         this.currentX = 8;
         this.currentY = 80;
         this.eventEmitter = eventEmitter;
-        this.zIndex = zIndex;
-        this.child = new childBluePrint(this.resizeEmitter);
+        this.zIndex = initialZIndex;
+        this.child = new childClass(this.eventEmitter);
     }
 
     private handleClose = (e: MouseEvent) => {
@@ -98,7 +99,8 @@ export default class Window {
         this.currentHeight = clientHeight;
         this.eventEmitter.emit(Events.renderApp);
         const { innerWidth, innerHeight } = this.getInnerDimensions();
-        this.resizeEmitter.emit(Events.resizeWindow, innerWidth, innerHeight);
+        //this.resizeEmitter.emit(Events.resizeWindow, innerWidth, innerHeight);
+        this.child.handleResize(innerWidth, innerHeight);
     }
 
     private restoreWindow = () => {
@@ -113,7 +115,8 @@ export default class Window {
         this.cachedY = null;
         this.eventEmitter.emit(Events.renderApp);
         const { innerWidth, innerHeight } = this.getInnerDimensions();
-        this.resizeEmitter.emit(Events.resizeWindow, innerWidth, innerHeight);
+        //this.resizeEmitter.emit(Events.resizeWindow, innerWidth, innerHeight);
+        this.child.handleResize(innerWidth, innerHeight);
     }
 
     private handleTopBarInteraction = (e: MouseEvent) => {
@@ -182,7 +185,8 @@ export default class Window {
         this.containerNode.style.width = `${newWidth}px`;
         this.containerNode.style.height = `${newHeight}px`;
         const { innerWidth, innerHeight } = this.getInnerDimensions();
-        this.resizeEmitter.emit(Events.resizeWindow, innerWidth, innerHeight);
+        //this.resizeEmitter.emit(Events.resizeWindow, innerWidth, innerHeight);
+        this.child.handleResize(innerWidth, innerHeight);
     }
 
     getInnerDimensions = () => {
@@ -232,7 +236,7 @@ export default class Window {
                     </div>
                     <p class="window__title">${this.title}</p>
                 </div>
-                <div class="window__content-container"></div>
+                <div class="window__content-container" tabindex="0"></div>
                 <div class="window__bottom-bar">
                     <div class="window__resize-bar-container" @mousedown=${this.handleResizeContainerInteraction}>
                         <span class="window__resize-bar window__resize-bar--1"></span>
@@ -250,7 +254,15 @@ export default class Window {
         document.body.addEventListener('mousemove', this.handleInteractionUpdate);
         document.body.addEventListener('mouseup', this.handleInteractionEnd);
         const { innerWidth, innerHeight } = this.getInnerDimensions();
-        this.child.init(this.contentNode, innerWidth, innerHeight);
+        //this.child.init(this.contentNode, innerWidth, innerHeight);
+        this.child.init({
+            container: this.contentNode,
+            initialWidth: innerWidth,
+            initialHeight: innerHeight,
+            initialQuantize: '16n',
+            initialNoteDuration: '16n',
+            numBars: 8
+        });
     }
 
     cleanup = () => {

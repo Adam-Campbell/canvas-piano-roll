@@ -1,4 +1,4 @@
-import emitter from '../../EventEmitter';
+import EventEmitter from '../../EventEmitter';
 import {
     StaticMeasurements,
     Events
@@ -28,10 +28,12 @@ export default class ConversionManager {
     private _noteDuration: string;
     private _tickToPxRatio: number;
     private _numBars: number;
+    private emitter: EventEmitter;
     
     constructor(
         stageWidth: number, 
-        stageHeight: number, 
+        stageHeight: number,
+        eventEmitter: EventEmitter,
         initialQuantize = '16n', 
         initialNoteDuration = '16n', 
         numBars = 4
@@ -43,10 +45,11 @@ export default class ConversionManager {
         this._noteDuration = initialNoteDuration;
         this._tickToPxRatio = 0.25;
         this._numBars = numBars;
-        emitter.subscribe(Events.quantizeValueUpdate, qVal => {
+        this.emitter = eventEmitter;
+        this.emitter.subscribe(Events.quantizeValueUpdate, qVal => {
             this._quantize = qVal;
         });
-        emitter.subscribe(Events.noteDurationUpdate, nVal => {
+        this.emitter.subscribe(Events.noteDurationUpdate, nVal => {
             this._noteDuration = nVal;
         });
     }
