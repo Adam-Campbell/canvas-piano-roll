@@ -34,6 +34,10 @@ export enum Tools {
     marquee = 'marquee'
 }
 
+export enum WindowTypes {
+    pianoRoll = 'pianoRoll'
+}
+
 export enum WindowInteractionModes {
     resize = 'resize',
     reposition = 'reposition'

@@ -18,23 +18,23 @@ export default class PianoKeyLayer {
     private background: Konva.Rect;
     private instrument;
 
-    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
+    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer, instrument: any) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
         this.layerGroup = new Konva.Group();
         this.pianoKeyGroup = new Konva.Group({ y: StaticMeasurements.seekerAreaHeight });
         this.background = this.constructBackground();
-        this.instrument = new Tone.PolySynth(12, Tone.Synth).toMaster();
-        this.instrument.set({
-            envelope: {
-                sustain: 0.9,
-                release: 0.1
-            },
-            oscillator: {
-                volume: -22,
-                type: 'amsawtooth'
-            }
-        });  
+        this.instrument = instrument;
+        // this.instrument.set({
+        //     envelope: {
+        //         sustain: 0.9,
+        //         release: 0.1
+        //     },
+        //     oscillator: {
+        //         volume: -22,
+        //         type: 'amsawtooth'
+        //     }
+        // });  
     }
 
     init() : void {

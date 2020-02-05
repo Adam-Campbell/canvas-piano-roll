@@ -11,7 +11,12 @@ import App from './App';
 //console.log('Hello world')
 const app = new App();
 app.renderApp();
-app.addWindow();
+
+window.audioEngine = app.audioEngine;
+app.audioEngine.addChannel('Channel 1');
+const section = app.audioEngine.channels[0].addSection('0:0:0', 8);
+
+app.addPianoRollWindow(section.id);
 
 //app.addWindow();
 //app.renderApp();

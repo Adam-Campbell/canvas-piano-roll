@@ -6,9 +6,13 @@ import {
     generateTaskbarMarkup,
     generateWindowsMarkup, 
 } from './templateFns';
-import { Events } from '../Constants';
+import { 
+    Events,
+    WindowTypes 
+} from '../Constants';
 import CrazySquare from '../CrazySquare';
 import PianoRoll from '../PianoRoll';
+import AudioEngine from '../AudioEngine';
 
 const windowsData = [
     { id: '0', title: 'Lead Synth' },
@@ -23,29 +27,44 @@ let idx = 0;
 export default class App {
     
     private activeWindows: Window[] = [];
-
-    eventEmitter = new EventEmitter();
+    audioEngine: AudioEngine;
+    eventEmitter: EventEmitter;
 
     constructor() {
+        this.eventEmitter = new EventEmitter();
+        this.audioEngine = new AudioEngine();
         this.eventEmitter.subscribe(Events.closeWindow, this.removeWindow);
         this.eventEmitter.subscribe(Events.renderApp, this.renderApp);
         this.eventEmitter.subscribe(Events.focusWindow, this.focusWindow);
+        
     }
 
-    addWindow = () => {
+    addWindow = (childClass: any, childContext: any) => {
         const data = windowsData[idx++];
         const newWindow = new Window({
             id: data.id,
             title: data.title,
             eventEmitter: this.eventEmitter,
             initialZIndex: this.activeWindows.length,
-            childClass: PianoRoll,
+            childClass,
+            childContext,
             defaultWidth: 650,
             defaultHeight: 500
         });
         this.activeWindows.push(newWindow);
         this.renderApp();
         newWindow.init();
+    }
+
+    addPianoRollWindow = (sectionId: string) => {
+        const { section, livePlayInstrument } = this.audioEngine.getSectionContext(sectionId);
+        this.addWindow(PianoRoll, {
+            section,
+            livePlayInstrument,
+            numBars: section.numBars,
+            initialQuantize: '16n',
+            initialNoteDuration: '16n'
+        });
     }
 
     removeWindow = (id: string) => {
