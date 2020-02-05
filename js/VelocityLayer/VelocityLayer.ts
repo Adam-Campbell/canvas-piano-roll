@@ -1,8 +1,8 @@
 import Konva from 'konva';
 import {
-    SCROLLBAR_WIDTH,
     Colours,
-    SerializedState
+    SerializedState,
+    StaticMeasurements
 } from '../Constants';
 import ConversionManager from '../ConversionManager';
 
@@ -52,7 +52,7 @@ export default class VelocityLayer {
     }
 
     redrawOnVerticalResize() : void {
-        const delta = this.conversionManager.stageHeight - SCROLLBAR_WIDTH - this.conversionManager.velocityAreaHeight - this.background.attrs.y;
+        const delta = this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth - this.conversionManager.velocityAreaHeight - this.background.attrs.y;
         const allRects = this.layerGroup.find('Rect');
         allRects.forEach(rect => {
             rect.y(
@@ -65,17 +65,17 @@ export default class VelocityLayer {
     redrawOnHeightChange(height: number) : void {
         this.background.height(height);
         this.background.y(
-            this.conversionManager.stageHeight - height - SCROLLBAR_WIDTH
+            this.conversionManager.stageHeight - height - StaticMeasurements.scrollbarWidth
         );
         this.border.y(
-            this.conversionManager.stageHeight - height - SCROLLBAR_WIDTH
+            this.conversionManager.stageHeight - height - StaticMeasurements.scrollbarWidth
         );
         const velocityMarkers = this.layer.find('.VELOCITY_MARKER');
         velocityMarkers.forEach(velocityMarker => {
             const newMarkerHeight = velocityMarker.attrs.velocity * (height - 10);
             velocityMarker.height(newMarkerHeight);
             velocityMarker.y(
-                this.conversionManager.stageHeight - SCROLLBAR_WIDTH - newMarkerHeight
+                this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth - newMarkerHeight
             );
         });
         this.layer.batchDraw();
@@ -86,7 +86,7 @@ export default class VelocityLayer {
             width: this.conversionManager.gridWidth,
             height: this.conversionManager.velocityAreaHeight,
             x: 0,
-            y: this.conversionManager.stageHeight - SCROLLBAR_WIDTH - this.conversionManager.velocityAreaHeight,
+            y: this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth - this.conversionManager.velocityAreaHeight,
             fill: Colours.grayscale[2],
             id: 'VELOCITY_BACKGROUND'
         });
@@ -98,7 +98,7 @@ export default class VelocityLayer {
             width: this.conversionManager.gridWidth,
             height: 3,
             x: 0,
-            y: this.conversionManager.stageHeight - SCROLLBAR_WIDTH - this.conversionManager.velocityAreaHeight,
+            y: this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth - this.conversionManager.velocityAreaHeight,
             fill: Colours.grayscale[6],
             id: 'VELOCITY_BORDER'
         });
@@ -136,7 +136,7 @@ export default class VelocityLayer {
     addNewVelocityMarker(x: number, id: string) : Konva.Rect {
         const velocityMarker = this.createVelocityMarker(
             x,
-            this.conversionManager.stageHeight - SCROLLBAR_WIDTH - (this.conversionManager.velocityAreaHeight - 10),
+            this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth - (this.conversionManager.velocityAreaHeight - 10),
             (this.conversionManager.velocityAreaHeight - 10),
             id,
             true,
@@ -233,7 +233,7 @@ export default class VelocityLayer {
 
     updateVelocityMarkersHeight(velocityRectsArray: Konva.Rect[], velocityValue: number) : void {
         const newHeight = velocityValue * (this.conversionManager.velocityAreaHeight - 10);
-        const newY = this.conversionManager.stageHeight - SCROLLBAR_WIDTH - newHeight;
+        const newY = this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth - newHeight;
         velocityRectsArray.forEach(velocityRect => {
             velocityRect.setAttr('velocity', velocityValue);
             velocityRect.height(newHeight);
@@ -251,7 +251,7 @@ export default class VelocityLayer {
             // calculate x, y, height, id, isSelected
             const x = this.conversionManager.convertTicksToPx(note.time);
             const height = note.velocity * (this.conversionManager.velocityAreaHeight - 10);
-            const y = this.conversionManager.stageHeight - SCROLLBAR_WIDTH - height;
+            const y = this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth - height;
             const isSelected = state.selectedNoteIds.includes(note.id);
             const velocityMarkerElement = this.createVelocityMarker(
                 x,

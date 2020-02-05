@@ -1,17 +1,9 @@
 import emitter from '../EventEmitter';
 import {
-    BAR_WIDTH,
-    ROW_HEIGHT,
-    VELOCITY_LAYER_HEIGHT,
-    SEEKER_AREA_HEIGHT
+    StaticMeasurements,
+    Events
 } from '../Constants';
-import {
-    QUANTIZE_VALUE_UPDATE,
-    NOTE_DURATION_UPDATE
-} from '../events';
 import { pitchesArray } from '../pitches';
-
-const TICKS_PER_BAR = 768;
 
 const noteDurationsMappedToTicks = {
     '32t': 16,
@@ -46,15 +38,15 @@ export default class ConversionManager {
     ) {
         this._stageWidth = stageWidth;
         this._stageHeight = stageHeight;
-        this._velocityAreaHeight = VELOCITY_LAYER_HEIGHT;
+        this._velocityAreaHeight = StaticMeasurements.velocityLayerHeight;
         this._quantize = initialQuantize;
         this._noteDuration = initialNoteDuration;
         this._tickToPxRatio = 0.25;
         this._numBars = numBars;
-        emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
+        emitter.subscribe(Events.quantizeValueUpdate, qVal => {
             this._quantize = qVal;
         });
-        emitter.subscribe(NOTE_DURATION_UPDATE, nVal => {
+        emitter.subscribe(Events.noteDurationUpdate, nVal => {
             this._noteDuration = nVal;
         });
     }
@@ -97,11 +89,11 @@ export default class ConversionManager {
     }
 
     get barWidth() : number {
-        return TICKS_PER_BAR * this.tickToPxRatio;
+        return StaticMeasurements.ticksPerBar * this.tickToPxRatio;
     }
 
     get rowHeight() : number {
-        return ROW_HEIGHT;
+        return StaticMeasurements.rowHeight;
     }
 
     get gridHeight() : number {
@@ -137,7 +129,7 @@ export default class ConversionManager {
     }
 
     get seekerAreaHeight() : number {
-        return SEEKER_AREA_HEIGHT;
+        return StaticMeasurements.seekerAreaHeight;
     }
 
     get numBars() : number {

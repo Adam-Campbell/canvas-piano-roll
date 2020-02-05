@@ -1,18 +1,15 @@
-// green
 const malachite = {
     main: '#07da74',
     lightened: '#1de283',
     darkened: '#0bc56b'
 };
 
-// blue
 const cerulean = {
     main: '#07b3da',
     lightened: '#23c7ec',
     darkened: '#068cab'
 };
 
-// red
 const monza = {
     main: '#da0729',
     lightened: '#fda4b2',
@@ -39,34 +36,9 @@ const currentGrayScale = {
     8: '#0b0b0b'
 }
 
-
-/*
-
-Current grayscale:
-
-#dadada - grid background
-
-#acacac - transport area background and velocity layer background
-
-#6d6d6d - scrollbar thumb
-
-#666 - lighter grid lines
-
-#333 - scrollbar track
-
-#222 - darker grid lines
-
-
-
-
-
-
-
-*/
-
-export default {
+export const Colours = {
     primary: malachite,
     secondary: monza,
     tertiary: cerulean,
     grayscale: currentGrayScale
-}
+};

@@ -9,7 +9,6 @@ export default class NoteSelection {
     }
 
     add(canvasElement: Konva.Rect) : void {
-        console.log('add called')
         this.cache.add(canvasElement.attrs.id);
     }
 

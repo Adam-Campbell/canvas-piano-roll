@@ -6,7 +6,7 @@ import {
     getKeyProps,
     sortByColor
 } from './pianoKeyUtils';
-import { Colours } from '../Constants';
+import { Colours, StaticMeasurements } from '../Constants';
 import ConversionManager from '../ConversionManager';
 
 export default class PianoKeyLayer {
@@ -22,7 +22,7 @@ export default class PianoKeyLayer {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
         this.layerGroup = new Konva.Group();
-        this.pianoKeyGroup = new Konva.Group({ y: 30 });
+        this.pianoKeyGroup = new Konva.Group({ y: StaticMeasurements.seekerAreaHeight });
         this.background = this.constructBackground();
         this.instrument = new Tone.PolySynth(12, Tone.Synth).toMaster();
         this.instrument.set({

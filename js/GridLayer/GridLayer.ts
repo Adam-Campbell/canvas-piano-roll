@@ -1,11 +1,5 @@
-//import { Line, Rect, Group } from 'konva';
 import Konva from 'konva';
 import emitter from '../EventEmitter'; 
-import { 
-    QUANTIZE_VALUE_UPDATE,
-    SCALE_TYPE_UPDATE,
-    DISPLAY_SCALE_UPDATE
-} from '../events';
 import {  
     getHorizontalLinesData,
     getVerticalLinesData,
@@ -13,7 +7,10 @@ import {
 import { pitchesArray } from '../pitches';
 import { scale } from '@tonaljs/scale';
 import { note } from '@tonaljs/tonal';
-import { Colours } from '../Constants';
+import { 
+    Colours,
+    Events 
+} from '../Constants';
 import ConversionManager from '../ConversionManager';
 
 const isSameNote = (noteA, noteB) => note(noteA).chroma === note(noteB).chroma;
@@ -26,7 +23,7 @@ export default class GridLayer {
     private scaleHighlightsSubContainer: Konva.Group;
     private gridLinesSubContainer: Konva.Group;
     private scaleType: string;
-    private shouldDisplayScaleHighlighting: boolean;
+    shouldDisplayScaleHighlighting: boolean;
 
     constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
         this.conversionManager = conversionManager;
@@ -44,15 +41,15 @@ export default class GridLayer {
     }
 
     private registerGlobalEventSubscriptions() : void {
-        emitter.subscribe(QUANTIZE_VALUE_UPDATE, qVal => {
+        emitter.subscribe(Events.quantizeValueUpdate, qVal => {
             this.drawGrid();
         });
-        emitter.subscribe(SCALE_TYPE_UPDATE, scaleType => {
+        emitter.subscribe(Events.scaleTypeUpdate, scaleType => {
             this.scaleType = scaleType;
             console.log(scaleType);
             this.drawScaleHighlights();
         });
-        emitter.subscribe(DISPLAY_SCALE_UPDATE, shouldDisplay => {
+        emitter.subscribe(Events.displayScaleUpdate, shouldDisplay => {
             this.shouldDisplayScaleHighlighting = shouldDisplay;
             this.drawScaleHighlights();
         });
@@ -68,7 +65,7 @@ export default class GridLayer {
         this.layer.batchDraw();
     }
 
-    private toggleScaleHighlights() {
+    toggleScaleHighlights() {
         this.shouldDisplayScaleHighlighting = !this.shouldDisplayScaleHighlighting;
         this.drawScaleHighlights();
     }

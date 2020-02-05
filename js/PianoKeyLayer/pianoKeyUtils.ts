@@ -1,4 +1,4 @@
-import { ROW_HEIGHT, Colours, Pitch } from '../Constants';
+import { Colours, Pitch, StaticMeasurements } from '../Constants';
 
 export const staticKeyProps = {
     x: 0,
@@ -21,7 +21,7 @@ interface KeyProps {
 }
 
 export const getKeyProps = (pitch: Pitch, idx: number) : KeyProps => {
-    const approxY = idx * ROW_HEIGHT;
+    const approxY = idx * StaticMeasurements.rowHeight;
     const noteIdx = idx % 12;
     switch (noteIdx) {
         case 1:

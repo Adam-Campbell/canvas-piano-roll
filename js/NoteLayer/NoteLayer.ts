@@ -71,7 +71,7 @@ export default class NoteLayer {
         });
     }
 
-    addNewNote(x: number, y: number, id: string, width: number) : Konva.Rect {
+    addNewNote(x: number, y: number, id: string, width?: number) : Konva.Rect {
         const newNote = this.createNoteElement(
             x,
             y,

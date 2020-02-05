@@ -1,12 +1,6 @@
 import Tone from 'tone';
 import emitter from './EventEmitter';
-import {
-    UNDO_ACTION,
-    REDO_ACTION,
-    COPY_TO_CLIPBOARD,
-    CUT_TO_CLIPBOARD,
-    PASTE_FROM_CLIPBOARD
-} from './events';
+import { Events } from './Constants';
 
 export const initButtons = () => {
 
@@ -26,22 +20,22 @@ export const initButtons = () => {
     const undoButton = document.getElementById('undo-button');
     const redoButton = document.getElementById('redo-button');
     undoButton.addEventListener('click', e => {
-        emitter.broadcast(UNDO_ACTION);
+        emitter.broadcast(Events.undoAction);
     });
     redoButton.addEventListener('click', e => {
-        emitter.broadcast(REDO_ACTION);
+        emitter.broadcast(Events.redoAction);
     });
 
     const cutButton = document.getElementById('cut-button');
     const copyButton = document.getElementById('copy-button');
     const pasteButton = document.getElementById('paste-button');
     cutButton.addEventListener('click', e => {
-        emitter.broadcast(CUT_TO_CLIPBOARD);
+        emitter.broadcast(Events.cutToClipboard);
     });
     copyButton.addEventListener('click', e => {
-        emitter.broadcast(COPY_TO_CLIPBOARD);
+        emitter.broadcast(Events.copyToClipboard);
     });
     pasteButton.addEventListener('click', e => {
-        emitter.broadcast(PASTE_FROM_CLIPBOARD);
+        emitter.broadcast(Events.pasteFromClipboard);
     });
 }

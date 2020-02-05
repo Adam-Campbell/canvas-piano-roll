@@ -1,5 +1,5 @@
 import emitter from './EventEmitter';
-import { SCALE_TYPE_UPDATE, DISPLAY_SCALE_UPDATE } from './events';
+import { Events } from './Constants';
 
 export const initScaleSelect = () => {
     const scaleKeySelect = document.getElementById('scale-key-select');
@@ -8,13 +8,13 @@ export const initScaleSelect = () => {
         const key = scaleKeySelect.value;
         const type = scaleTypeSelect.value;
         const newScale = `${key} ${type}`;
-        emitter.broadcast(SCALE_TYPE_UPDATE, newScale);
+        emitter.broadcast(Events.scaleTypeUpdate, newScale);
     }
     scaleKeySelect.addEventListener('change', handleChange);
     scaleTypeSelect.addEventListener('change', handleChange);
 
     const displayScaleToggle = document.getElementById('display-scale-toggle');
     displayScaleToggle.addEventListener('change', e => {
-        emitter.broadcast(DISPLAY_SCALE_UPDATE, e.target.checked);
+        emitter.broadcast(Events.displayScaleUpdate, e.target.checked);
     });
 }

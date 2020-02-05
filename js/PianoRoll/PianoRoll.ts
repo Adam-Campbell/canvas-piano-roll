@@ -19,32 +19,14 @@ import SeekerLineLayer from '../SeekerLineLayer';
 import PianoKeyLayer from '../PianoKeyLayer';
 import ScrollbarLayer from '../ScrollbarLayer';
 import ContextMenuLayer from '../ContextMenuLayer';
-
 import { 
-    STAGE_WIDTH, 
-    STAGE_HEIGHT,
-    // DRAG_MODE_ADJUST_NOTE_SIZE,
-    // DRAG_MODE_ADJUST_NOTE_POSITION,
-    // DRAG_MODE_ADJUST_SELECTION,
-    // DRAG_MODE_ADJUST_SELECTION_FROM_VELOCITY_AREA,
-    // DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT,
-    SCROLLBAR_WIDTH,
-    PIANO_KEY_WIDTH,
     DragModes,
     Tools,
     Events,
     StaticMeasurements,
-    SerializedState
+    SerializedState,
+    KonvaEvent
 } from '../Constants';
-import {
-    ACTIVE_TOOL_UPDATE,
-    UNDO_ACTION,
-    REDO_ACTION,
-    COPY_TO_CLIPBOARD,
-    CUT_TO_CLIPBOARD,
-    PASTE_FROM_CLIPBOARD,
-    CHORD_TYPE_UPDATE
-} from '../events';
 import { 
     doesOverlap,
     canShiftUp,
@@ -62,6 +44,13 @@ enum NudgeDirections {
     horizontal = 'horizontal',
     vertical = 'vertical',
     both = 'both'
+}
+
+enum EasingModes {
+    linear = 'linear',
+    easeIn = 'easeIn',
+    easeOut = 'easeOut',
+    easeInOut = 'easeInOut'
 }
 
 export default class PianoRoll {
@@ -95,8 +84,8 @@ export default class PianoRoll {
 
     constructor(
         containerId: string, 
-        width: number = STAGE_WIDTH, 
-        height: number = STAGE_HEIGHT, 
+        width: number = StaticMeasurements.stageWidth, 
+        height: number = StaticMeasurements.stageHeight, 
         initialQuantize: string = '16n', 
         initialNoteDuration: string = '16n', 
         numBars: number = 8
@@ -425,7 +414,7 @@ export default class PianoRoll {
         this.audioReconciler.addNote(noteElement, velocityMarkerElement);
     }
 
-    private addNewNote(x: number, y: number, width: number) : Konva.Rect {
+    private addNewNote(x: number, y: number, width?: number) : Konva.Rect {
         const id = genId();
         const newNote = this.noteLayer.addNewNote(x, y, id, width);
         const newVelocityMarker = this.velocityLayer.addNewVelocityMarker(x, id);
@@ -723,7 +712,7 @@ export default class PianoRoll {
             const velocityMarkerHeight = noteObject.velocity * (this.conversionManager.velocityAreaHeight - 10);
             const velocityMarkerElement = this.velocityLayer.createVelocityMarker(
                 this.conversionManager.convertTicksToPx(noteObject.time),
-                this.conversionManager.stageHeight - SCROLLBAR_WIDTH - velocityMarkerHeight,
+                this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth - velocityMarkerHeight,
                 velocityMarkerHeight,
                 noteObject.id,
                 true,
@@ -738,98 +727,103 @@ export default class PianoRoll {
         this.serializeState();
     }
 
-    _handleContextMenu(e) {
-        const { rawX, rawY, target } = this._extractInfoFromEventObject(e);
+    private handleContextMenu(e: KonvaEvent) : void {
+        const { rawX, rawY, target } = this.extractInfoFromEventObject(e);
         e.evt.preventDefault();
-        const isVelocityAreaClick = this._conversionManager.stageHeight - rawY <= this._conversionManager.velocityAreaHeight + SCROLLBAR_WIDTH;
+        const isVelocityAreaClick = this.conversionManager.stageHeight - rawY <= this.conversionManager.velocityAreaHeight + StaticMeasurements.scrollbarWidth;
         const targetIsNote = target.name() === 'NOTE';
         if (isVelocityAreaClick) {
-            this._addVelocityContextMenu(rawX, rawY);
+            this.addVelocityContextMenu(rawX, rawY);
         } else if (targetIsNote) {
-            this._addNoteContextMenu(rawX, rawY);
+            this.addNoteContextMenu(rawX, rawY);
         } else {
-            this._addGridContextMenu(rawX, rawY);
+            this.addGridContextMenu(rawX, rawY);
         }
     }
 
-    _addVelocityContextMenu(rawX, rawY) {
+    private addVelocityContextMenu(rawX: number, rawY: number) : void {
         const menuItems = [
             { 
                 label: 'Humanize',
-                callback: () => this._humanizeSelection() 
+                callback: () => this.humanizeSelection() 
             },
             { 
                 label: 'Transform - linear',
-                callback: () => this._transformSelection('linear') 
+                callback: () => this.transformSelection('linear') 
             },
             { 
                 label: 'Transform - ease in',
-                callback: () => this._transformSelection('easeIn')
+                callback: () => this.transformSelection('easeIn')
             },
             { 
                 label: 'Transform - ease out',
-                callback: () => this._transformSelection('easeOut') 
+                callback: () => this.transformSelection('easeOut') 
             },
             { 
                 label: 'Transform - ease in out',
-                callback: () => this._transformSelection('easeInOut') 
+                callback: () => this.transformSelection('easeInOut') 
             }
         ];
-        this._contextMenuLayer.addContextMenu({ rawX, rawY, menuItems });
+        this.contextMenuLayer.addContextMenu({ rawX, rawY, menuItems });
     }
 
-    _addGridContextMenu(rawX, rawY) {
+    private addGridContextMenu(rawX: number, rawY: number) : void {
         const menuItems = [
             {
                 label: 'Zoom in',
-                callback: () => this._handleZoomAdjustment(true)
+                callback: () => this.handleZoomAdjustment(true)
             },
             {
                 label: 'Zoom out',
-                callback: () => this._handleZoomAdjustment(false)
+                callback: () => this.handleZoomAdjustment(false)
             },
             {
                 label: 'Paste',
-                callback: () => this._paste()
+                callback: () => this.paste()
             },
             {
-                label: this._gridLayer._shouldDisplayScaleHighlighting ? 'Hide scale highlighting' : 'Show scale highlighting',
-                callback: () => this._gridLayer._toggleScaleHighlights()
+                label: this.gridLayer.shouldDisplayScaleHighlighting ? 'Hide scale highlighting' : 'Show scale highlighting',
+                callback: () => this.gridLayer.toggleScaleHighlights()
             }
         ];
-        this._contextMenuLayer.addContextMenu({ rawX, rawY, menuItems });
+        this.contextMenuLayer.addContextMenu({ rawX, rawY, menuItems });
     }
 
-    _addNoteContextMenu(rawX, rawY) {
+    private addNoteContextMenu(rawX: number, rawY: number) : void {
         const menuItems = [
             {
                 label: 'Cut',
-                callback: () => this._cut()
+                callback: () => this.cut()
             },
             {
                 label: 'Copy',
-                callback: () => this._copy()
+                callback: () => this.copy()
             },
             {
                 label: 'Delete',
-                callback: () => this._deleteSelectedNotes()
+                callback: () => this.deleteSelectedNotes()
             },
             {
                 label: 'Generate chord',
-                callback: () => this._constructChordsFromSelectedRootNotes()
+                callback: () => this.constructChordsFromSelectedRootNotes()
             }
         ];
-        this._contextMenuLayer.addContextMenu({ rawX, rawY, menuItems });
+        this.contextMenuLayer.addContextMenu({ rawX, rawY, menuItems });
     }
 
-    _extractInfoFromEventObject(e) {
+    private extractInfoFromEventObject(e: KonvaEvent) : {
+        isTouchEvent : boolean,
+        target: any,
+        rawX: number,
+        rawY: number
+    } {
         const { evt, target } = e;
         const isTouchEvent = Boolean(evt.touches);
         let rawX;
         let rawY;
         if (isTouchEvent) {
             const { clientX, clientY } = evt.touches[0];
-            const { top, left } = this._stage.container().getBoundingClientRect();
+            const { top, left } = this.stage.container().getBoundingClientRect();
             rawX = clientX - left;
             rawY = clientY - top;
         } else {
@@ -844,145 +838,144 @@ export default class PianoRoll {
         }
     }
 
-    _handleDoubleClick(e) {
-        const { rawX, rawY } = this._extractInfoFromEventObject(e);
+    private handleDoubleClick(e: KonvaEvent) : void {
+        const { rawX, rawY } = this.extractInfoFromEventObject(e);
         const isTransportAreaClick = rawY <= 30;
         if (isTransportAreaClick) {
-            const roundedX = this._conversionManager.roundDownToGridCol(
-                rawX - this._scrollManager.x
+            const roundedX = this.conversionManager.roundDownToGridCol(
+                rawX - this.scrollManager.x
             );
-            const positionAsTicks = this._conversionManager.convertPxToTicks(roundedX);
-            this._playbackFromTicks = positionAsTicks;
-            this._transportLayer.repositionPlaybackMarker(positionAsTicks);
+            const positionAsTicks = this.conversionManager.convertPxToTicks(roundedX);
+            this.playbackFromTicks = positionAsTicks;
+            this.transportLayer.repositionPlaybackMarker(positionAsTicks);
         }
     }
 
-    _handleInteractionStart(e) {
-        this._contextMenuLayer.removeContextMenu();
+    private handleInteractionStart(e: KonvaEvent) : void {
+        this.contextMenuLayer.removeContextMenu();
         if (e.evt.button !== 0) {
             return;
         }
-        const { rawX, rawY, isTouchEvent, target } = this._extractInfoFromEventObject(e);
-        const xWithScroll = rawX - this._scrollManager.x;
-        const yWithScroll = rawY - this._scrollManager.y;
-        const roundedX = this._conversionManager.roundDownToGridCol(xWithScroll);
-        const roundedY = this._conversionManager.roundDownToGridRow(yWithScroll);
+        const { rawX, rawY, isTouchEvent, target } = this.extractInfoFromEventObject(e);
+        const xWithScroll = rawX - this.scrollManager.x;
+        const yWithScroll = rawY - this.scrollManager.y;
+        const roundedX = this.conversionManager.roundDownToGridCol(xWithScroll);
+        const roundedY = this.conversionManager.roundDownToGridRow(yWithScroll);
 
-        const isVelocityAreaClick = this._conversionManager.stageHeight - rawY <= this._conversionManager.velocityAreaHeight + SCROLLBAR_WIDTH;
+        const isVelocityAreaClick = this.conversionManager.stageHeight - rawY <= this.conversionManager.velocityAreaHeight + StaticMeasurements.scrollbarWidth;
         const isTransportAreaClick = rawY <= 30;
-        this._mouseStateManager.addMouseDownEvent(xWithScroll, yWithScroll);
+        this.mouseStateManager.addMouseDownEvent(xWithScroll, yWithScroll);
 
         if (isTransportAreaClick) {
-            const positionAsTicks = this._conversionManager.convertPxToTicks(roundedX);
+            const positionAsTicks = this.conversionManager.convertPxToTicks(roundedX);
             const positionAsBBS = Tone.Ticks(positionAsTicks).toBarsBeatsSixteenths();
             Tone.Transport.position = positionAsBBS;
-            this._seekerLineLayer.updateSeekerLinePosition();
+            this.seekerLineLayer.updateSeekerLinePosition();
             return;
         }
 
-        if (this._activeTool === 'marquee') {
+        if (this.activeTool === Tools.marquee) {
             if (isVelocityAreaClick) {
-                this._mouseStateManager.addMouseDownEvent(xWithScroll, rawY);
-                this._dragMode = DRAG_MODE_ADJUST_SELECTION_FROM_VELOCITY_AREA;
+                this.mouseStateManager.addMouseDownEvent(xWithScroll, rawY);
+                this.dragMode = DragModes.adjustSelectionFromVelocityArea;
             } else {
-                this._dragMode = DRAG_MODE_ADJUST_SELECTION;
+                this.dragMode = DragModes.adjustSelection;
             }
-        } else if (this._activeTool === 'pencil') {
+        } else if (this.activeTool === Tools.pencil) {
             if (isVelocityAreaClick) {
-                this._handleVelocityAreaPencilInteraction(roundedX, rawY);
+                this.handleVelocityAreaPencilInteraction(roundedX, rawY);
             } else {
-                this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
-                this._clearSelection();
-                this._addNewNote(roundedX, roundedY); 
+                this.dragMode = DragModes.adjustNoteSize;
+                this.clearSelection();
+                this.addNewNote(roundedX, roundedY); 
             }
-        } else if (this._activeTool === 'cursor') {
+        } else if (this.activeTool === Tools.cursor) {
             if (isVelocityAreaClick) {
-                this._handleVelocityAreaCursorInteraction(roundedX, target);
+                this.handleVelocityAreaCursorInteraction(roundedX, target);
             } else {
                 const targetIsNote = Boolean(target.getAttr('isNoteRect'));
                 if (targetIsNote) {
-                    this._handleNoteInteractionStart(target, xWithScroll);
+                    this.handleNoteInteractionStart(target, xWithScroll);
                 }
             }  
         }
 
     }
 
-    _handleNoteInteractionStart(noteElement, xWithScroll) {
+    private handleNoteInteractionStart(noteElement: Konva.Rect, xWithScroll: number) : void {
         const { x: rectX, width: rectWidth } = noteElement.attrs;
         const isEdgeClick = rectWidth + rectX - xWithScroll < 10;
-        const isSelected = this._noteSelection.has(noteElement);
+        const isSelected = this.noteSelection.has(noteElement);
         if (isEdgeClick) {
             if (!isSelected) {
-                this._clearSelection();
-                this._addNoteToSelection(noteElement);
+                this.clearSelection();
+                this.addNoteToSelection(noteElement);
             } 
-            this._dragMode = DRAG_MODE_ADJUST_NOTE_SIZE;
+            this.dragMode = DragModes.adjustNoteSize
         } else {
-            this._dragMode = DRAG_MODE_ADJUST_NOTE_POSITION;
+            this.dragMode = DragModes.adjustNotePosition;
         }
     }
 
-    _handleVelocityAreaCursorInteraction(roundedX, target) {
+    private handleVelocityAreaCursorInteraction(roundedX: number, target: Konva.Rect) : void {
         // Test if the target is the border, and if so enter height change drag mode. 
         if (target.id() === 'VELOCITY_BORDER') {
-            this._dragMode = DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT;
+            this.dragMode = DragModes.adjustVelocityAreaHeight
             return;
         }
         // If not, select / deselect notes based on the current selection state, click location and
         // shift key state.
-        const allNoteElements = this._noteCache.retrieveAll();
+        const allNoteElements = this.noteCache.retrieveAll();
         const matchingNotes = allNoteElements.filter(el => el.x() === roundedX);
         const selectedMatchingNotes = matchingNotes.filter(el => {
-            return this._noteSelection.has(el);
+            return this.noteSelection.has(el);
         });
         
-        if (matchingNotes.length === 0 || !this._keyboardStateManager.shiftKey) {
-            // clear selection
-            this._clearSelection();
+        if (matchingNotes.length === 0 || !this.keyboardStateManager.shiftKey) {
+            this.clearSelection();
         }
 
         if (matchingNotes.length !== selectedMatchingNotes.length) {
-            matchingNotes.forEach(noteElement => this._addNoteToSelection(noteElement));
+            matchingNotes.forEach(noteElement => this.addNoteToSelection(noteElement));
         } else {
-            matchingNotes.forEach(noteElement => this._removeNoteFromSelection(noteElement));
+            matchingNotes.forEach(noteElement => this.removeNoteFromSelection(noteElement));
         }
     }
 
-    _handleVelocityAreaPencilInteraction(roundedX, rawY) {
+    private handleVelocityAreaPencilInteraction(roundedX: number, rawY: number) : void {
         // Calculate the new velocity
         const pxFromBottom = Math.min(
-            this._conversionManager.stageHeight - rawY - SCROLLBAR_WIDTH,
-            this._conversionManager.velocityAreaHeight - 10
+            this.conversionManager.stageHeight - rawY - StaticMeasurements.scrollbarWidth,
+            this.conversionManager.velocityAreaHeight - 10
         );
-        const velocityValue = pxFromBottom / (this._conversionManager.velocityAreaHeight - 10);
+        const velocityValue = pxFromBottom / (this.conversionManager.velocityAreaHeight - 10);
         // Determine which notes should be updated based on the click location, the current selection
         // state and the shift key state.
-        const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
+        const allVelocityMarkers = this.velocityMarkerCache.retrieveAll();
         const matchingMarkers = allVelocityMarkers.filter(el => el.x() === roundedX);
-        const selectedMarkers = allVelocityMarkers.filter(el => this._noteSelection.has(el));
+        const selectedMarkers = allVelocityMarkers.filter(el => this.noteSelection.has(el));
         const selectedMatchingMarkers = matchingMarkers.filter(el => {
-            return this._noteSelection.has(el);
+            return this.noteSelection.has(el);
         });
-        const shiftKeyIsPressed = this._keyboardStateManager.shiftKey;
+
         let velocityMarkersToUpdate;
         if (matchingMarkers.length === 0) {
             return;
         } else if (selectedMatchingMarkers.length === 0) {
             velocityMarkersToUpdate = matchingMarkers;
         } else {
-            velocityMarkersToUpdate = shiftKeyIsPressed ? selectedMarkers : selectedMatchingMarkers;
+            velocityMarkersToUpdate = this.keyboardStateManager.shiftKey ? selectedMarkers : selectedMatchingMarkers;
         }
         // Once the relevant notes have been found, iterate over them and update each of them. 
-        this._velocityLayer.updateVelocityMarkersHeight(velocityMarkersToUpdate, velocityValue);
+        this.velocityLayer.updateVelocityMarkersHeight(velocityMarkersToUpdate, velocityValue);
         velocityMarkersToUpdate.forEach(velocityRect => {
             const id = velocityRect.getAttr('id');
-            this._addNoteToAudioEngine(id);
+            this.addNoteToAudioEngine(id);
         });
-        this._serializeState();
+        this.serializeState();
     }
 
-    _humanizeNoteVelocities(velocityMarkerElements, range = 0.1) {
+    private humanizeNoteVelocities(velocityMarkerElements: Konva.Rect[], range: number = 0.1) : void {
         velocityMarkerElements.forEach(velocityElement => {
             const { velocity, id } = velocityElement.attrs;
             // Ensure the the velocity value that we randomize is at least `range` distance
@@ -993,25 +986,25 @@ export default class PianoRoll {
                 1 - range
             );
             const newVelocityValue = safeVelocityValue + (Math.random() * range * 2) - range;
-            this._velocityLayer.updateVelocityMarkersHeight([ velocityElement ], newVelocityValue);
-            this._addNoteToAudioEngine(id);
+            this.velocityLayer.updateVelocityMarkersHeight([ velocityElement ], newVelocityValue);
+            this.addNoteToAudioEngine(id);
         });
-        this._serializeState();
+        this.serializeState();
     }
 
-    _humanizeSelection() {
-        const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
-        const selectedMarkers = allVelocityMarkers.filter(el => this._noteSelection.has(el));
-        this._humanizeNoteVelocities(selectedMarkers, 0.1);
+    private humanizeSelection() : void {
+        const allVelocityMarkers = this.velocityMarkerCache.retrieveAll();
+        const selectedMarkers = allVelocityMarkers.filter(el => this.noteSelection.has(el));
+        this.humanizeNoteVelocities(selectedMarkers, 0.1);
     }
 
-    _transformSelection(easing = 'linear') {
-        const allVelocityMarkers = this._velocityMarkerCache.retrieveAll();
-        const selectedMarkers = allVelocityMarkers.filter(el => this._noteSelection.has(el));
-        this._transformNoteVelocities(selectedMarkers, easing);
+    private transformSelection(easingMode: EasingModes = EasingModes.linear) : void {
+        const allVelocityMarkers = this.velocityMarkerCache.retrieveAll();
+        const selectedMarkers = allVelocityMarkers.filter(el => this.noteSelection.has(el));
+        this.transformNoteVelocities(selectedMarkers, easingMode);
     }
 
-    _transformNoteVelocities(velocityMarkerElements, easingFnName) {
+    private transformNoteVelocities(velocityMarkerElements: Konva.Rect, easingMode: EasingModes) : void {
         
         let originX;
         let terminalX;
@@ -1034,7 +1027,7 @@ export default class PianoRoll {
         const getPosInRange = x => (x - originX) / xDelta;
         const adjustForFnRange = x => x * velocityDelta + originVelocity;
 
-        const easingFn = easingFns[easingFnName] || easingFns.linear;
+        const easingFn = easingFns[easingMode] || easingFns.linear;
 
         const transformFn = pipe(
             getPosInRange,
@@ -1045,178 +1038,178 @@ export default class PianoRoll {
         velocityMarkerElements.forEach(velocityElement => {
             const { x, id } = velocityElement.attrs;
             const newVelocityValue = transformFn(x);
-            this._velocityLayer.updateVelocityMarkersHeight([ velocityElement ], newVelocityValue);
-            this._addNoteToAudioEngine(id);
+            this.velocityLayer.updateVelocityMarkersHeight([ velocityElement ], newVelocityValue);
+            this.addNoteToAudioEngine(id);
         });
-        this._serializeState();
+        this.serializeState();
     }
 
-    _handleInteractionUpdate(e) {
-        switch (this._dragMode) {
-            case DRAG_MODE_ADJUST_NOTE_SIZE:
-                this._handleAdjustNoteSizeInteractionUpdate(e);
+    private handleInteractionUpdate(e: KonvaEvent) : void {
+        switch (this.dragMode) {
+            case DragModes.adjustNoteSize:
+                this.handleAdjustNoteSizeInteractionUpdate(e);
                 break;
-            case DRAG_MODE_ADJUST_NOTE_POSITION:
-                this._handleAdjustNotePositionInteractionUpdate(e);
+            case DragModes.adjustNotePosition:
+                this.handleAdjustNotePositionInteractionUpdate(e);
                 break;
-            case DRAG_MODE_ADJUST_SELECTION:
-                this._handleAdjustSelectionInteractionUpdate(e);
+            case DragModes.adjustSelection:
+                this.handleAdjustSelectionInteractionUpdate(e);
                 break;
-            case DRAG_MODE_ADJUST_SELECTION_FROM_VELOCITY_AREA:
-                this._handleAdjustSelectionFromVelocityInteractionUpdate(e);
+            case DragModes.adjustSelectionFromVelocityArea:
+                this.handleAdjustSelectionFromVelocityInteractionUpdate(e);
                 break;
-            case DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT:
-                this._handleAdjustVelocityAreaHeightInteractionUpdate(e);
+            case DragModes.adjustVelocityAreaHeight:
+                this.handleAdjustVelocityAreaHeightInteractionUpdate(e);
                 break;
             default:
                 return;
         }
     }
 
-    _handleAdjustNoteSizeInteractionUpdate(e) {
-        const { rawX, rawY } = this._extractInfoFromEventObject(e);
-        this._nudgeGridIfRequired(rawX, rawY, 'HORIZONTAL');
-        const xWithScroll = rawX - this._scrollManager.x;
-        const selectedNoteIds = this._noteSelection.retrieveAll();
-        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
-        this._noteLayer.updateNoteDurations(
-            this._mouseStateManager.x, 
+    private handleAdjustNoteSizeInteractionUpdate(e: KonvaEvent) : void {
+        const { rawX, rawY } = this.extractInfoFromEventObject(e);
+        this.nudgeGridIfRequired(rawX, rawY, NudgeDirections.horizontal);
+        const xWithScroll = rawX - this.scrollManager.x;
+        const selectedNoteIds = this.noteSelection.retrieveAll();
+        const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
+        this.noteLayer.updateNoteDurations(
+            this.mouseStateManager.x, 
             xWithScroll, 
             selectedNoteElements
         );
     }
 
-    _handleAdjustNotePositionInteractionUpdate(e) {
-        const { rawX, rawY } = this._extractInfoFromEventObject(e);
-        this._nudgeGridIfRequired(rawX, rawY);
-        const xWithScroll = rawX - this._scrollManager.x;
-        const yWithScroll = rawY - this._scrollManager.y;
-        this._mouseStateManager.updateHasTravelled(xWithScroll, yWithScroll);
-        const xDelta = this._conversionManager.roundToGridCol(
-            xWithScroll - this._mouseStateManager.x
+    private handleAdjustNotePositionInteractionUpdate(e: KonvaEvent) : void {
+        const { rawX, rawY } = this.extractInfoFromEventObject(e);
+        this.nudgeGridIfRequired(rawX, rawY, NudgeDirections.both);
+        const xWithScroll = rawX - this.scrollManager.x;
+        const yWithScroll = rawY - this.scrollManager.y;
+        this.mouseStateManager.updateHasTravelled(xWithScroll, yWithScroll);
+        const xDelta = this.conversionManager.roundToGridCol(
+            xWithScroll - this.mouseStateManager.x
         );
-        const yDelta = this._conversionManager.roundToGridRow(
-            yWithScroll - this._mouseStateManager.y
+        const yDelta = this.conversionManager.roundToGridRow(
+            yWithScroll - this.mouseStateManager.y
         );
-        const selectedNoteIds = this._noteSelection.retrieveAll();
-        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
-        const selectedVelocityMarkerElements = this._velocityMarkerCache.retrieve(selectedNoteIds);
-        this._noteLayer.repositionNotes(xDelta, yDelta, selectedNoteElements);
-        this._velocityLayer.repositionVelocityMarkers(xDelta, selectedVelocityMarkerElements);
+        const selectedNoteIds = this.noteSelection.retrieveAll();
+        const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
+        const selectedVelocityMarkerElements = this.velocityMarkerCache.retrieve(selectedNoteIds);
+        this.noteLayer.repositionNotes(xDelta, yDelta, selectedNoteElements);
+        this.velocityLayer.repositionVelocityMarkers(xDelta, selectedVelocityMarkerElements);
     }
 
-    _handleAdjustSelectionInteractionUpdate(e) {
-        const { rawX, rawY } = this._extractInfoFromEventObject(e);
-        this._nudgeGridIfRequired(rawX, rawY);
-        const currentX = rawX - this._scrollManager.x;
-        const currentY = rawY - this._scrollManager.y;
-        const mouseDownX = this._mouseStateManager.x;
-        const mouseDownY = this._mouseStateManager.y;
+    private handleAdjustSelectionInteractionUpdate(e: KonvaEvent) : void {
+        const { rawX, rawY } = this.extractInfoFromEventObject(e);
+        this.nudgeGridIfRequired(rawX, rawY, NudgeDirections.both);
+        const currentX = rawX - this.scrollManager.x;
+        const currentY = rawY - this.scrollManager.y;
+        const mouseDownX = this.mouseStateManager.x;
+        const mouseDownY = this.mouseStateManager.y;
         const selectionX1 = Math.min(mouseDownX, currentX);
         const selectionX2 = Math.max(mouseDownX, currentX);
         const selectionY1 = Math.min(mouseDownY, currentY);
         const selectionY2 = Math.max(mouseDownY, currentY);
-        this._noteLayer.updateSelectionMarquee(selectionX1, selectionY1, selectionX2, selectionY2);
-        this._reconcileNoteSelectionWithSelectionArea(selectionX1, selectionY1, selectionX2, selectionY2);
+        this.noteLayer.updateSelectionMarquee(selectionX1, selectionY1, selectionX2, selectionY2);
+        this.reconcileNoteSelectionWithSelectionArea(selectionX1, selectionY1, selectionX2, selectionY2);
     }
 
-    _handleAdjustSelectionFromVelocityInteractionUpdate(e) {
-        const { rawX, rawY } = this._extractInfoFromEventObject(e);
-        this._nudgeGridIfRequired(rawX, rawY, 'HORIZONTAL');
-        const xWithScroll = rawX - this._scrollManager.x;
-        const mouseDownX = this._mouseStateManager.x;
-        const mouseDownY = this._mouseStateManager.y;
-        const topOfVelocityArea = this._conversionManager.stageHeight - this._conversionManager.velocityAreaHeight - SCROLLBAR_WIDTH;
-        const bottomofVelocityArea = this._conversionManager.stageHeight - SCROLLBAR_WIDTH;
+    private handleAdjustSelectionFromVelocityInteractionUpdate(e: KonvaEvent) : void {
+        const { rawX, rawY } = this.extractInfoFromEventObject(e);
+        this.nudgeGridIfRequired(rawX, rawY, NudgeDirections.horizontal);
+        const xWithScroll = rawX - this.scrollManager.x;
+        const mouseDownX = this.mouseStateManager.x;
+        const mouseDownY = this.mouseStateManager.y;
+        const topOfVelocityArea = this.conversionManager.stageHeight - this.conversionManager.velocityAreaHeight - StaticMeasurements.scrollbarWidth;
+        const bottomofVelocityArea = this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth;
         const x1 = Math.min(mouseDownX, xWithScroll);
         const x2 = Math.max(mouseDownX, xWithScroll);
         const y1 = Math.max(topOfVelocityArea, Math.min(mouseDownY, rawY) );
         const y2 = Math.min(bottomofVelocityArea, Math.max(mouseDownY, rawY) );
-        this._velocityLayer.updateSelectionMarquee(x1, y1, x2, y2);
-        this._reconcileNoteSelectionWithSelectionArea(x1, 0, x2, this._conversionManager.gridHeight);
+        this.velocityLayer.updateSelectionMarquee(x1, y1, x2, y2);
+        this.reconcileNoteSelectionWithSelectionArea(x1, 0, x2, this.conversionManager.gridHeight);
     }
 
-    _handleAdjustVelocityAreaHeightInteractionUpdate(e) {
-        const { rawY } = this._extractInfoFromEventObject(e);
-        const newHeight = (this._conversionManager.stageHeight - SCROLLBAR_WIDTH) - rawY;
-        this._velocityLayer.redrawOnHeightChange(newHeight);
-        this._conversionManager.velocityAreaHeight = newHeight;
+    private handleAdjustVelocityAreaHeightInteractionUpdate(e: KonvaEvent) : void {
+        const { rawY } = this.extractInfoFromEventObject(e);
+        const newHeight = (this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth) - rawY;
+        this.velocityLayer.redrawOnHeightChange(newHeight);
+        this.conversionManager.velocityAreaHeight = newHeight;
     }
 
-    _handleInteractionEnd(e) {
-        switch (this._dragMode) {
-            case DRAG_MODE_ADJUST_NOTE_SIZE:
-                this._handleAdjustNoteSizeInteractionEnd(e);
+    private handleInteractionEnd(e: KonvaEvent) : void {
+        switch (this.dragMode) {
+            case DragModes.adjustNoteSize:
+                this.handleAdjustNoteSizeInteractionEnd(e);
                 break;
-            case DRAG_MODE_ADJUST_NOTE_POSITION:
-                this._handleAdjustNotePositionInteractionEnd(e);
+            case DragModes.adjustNotePosition:
+                this.handleAdjustNotePositionInteractionEnd(e);
                 break;
-            case DRAG_MODE_ADJUST_SELECTION:
-                this._handleAdjustSelectionInteractionEnd(e);
+            case DragModes.adjustSelection:
+                this.handleAdjustSelectionInteractionEnd(e);
                 break;
-            case DRAG_MODE_ADJUST_SELECTION_FROM_VELOCITY_AREA:
-                this._handleAdjustSelectionFromVelocityInteractionEnd(e);
+            case DragModes.adjustSelectionFromVelocityArea:
+                this.handleAdjustSelectionFromVelocityInteractionEnd(e);
                 break;
-            case DRAG_MODE_ADJUST_VELOCITY_AREA_HEIGHT:
-                this._handleAdjustVelocityAreaHeightInteractionEnd(e);
+            case DragModes.adjustVelocityAreaHeight:
+                this.handleAdjustVelocityAreaHeightInteractionEnd(e);
                 break;
             default:
                 return;
         }
     }
 
-    _handleAdjustNoteSizeInteractionEnd(e) {
-        this._dragMode = null;
-        const selectedNoteIds = this._noteSelection.retrieveAll();
-        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
-        const selectedVelocityMarkerElements = this._velocityMarkerCache.retrieve(selectedNoteIds);
-        this._noteLayer.updateNotesAttributeCaches(selectedNoteElements);
-        this._velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
-        selectedNoteIds.forEach(id => this._addNoteToAudioEngine(id));
-        this._serializeState();
+    private handleAdjustNoteSizeInteractionEnd(e: KonvaEvent) : void {
+        this.dragMode = null;
+        const selectedNoteIds = this.noteSelection.retrieveAll();
+        const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
+        const selectedVelocityMarkerElements = this.velocityMarkerCache.retrieve(selectedNoteIds);
+        this.noteLayer.updateNotesAttributeCaches(selectedNoteElements);
+        this.velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
+        selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
+        this.serializeState();
     }
 
-    _handleAdjustNotePositionInteractionEnd(e) {
-        if (!this._mouseStateManager.hasTravelled) {
+    private handleAdjustNotePositionInteractionEnd(e: KonvaEvent) : void {
+        if (!this.mouseStateManager.hasTravelled) {
             const { target } = e;
-            const isCurrentlySelected = this._noteSelection.has(target);
-            if (this._keyboardStateManager.shiftKey) {
+            const isCurrentlySelected = this.noteSelection.has(target);
+            if (this.keyboardStateManager.shiftKey) {
                 if (isCurrentlySelected) {
-                    this._removeNoteFromSelection(target);
+                    this.removeNoteFromSelection(target);
                 } else {
-                    this._addNoteToSelection(target);
+                    this.addNoteToSelection(target);
                 }
             } else {
-                this._clearSelection();
+                this.clearSelection();
                 if (!isCurrentlySelected) {
-                    this._addNoteToSelection(target);
+                    this.addNoteToSelection(target);
                 }
             }
         }
-        const selectedNoteIds = this._noteSelection.retrieveAll();
-        const selectedNoteElements = this._noteCache.retrieve(selectedNoteIds);
-        const selectedVelocityMarkerElements = this._velocityMarkerCache.retrieve(selectedNoteIds);
-        this._noteLayer.updateNotesAttributeCaches(selectedNoteElements);
-        this._velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
-        selectedNoteIds.forEach(id => this._addNoteToAudioEngine(id));
-        this._serializeState();
-        this._dragMode = null;
+        const selectedNoteIds = this.noteSelection.retrieveAll();
+        const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
+        const selectedVelocityMarkerElements = this.velocityMarkerCache.retrieve(selectedNoteIds);
+        this.noteLayer.updateNotesAttributeCaches(selectedNoteElements);
+        this.velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
+        selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
+        this.serializeState();
+        this.dragMode = null;
     }
 
-    _handleAdjustSelectionInteractionEnd(e) {
-        this._noteLayer.clearSelectionMarquee();
-        this._dragMode = null;
-        this._serializeState();
+    private handleAdjustSelectionInteractionEnd(e: KonvaEvent) : void {
+        this.noteLayer.clearSelectionMarquee();
+        this.dragMode = null;
+        this.serializeState();
     }
 
-    _handleAdjustSelectionFromVelocityInteractionEnd(e) {
-        this._velocityLayer.clearSelectionMarquee();
-        this._dragMode = null;
-        this._serializeState();
+    private handleAdjustSelectionFromVelocityInteractionEnd(e: KonvaEvent) : void {
+        this.velocityLayer.clearSelectionMarquee();
+        this.dragMode = null;
+        this.serializeState();
     }
 
-    _handleAdjustVelocityAreaHeightInteractionEnd(e) {
-        this._dragMode = null;
+    private handleAdjustVelocityAreaHeightInteractionEnd(e: KonvaEvent) : void {
+        this.dragMode = null;
     }
 
 }

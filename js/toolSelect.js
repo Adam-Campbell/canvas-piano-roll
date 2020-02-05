@@ -1,10 +1,5 @@
-// import {
-//     ACTIVE_TOOL_CURSOR,
-//     ACTIVE_TOOL_PENCIL,
-//     ACTIVE_TOOL_MARQUEE
-// } from './constants';
-import { ACTIVE_TOOL_UPDATE } from './events';
 import emitter from './EventEmitter';
+import { Events } from './Constants';
 
 export const initToolSelect = () => {
     const cursorInput = document.getElementById('tool-type-cursor');
@@ -13,7 +8,7 @@ export const initToolSelect = () => {
     [cursorInput, pencilInput, marqueeInput].forEach(input => {
         input.addEventListener('change', e => {
             const tool = e.target.value;
-            emitter.broadcast(ACTIVE_TOOL_UPDATE, tool);
+            emitter.broadcast(Events.activeToolUpdate, tool);
         });
     });
 }

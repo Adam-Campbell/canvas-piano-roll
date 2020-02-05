@@ -1,6 +1,6 @@
 import Konva from 'konva';
 import ConversionManager from '../ConversionManager';
-import { Colours } from '../Constants';
+import { Colours, KonvaEvent } from '../Constants';
 
 interface MenuItem {
     label: string,
@@ -69,7 +69,7 @@ export default class ContextMenuLayer {
             label.moveTo(contextMenuGroup);
         });
 
-        contextMenuGroup.on('mousedown', e => {
+        contextMenuGroup.on('mousedown', (e: KonvaEvent) => {
             e.cancelBubble = true;
             const { offsetY } = e.evt;
             const groupY = contextMenuGroup.y();
@@ -81,7 +81,7 @@ export default class ContextMenuLayer {
             contextMenuGroup.destroy();
             this.layer.batchDraw();
         });
-        contextMenuGroup.on('mouseover', e => {
+        contextMenuGroup.on('mouseover', (e: KonvaEvent) => {
             const menuItemBackgrounds = [...contextMenuGroup.find('.MENU_ITEM_BACKGROUND')];
             const relativeY = e.evt.offsetY - contextMenuGroup.y();
             const idx = Math.floor(relativeY / 30);
@@ -91,7 +91,7 @@ export default class ContextMenuLayer {
                 this.layer.batchDraw();
             }
         });
-        contextMenuGroup.on('mouseout', e => {
+        contextMenuGroup.on('mouseout', (e: KonvaEvent) => {
             const menuItemBackgrounds = contextMenuGroup.find('.MENU_ITEM_BACKGROUND');
             menuItemBackgrounds.forEach(item => item.fill(Colours.grayscale[5]));
             this.layer.batchDraw();
