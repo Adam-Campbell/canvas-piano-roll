@@ -1,18 +1,25 @@
-import colours from '../colours';
+import { Colours } from '../Constants';
 
-export const getHorizontalLinesData = (gridWidthPx) => {
+interface LineData {
+    points: number[],
+    stroke: string,
+    strokeWidth: number
+}
+
+export const getHorizontalLinesData = (gridWidthPx: number) : LineData[] => {
     let linesArr = [];
     for (let i = 0; i < 109; i++) {
         linesArr.push({
             points: [ 0, i*20, gridWidthPx, i*20 ],
-            stroke: colours.grayscale[7],
+            stroke: Colours.grayscale[7],
             strokeWidth: 1
         });
     }
     return linesArr;
 }
 
-export const getVerticalLinesData = (numBars, barWidthPx, colWidthPx, gridHeightPx) => {
+export const getVerticalLinesData = (numBars: number, barWidthPx: number, 
+    colWidthPx: number, gridHeightPx: number) : LineData[] => {
     let gridLines = [];
     let total = 0;
     let escapeHatch = 0;
@@ -27,7 +34,7 @@ export const getVerticalLinesData = (numBars, barWidthPx, colWidthPx, gridHeight
         }
         gridLines.push({
             points: [ total, 0, total, gridHeightPx ],
-            stroke: total % barWidthPx === 0 ? colours.grayscale[7] : colours.grayscale[4],
+            stroke: total % barWidthPx === 0 ? Colours.grayscale[7] : Colours.grayscale[4],
             strokeWidth
         });
         total += colWidthPx;

@@ -1,31 +1,37 @@
-import { Rect, Group } from 'konva';
-import colours from '../colours';
+//import { Rect, Group } from 'konva';
+import Konva from 'konva';
+import ConversionManager from '../ConversionManager';
+import { Colours, SerializedState } from '../Constants';
 
 export default class NoteLayer {
 
-    constructor(conversionManager, layerRef) {
-        this._conversionManager = conversionManager;
+    private conversionManager: ConversionManager;
+    private layer: Konva.Layer;
+    private notesContainer: Konva.Group;
+
+    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
+        this.conversionManager = conversionManager;
         this.layer = layerRef;
-        this._notesContainer = new Group({ x: 120, y: 30 });
+        this.notesContainer = new Konva.Group({ x: 120, y: 30 });
     }
 
-    init() {
-        this.layer.add(this._notesContainer);
+    init() : void {
+        this.layer.add(this.notesContainer);
         this.layer.batchDraw();
     }
 
-    updateX(x) {
-        this._notesContainer.x(x);
+    updateX(x: number) : void {
+        this.notesContainer.x(x);
         this.layer.batchDraw();
     }
 
-    updateY(y) {
-        this._notesContainer.y(y);
+    updateY(y: number) : void {
+        this.notesContainer.y(y);
         this.layer.batchDraw();
     }
 
-    redrawOnZoomAdjustment(isZoomingIn) {
-        const noteElements = this._notesContainer.find('.NOTE');
+    redrawOnZoomAdjustment(isZoomingIn: boolean) : void {
+        const noteElements = this.notesContainer.find('.NOTE');
         const multiplier = isZoomingIn ? 2 : 0.5;
         noteElements.forEach(noteElement => {
             noteElement.x(
@@ -46,14 +52,14 @@ export default class NoteLayer {
         this.layer.batchDraw();
     }
 
-    _createNoteElement(x, y, width, id, isSelected) {
-        return new Rect({
+    createNoteElement(x: number, y: number, width: number, id: string, isSelected?: boolean) : Konva.Rect {
+        return new Konva.Rect({
             x,
             y,
             width,
-            height: this._conversionManager.rowHeight,
-            fill: isSelected ? colours.grayscale[6] : colours.primary.main,
-            stroke: colours.grayscale[7],
+            height: this.conversionManager.rowHeight,
+            fill: isSelected ? Colours.grayscale[6] : Colours.primary.main,
+            stroke: Colours.grayscale[7],
             strokeWidth: 1,
             cornerRadius: 2,
             id,
@@ -65,43 +71,43 @@ export default class NoteLayer {
         });
     }
 
-    addNewNote(x, y, id, width) {
-        const newNote = this._createNoteElement(
+    addNewNote(x: number, y: number, id: string, width?: number) : Konva.Rect {
+        const newNote = this.createNoteElement(
             x,
             y,
-            width || this._conversionManager.noteWidth,
+            width || this.conversionManager.noteWidth,
             id,
             true
         );
-        newNote.moveTo(this._notesContainer);
+        newNote.moveTo(this.notesContainer);
         this.layer.batchDraw();
         return newNote;
     }
 
-    moveNoteToNotesContainer(noteElement) {
-        noteElement.moveTo(this._notesContainer);
+    moveNoteToNotesContainer(noteElement: Konva.Rect) : void {
+        noteElement.moveTo(this.notesContainer);
         this.layer.batchDraw();
     }
 
-    _updateSingleNoteDuration(noteRect, xDelta) {
+    private updateSingleNoteDuration(noteRect: Konva.Rect, xDelta: number) : void {
         const newWidth = Math.max(
             noteRect.attrs.cachedWidth + xDelta,
-            this._conversionManager.colWidth
+            this.conversionManager.colWidth
         );
         noteRect.width(newWidth);
     }
 
-    updateNoteDurations(originX, terminalX, noteRectsArray) {
-        const xDelta = this._conversionManager.roundToGridCol(
+    updateNoteDurations(originX: number, terminalX: number, noteRectsArray: Konva.Rect[]) : void {
+        const xDelta = this.conversionManager.roundToGridCol(
             terminalX - originX
         );
         noteRectsArray.forEach(noteRect => {
-            this._updateSingleNoteDuration(noteRect, xDelta);
+            this.updateSingleNoteDuration(noteRect, xDelta);
         });
         this.layer.batchDraw();
     }
 
-    updateNotesAttributeCaches(noteRectsArray) {
+    updateNotesAttributeCaches(noteRectsArray: Konva.Rect[]) : void {
         noteRectsArray.forEach(noteRect => {
             noteRect.setAttr('cachedWidth', noteRect.attrs.width);
             noteRect.setAttr('cachedX', noteRect.attrs.x);
@@ -109,12 +115,12 @@ export default class NoteLayer {
         });
     }
 
-    deleteNotes(noteRectsArray) {
+    deleteNotes(noteRectsArray: Konva.Rect[]) : void {
         noteRectsArray.forEach(noteRect => noteRect.destroy());
         this.layer.batchDraw();
     }
 
-    repositionNotes(xDelta, yDelta, noteRectsArray) {
+    repositionNotes(xDelta: number, yDelta: number, noteRectsArray: Konva.Rect[]) : void {
         noteRectsArray.forEach(noteRect => {
             const { cachedX, cachedY } = noteRect.attrs;
             const newX = Math.max(
@@ -131,19 +137,19 @@ export default class NoteLayer {
         this.layer.batchDraw();
     }
 
-    updateSelectionMarquee(originX, originY, terminalX, terminalY) {
+    updateSelectionMarquee(originX: number, originY: number, terminalX: number, terminalY: number) : void {
         const marquee = this.layer.findOne('#MARQUEE');
         if (!marquee) {
-            const newMarquee = new Rect({
+            const newMarquee = new Konva.Rect({
                 x: originX,
                 y: originY,
                 width: terminalX - originX,
                 height: terminalY - originY,
-                fill: colours.tertiary.main,
+                fill: Colours.tertiary.main,
                 opacity: 0.4,
                 id: 'MARQUEE'
             });
-            newMarquee.moveTo(this._notesContainer);
+            newMarquee.moveTo(this.notesContainer);
         } else {
             marquee.x(originX);
             marquee.y(originY);
@@ -153,7 +159,7 @@ export default class NoteLayer {
         this.layer.batchDraw();
     }
 
-    clearSelectionMarquee() {
+    clearSelectionMarquee() : void {
         const marquee = this.layer.findOne('#MARQUEE');
         if (marquee) {
             marquee.destroy();
@@ -161,17 +167,17 @@ export default class NoteLayer {
         }
     }
 
-    addSelectedAppearance(noteRect) {
-        noteRect.fill(colours.grayscale[6]);
+    addSelectedAppearance(noteRect: Konva.Rect) : void {
+        noteRect.fill(Colours.grayscale[6]);
         this.layer.batchDraw();
     }
 
-    removeSelectedAppearance(noteRect) {
-        noteRect.fill(colours.primary.main);
+    removeSelectedAppearance(noteRect: Konva.Rect) : void {
+        noteRect.fill(Colours.primary.main);
         this.layer.batchDraw();
     }
 
-    shiftNotesUp(noteRectsArray, shiftAmount) {
+    shiftNotesUp(noteRectsArray: Konva.Rect[], shiftAmount: number) : void {
         noteRectsArray.forEach(noteRect => {
             noteRect.y(
                 noteRect.y() - shiftAmount
@@ -181,7 +187,7 @@ export default class NoteLayer {
         this.updateNotesAttributeCaches(noteRectsArray);
     }
 
-    shiftNotesDown(noteRectsArray, shiftAmount) {
+    shiftNotesDown(noteRectsArray: Konva.Rect[], shiftAmount: number) : void {
         noteRectsArray.forEach(noteRect => {
             noteRect.y(
                 noteRect.y() + shiftAmount
@@ -191,29 +197,29 @@ export default class NoteLayer {
         this.updateNotesAttributeCaches(noteRectsArray);
     }
 
-    shiftNotesLeft(noteRectsArray) {
+    shiftNotesLeft(noteRectsArray: Konva.Rect[]) : void {
         noteRectsArray.forEach(noteRect => {
             noteRect.x(
-                noteRect.x() - this._conversionManager.colWidth
+                noteRect.x() - this.conversionManager.colWidth
             );
         });
         this.layer.batchDraw();
         this.updateNotesAttributeCaches(noteRectsArray);
     }
 
-    shiftNotesRight(noteRectsArray) {
+    shiftNotesRight(noteRectsArray: Konva.Rect[]) : void {
         noteRectsArray.forEach(noteRect => {
             noteRect.x(
-                noteRect.x() + this._conversionManager.colWidth
+                noteRect.x() + this.conversionManager.colWidth
             );
         });
         this.layer.batchDraw();
         this.updateNotesAttributeCaches(noteRectsArray);
     }
 
-    forceToState(state) {
+    forceToState(state: SerializedState) : Konva.Rect[] {
         // delete all note elements currently on the layer
-        this._notesContainer.destroyChildren();
+        this.notesContainer.destroyChildren();
         // delete marquee element if exists
         const marqueeElement = this.layer.findOne('#MARQUEE');
         if (marqueeElement) {
@@ -222,18 +228,18 @@ export default class NoteLayer {
 
         const noteElements = state.notes.map(note => {
             const isSelected = state.selectedNoteIds.includes(note.id);
-            const x = this._conversionManager.convertTicksToPx(note.time);
-            const y = this._conversionManager.deriveYFromPitch(note.note);
-            const width = this._conversionManager.convertTicksToPx(note.duration);
+            const x = this.conversionManager.convertTicksToPx(note.time);
+            const y = this.conversionManager.deriveYFromPitch(note.note);
+            const width = this.conversionManager.convertTicksToPx(note.duration);
             console.log(x, width);
-            const noteElement = this._createNoteElement(
+            const noteElement = this.createNoteElement(
                 x,
                 y,
                 width,
                 note.id,
                 isSelected
             );
-            this._notesContainer.add(noteElement);
+            this.notesContainer.add(noteElement);
             return noteElement;
         });
 

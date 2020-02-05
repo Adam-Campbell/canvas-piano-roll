@@ -1,14 +1,27 @@
-import { ROW_HEIGHT } from '../constants';
-import colours from '../colours';
+import { Colours, Pitch, StaticMeasurements } from '../Constants';
 
 export const staticKeyProps = {
     x: 0,
-    stroke: colours.grayscale[8],
+    stroke: Colours.grayscale[8],
     strokeWidth: 2
 };
 
-export const getKeyProps = (pitch, idx) => {
-    const approxY = idx * ROW_HEIGHT;
+interface KeyProps {
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    fill: string,
+    originalFill: string,
+    stroke: string,
+    strokeWidth: number,
+    cornerRadius?: number[],
+    pitch: Pitch,
+    id: string
+}
+
+export const getKeyProps = (pitch: Pitch, idx: number) : KeyProps => {
+    const approxY = idx * StaticMeasurements.rowHeight;
     const noteIdx = idx % 12;
     switch (noteIdx) {
         case 1:
@@ -21,11 +34,11 @@ export const getKeyProps = (pitch, idx) => {
                 y: approxY,
                 width: 90,
                 height: 20,
-                fill: colours.grayscale[8],
-                originalFill: colours.grayscale[8],
+                fill: Colours.grayscale[8],
+                originalFill: Colours.grayscale[8],
                 cornerRadius: [0, 3, 3, 0],
                 pitch,
-                id: pitch
+                id: pitch.full
             };
         case 6:
         case 11:
@@ -37,7 +50,7 @@ export const getKeyProps = (pitch, idx) => {
                 fill: 'white',
                 originalFill: 'white',
                 pitch,
-                id: pitch
+                id: pitch.full
 
             };
         case 0:
@@ -50,7 +63,7 @@ export const getKeyProps = (pitch, idx) => {
                 fill: 'white',
                 originalFill: 'white',
                 pitch,
-                id: pitch
+                id: pitch.full
             };
         case 2:
         case 4:
@@ -63,12 +76,12 @@ export const getKeyProps = (pitch, idx) => {
                 fill: 'white',
                 originalFill: 'white',
                 pitch,
-                id: pitch
+                id: pitch.full
             };
     }
 };
 
-export const sortByColor = (a, b) => {
+export const sortByColor = (a: KeyProps, b: KeyProps) : number => {
     if (a.fill < b.fill) {
         return 1;
     } else if (a.fill > b.fill) {

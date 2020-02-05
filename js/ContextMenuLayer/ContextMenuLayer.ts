@@ -1,30 +1,46 @@
-import { Rect, Text, Group } from 'konva';
-import colours from '../colours';
+import Konva from 'konva';
+import ConversionManager from '../ConversionManager';
+import { Colours, KonvaEvent } from '../Constants';
+
+interface MenuItem {
+    label: string,
+    callback: Function
+}
+
+interface ContextMenuOptions {
+    rawX: number,
+    rawY: number,
+    menuWidth?: number,
+    menuItems: MenuItem[]
+}
 
 export default class ContextMenuLayer {
 
-    constructor(conversionManager, layerRef) {
-        this._conversionManager = conversionManager;
+    private conversionManager: ConversionManager;
+    private layer: Konva.Layer;
+
+    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
+        this.conversionManager = conversionManager;
         this.layer = layerRef;
     }
 
-    addContextMenu({ rawX, rawY, menuWidth = 150, menuItems }) {
+    addContextMenu({ rawX, rawY, menuWidth = 150, menuItems }: ContextMenuOptions) : void {
         this.removeContextMenu();
 
         const expectedHeight = menuItems.length * 30;
-        const hasRoomBelow = this._conversionManager.stageHeight - rawY > expectedHeight;
-        const hasRoomToRight = this._conversionManager.stageWidth - rawX > menuWidth;
+        const hasRoomBelow = this.conversionManager.stageHeight - rawY > expectedHeight;
+        const hasRoomToRight = this.conversionManager.stageWidth - rawX > menuWidth;
 
         const xCoord = hasRoomToRight ? rawX : rawX - menuWidth;
         const yCoord = hasRoomBelow ? rawY : rawY - expectedHeight;
 
-        const contextMenuGroup = new Group({ 
+        const contextMenuGroup = new Konva.Group({ 
             id: 'CONTEXT_MENU_GROUP',
             x: xCoord,
             y: yCoord
         });
 
-        menuItems.forEach((menuItem, idx) => {
+        menuItems.forEach((menuItem: MenuItem, idx: number) => {
             let cornerRadiusArray;
             if (idx === 0) {
                 cornerRadiusArray = [3, 3, 0, 0]
@@ -33,17 +49,17 @@ export default class ContextMenuLayer {
             } else {
                 cornerRadiusArray = [0, 0, 0, 0];
             }
-            const menuItemBackground = new Rect({
+            const menuItemBackground = new Konva.Rect({
                 x: 0,
                 y: idx * 30,
                 width: 150,
                 height: 30,
-                fill: colours.grayscale[5],
+                fill: Colours.grayscale[5],
                 name: 'MENU_ITEM_BACKGROUND',
                 cornerRadius: cornerRadiusArray,
                 idx
             });
-            const label = new Text({
+            const label = new Konva.Text({
                 text: menuItem.label,
                 fill: '#fff',
                 x: 10,
@@ -53,7 +69,7 @@ export default class ContextMenuLayer {
             label.moveTo(contextMenuGroup);
         });
 
-        contextMenuGroup.on('mousedown', e => {
+        contextMenuGroup.on('mousedown', (e: KonvaEvent) => {
             e.cancelBubble = true;
             const { offsetY } = e.evt;
             const groupY = contextMenuGroup.y();
@@ -65,19 +81,19 @@ export default class ContextMenuLayer {
             contextMenuGroup.destroy();
             this.layer.batchDraw();
         });
-        contextMenuGroup.on('mouseover', e => {
+        contextMenuGroup.on('mouseover', (e: KonvaEvent) => {
             const menuItemBackgrounds = [...contextMenuGroup.find('.MENU_ITEM_BACKGROUND')];
             const relativeY = e.evt.offsetY - contextMenuGroup.y();
             const idx = Math.floor(relativeY / 30);
             const activeMenuItem = menuItemBackgrounds.find(item => item.attrs.idx === idx);
             if (activeMenuItem) {
-                activeMenuItem.fill(colours.grayscale[4]);
+                activeMenuItem.fill(Colours.grayscale[4]);
                 this.layer.batchDraw();
             }
         });
-        contextMenuGroup.on('mouseout', e => {
+        contextMenuGroup.on('mouseout', (e: KonvaEvent) => {
             const menuItemBackgrounds = contextMenuGroup.find('.MENU_ITEM_BACKGROUND');
-            menuItemBackgrounds.forEach(item => item.fill(colours.grayscale[5]));
+            menuItemBackgrounds.forEach(item => item.fill(Colours.grayscale[5]));
             this.layer.batchDraw();
         });
 
@@ -85,7 +101,7 @@ export default class ContextMenuLayer {
         this.layer.batchDraw();
     }
 
-    removeContextMenu() {
+    removeContextMenu() : void {
         const contextMenu = this.layer.findOne('#CONTEXT_MENU_GROUP');
         if (contextMenu) {
             contextMenu.destroy();
