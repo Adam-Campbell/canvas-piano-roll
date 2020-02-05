@@ -94,6 +94,7 @@ export default class PianoRoll {
         this.chordType = 'major';
         this.playbackFromTicks = 0;
         this.emitter = eventEmitter;
+        this.historyStack = new HistoryStack({ notes: [], selectedNoteIds: [] });
     }
 
     init(pianoRollOptions: PianoRollOptions) : void {
@@ -111,6 +112,7 @@ export default class PianoRoll {
         this.registerStageSubscriptions();
         this.registerKeyboardSubscriptions();
         this.registerGlobalEventSubscriptions();
+        this.forceToState(this.historyStack.currentEntry);
     }
 
     private instantiateChildClasses({
@@ -142,7 +144,6 @@ export default class PianoRoll {
         );
         this.audioReconciler = new AudioReconciler(this.conversionManager);
         this.noteSelection = new NoteSelection();
-        this.historyStack = new HistoryStack({ notes: [], selectedNoteIds: [] });
         this.clipboard = new Clipboard(this.conversionManager);
         // Instantiate canvas layer related classes
         this.primaryBackingLayer = new Konva.Layer();
