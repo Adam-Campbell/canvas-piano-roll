@@ -1,4 +1,5 @@
 export enum Events {
+    // Piano roll related events
     quantizeValueUpdate = 'quantizeValueUpdate',
     noteDurationUpdate = 'noteDurationUpdate',
     scaleTypeUpdate = 'scaleTypeUpdate',
@@ -10,7 +11,13 @@ export enum Events {
     redoAction = 'redoAction',
     copyToClipboard = 'copyToClipboard',
     cutToClipboard = 'cutToClipboard',
-    pasteFromClipboard = 'pasteFromClipboard'
+    pasteFromClipboard = 'pasteFromClipboard',
+    // Window related events
+    closeWindow = 'closeWindow',
+    deminimizeWindow = 'deminimizeWindow',
+    renderApp = 'renderApp',
+    focusWindow = 'focusWindow',
+    resizeWindow = 'resizeWindow'
 }
 
 export enum DragModes {
@@ -25,4 +32,15 @@ export enum Tools {
     cursor = 'cursor',
     pencil = 'pencil',
     marquee = 'marquee'
+}
+
+export enum WindowInteractionModes {
+    resize = 'resize',
+    reposition = 'reposition'
+}
+
+export enum WindowDisplayModes {
+    minimized = 'minimized',
+    maximized = 'maximized',
+    normal = 'normal'
 }

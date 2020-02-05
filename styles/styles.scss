@@ -1,0 +1,185 @@
+// body {
+//     background: #222;
+//     color: #fff;
+//     margin: 0;
+//     overflow: hidden;
+// }
+// #canvas-container {
+//     position: absolute;
+//     top: 50px;
+//     left: 0;
+// }
+// .toolbar-container {
+//     padding-left: 20px;
+//     padding-right: 20px;
+//     height: 50px;
+//     background: tomato;
+// }
+
+body {
+    /* background: rebeccapurple; */
+    background: #1d1d1d;
+    min-height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+.menubar {
+    height: 50px;
+    width: 100%;
+    background: #2f3131;
+    box-shadow: 0px -4px 5px 5px rgba(0,0,0,0.9);
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.taskbar {
+    height: 40px;
+    width: 100%;
+    background: #2f3131;
+    box-shadow: 0px 4px 5px 5px rgba(0,0,0,0.9);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    padding-left: 8px;
+    padding-right: 8px;
+    &__list {
+        list-style-type: none;
+        padding-left: 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        height: 40px;
+        max-width: calc(100% - 16px);
+    }
+    &__item {
+        box-sizing: border-box;
+        padding: 6px 8px;
+        border-radius: 3px;
+        background: #3e403f;
+        cursor: pointer;
+        color: #fff;
+        font-family: sans-serif;
+        font-weight: 600;
+        font-size: 14px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+        & + .taskbar__item {
+            margin-left: 8px;
+        }
+    }
+}
+
+
+
+.window {
+    display: flex;
+    flex-direction: column;
+    border-radius: 3px;
+    width: 450px;
+    height: 400px;
+    position: absolute;
+    top: 80px;
+    left: 8px;
+    overflow: hidden;
+    border: solid 2px #ddd;
+    box-shadow: 0px 0px 2px 2px rgba(0,0,0,0.4);
+    &__top-bar {
+        background: #ddd;
+        height: 30px;
+        box-shadow: 0px -4px 5px 5px rgba(0,0,0,0.9);
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: grab;
+        flex-shrink: 0;
+    }
+    &__actions-container {
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+    }
+    &__action-button {
+        border: solid 2px transparent;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        margin-left: 10px;
+        box-sizing: border-box;
+        &--close {
+            background: #ff4758;
+        }
+        &--close:focus {
+            outline: none;
+            border-color: #9b1421;
+        }
+        &--minimize {
+            background: #ffcb0f;
+        }
+        &--minimize:focus {
+            outline: none;
+            border-color: #a57f01;
+        }
+        &--maximize {
+            background: #54ce22;
+        }
+        &--maximize:focus {
+            outline: none;
+            border-color: #237403;
+        }
+    }
+    &__title {
+        font-family: sans-serif;
+        font-weight: 700;
+        font-size: 14px;
+        color: #222;
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+    &__bottom-bar {
+        background: #ddd;
+        height: 30px;
+        box-shadow: 0px 4px 5px 5px rgba(0,0,0,0.9);
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
+    &__resize-bar-container {
+        width: 26px;
+        height: 26px;
+        position: relative;
+        margin-left: auto;
+        cursor: nwse-resize;
+    }
+    &__resize-bar {
+        display: inline-block;
+        position: absolute;
+        bottom: 0;
+        background: #aaa;
+        width: 2px;
+        border-radius: 1px;
+        transform: rotate(45deg);
+        &--1 {
+            right: 13px;
+            height: 28px;
+        }
+        &--2 {
+            right: 9px;
+            height: 19px;
+        }
+        &--3 {
+            right: 5px;
+            height: 10px;
+        }
+    }
+    &__content-container {
+        flex-grow: 1;
+        background: #fff;
+        overflow: hidden;
+    }
+}

@@ -1,24 +1,24 @@
 import Tone from 'tone';
 import Konva from 'konva';
 import emitter from '../EventEmitter';
-import ConversionManager from '../ConversionManager';
-import AudioReconciler from '../AudioReconciler';
-import NoteSelection from '../NoteSelection';
-import KeyboardStateManager from '../KeyboardStateManager';
-import MouseStateManager from '../MouseStateManager';
-import CanvasElementCache from '../CanvasElementCache';
-import HistoryStack from '../HistoryStack';
-import Clipboard from '../Clipboard';
-import ScrollManager from '../ScrollManager';
+import ConversionManager from './ConversionManager';
+import AudioReconciler from './AudioReconciler';
+import NoteSelection from './NoteSelection';
+import KeyboardStateManager from './KeyboardStateManager';
+import MouseStateManager from './MouseStateManager';
+import CanvasElementCache from './CanvasElementCache';
+import HistoryStack from './HistoryStack';
+import Clipboard from './Clipboard';
+import ScrollManager from './ScrollManager';
 
-import GridLayer from '../GridLayer';
-import NoteLayer from '../NoteLayer';
-import VelocityLayer from '../VelocityLayer';
-import TransportLayer from '../TransportLayer';
-import SeekerLineLayer from '../SeekerLineLayer';
-import PianoKeyLayer from '../PianoKeyLayer';
-import ScrollbarLayer from '../ScrollbarLayer';
-import ContextMenuLayer from '../ContextMenuLayer';
+import GridLayer from './GridLayer';
+import NoteLayer from './NoteLayer';
+import VelocityLayer from './VelocityLayer';
+import TransportLayer from './TransportLayer';
+import SeekerLineLayer from './SeekerLineLayer';
+import PianoKeyLayer from './PianoKeyLayer';
+import ScrollbarLayer from './ScrollbarLayer';
+import ContextMenuLayer from './ContextMenuLayer';
 import { 
     DragModes,
     Tools,
