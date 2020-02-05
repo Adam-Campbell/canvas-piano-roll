@@ -1,3 +1,5 @@
+import EventEmitter from '../EventEmitter';
+
 export interface KonvaEvent {
     evt: any,
     pointerId: number,
@@ -32,4 +34,24 @@ export interface Pitch {
     note: string,
     octave: string,
     full: string
+}
+
+export interface PianoRollOptions {
+    container: string,
+    initialWidth: number,
+    initialHeight: number,
+    initialQuantize: string,
+    initialNoteDuration: string,
+    numBars: number,
+    eventEmitter: EventEmitter
+}
+
+export interface WindowOptions {
+    id: string,
+    title: string,
+    eventEmitter: EventEmitter,
+    initialZIndex: number,
+    childClass: any,
+    defaultWidth: number,
+    defaultHeight: number
 }
