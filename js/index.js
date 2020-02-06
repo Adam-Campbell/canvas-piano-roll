@@ -7,16 +7,22 @@ import { initNoteDurationSelect } from './noteDurationSelect';
 //import { initScaleSelect } from './scaleSelect';
 //import { initChordTypeSelect } from './chordTypeSelect';
 import App from './App';
+import Arranger from './Arranger';
+
+const arranger = new Arranger();
+arranger.init();
 
 
-const app = new App();
-app.renderApp();
+// const app = new App();
+// app.renderApp();
 
-window.audioEngine = app.audioEngine;
-app.audioEngine.addChannel('Channel 1');
-const section = app.audioEngine.channels[0].addSection('0:0:0', 8);
+// window.audioEngine = app.audioEngine;
+// app.audioEngine.addChannel('Channel 1');
+// const section = app.audioEngine.channels[0].addSection('0:0:0', 8);
 
-app.addPianoRollWindow(section.id);
+// app.addPianoRollWindow(section.id);
+
+
 
 
 

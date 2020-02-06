@@ -59,3 +59,18 @@ export interface WindowOptions {
     defaultWidth: number,
     defaultHeight: number
 }
+
+export interface KonvaLineData {
+    points: number[],
+    stroke: string,
+    strokeWidth: number
+}
+
+export interface ArrangerConversionManagerOptions {
+    stageWidth: number,
+    stageHeight: number,
+    barWidth: number,
+    barHeight: number,
+    numBars: number,
+    numChannels: number
+}
