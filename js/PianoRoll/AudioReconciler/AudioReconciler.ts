@@ -83,6 +83,7 @@ export default class AudioReconciler {
     }
 
     forceToState(notesState: Note[]) : void {
+        return;
         // remove all current notes from the engine and reset cache
         //Object.values(this.cache).forEach(note => this.removeNoteFromEngine(note));
         this.section.removeAllNotes();

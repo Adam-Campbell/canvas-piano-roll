@@ -8,7 +8,7 @@ import { initNoteDurationSelect } from './noteDurationSelect';
 //import { initChordTypeSelect } from './chordTypeSelect';
 import App from './App';
 
-//console.log('Hello world')
+
 const app = new App();
 app.renderApp();
 
@@ -18,8 +18,6 @@ const section = app.audioEngine.channels[0].addSection('0:0:0', 8);
 
 app.addPianoRollWindow(section.id);
 
-//app.addWindow();
-//app.renderApp();
 
 
 // initQuantizeSelect();

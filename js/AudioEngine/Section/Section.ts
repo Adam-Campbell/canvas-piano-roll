@@ -1,9 +1,10 @@
 import Tone from 'tone';
 import { NoteBBS } from '../../Constants';
+import { SerializedSectionState, NoteCache } from '../AudioEngineConstants';
 
 export default class Section {
 
-    noteCache = {};
+    noteCache: NoteCache = {};
     part: any;
     start: string;
     numBars: number;
@@ -14,10 +15,9 @@ export default class Section {
         this.numBars = numBars;
         this.id = id;
         this.part = new Tone.Part();
-        this.part.start = start;
+        this.part.start(start);
         this.part.loop = false;
-        this.part.callback = () => console.log('part callback was called')
-        //this.part.callback = instrumentCallback;
+        this.part.callback = instrumentCallback;
     }
 
     private addNoteToPart(noteObject: NoteBBS) : void {
@@ -45,22 +45,27 @@ export default class Section {
         });
     }
 
-    removeAllNotes() {
+    removeAllNotes() : void {
         Object.values(this.noteCache).forEach(this.removeNoteFromPart);
         this.noteCache = {};
     }
 
-    cleanup() {
+    cleanup() : void {
         this.part.dispose();
     }
 
     // serializes state for this particular section and returns it
-    serializeState() {
-
+    serializeState() : SerializedSectionState {
+        return {
+            notes: this.noteCache,
+            id: this.id,
+            start: this.start,
+            numBars: this.numBars
+        }
     }
 
     // forces this section to a given state
-    forceToState() {
+    forceToState(state: SerializedSectionState) : void {
 
     }
 

@@ -1,6 +1,7 @@
 import Channel from './Channel';
 import Section from './Section';
 import { genId } from '../genId';
+import { SerializedAudioEngineState } from './AudioEngineConstants';
 
 const defaultInstrumentSettings = {
     envelope: {
@@ -39,13 +40,15 @@ export default class AudioEngine {
     }
 
     // serializes the state of the entire audio engine. 
-    serializeState() {
-
+    serializeState() : SerializedAudioEngineState {
+        return {
+            channels: this.channels.map(channel => channel.serializeState())
+        };
     }
 
-    // forces the entire audio engine to a given state. 
-    forceToState() {
-
+    // forces the entire audio engine to a given state
+    forceToState() : void {
+    
     }
 
 }
