@@ -38,7 +38,7 @@ export default class Window {
     rafStamp: number;
 
     private child: any;
-    private childConfig: any;
+    private childContext: any;
     
     constructor({
         id, 
@@ -46,6 +46,7 @@ export default class Window {
         eventEmitter, 
         initialZIndex, 
         childClass,
+        childContext,
         defaultWidth, 
         defaultHeight
     }: WindowOptions) {
@@ -58,6 +59,7 @@ export default class Window {
         this.eventEmitter = eventEmitter;
         this.zIndex = initialZIndex;
         this.child = new childClass(this.eventEmitter);
+        this.childContext = childContext;
     }
 
     private handleClose = (e: MouseEvent) => {
@@ -259,9 +261,10 @@ export default class Window {
             container: this.contentNode,
             initialWidth: innerWidth,
             initialHeight: innerHeight,
-            initialQuantize: '16n',
-            initialNoteDuration: '16n',
-            numBars: 8
+            ...this.childContext
+            //initialQuantize: '16n',
+            //initialNoteDuration: '16n',
+            //numBars: 8
         });
     }
 

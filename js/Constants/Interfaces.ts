@@ -1,4 +1,5 @@
 import EventEmitter from '../EventEmitter';
+import Section from '../AudioEngine/Section';
 
 export interface KonvaEvent {
     evt: any,
@@ -43,7 +44,9 @@ export interface PianoRollOptions {
     initialQuantize: string,
     initialNoteDuration: string,
     numBars: number,
-    eventEmitter: EventEmitter
+    eventEmitter: EventEmitter,
+    section: Section,
+    livePlayInstrument: any
 }
 
 export interface WindowOptions {
@@ -52,6 +55,7 @@ export interface WindowOptions {
     eventEmitter: EventEmitter,
     initialZIndex: number,
     childClass: any,
+    childContext: any,
     defaultWidth: number,
     defaultHeight: number
 }

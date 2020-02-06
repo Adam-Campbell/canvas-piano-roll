@@ -121,7 +121,9 @@ export default class PianoRoll {
         initialHeight, 
         initialQuantize, 
         initialNoteDuration, 
-        numBars
+        numBars,
+        section,
+        livePlayInstrument
     }: PianoRollOptions) : void {
         // Instantiate canvas stage
         this.stage = new Konva.Stage({
@@ -142,7 +144,7 @@ export default class PianoRoll {
             initialNoteDuration,
             numBars
         );
-        this.audioReconciler = new AudioReconciler(this.conversionManager);
+        this.audioReconciler = new AudioReconciler(this.conversionManager, section);
         this.noteSelection = new NoteSelection();
         this.clipboard = new Clipboard(this.conversionManager);
         // Instantiate canvas layer related classes
@@ -153,7 +155,11 @@ export default class PianoRoll {
         this.velocityLayer = new VelocityLayer(this.conversionManager, this.primaryBackingLayer);
         this.transportLayer = new TransportLayer(this.conversionManager, this.primaryBackingLayer);
         this.seekerLineLayer = new SeekerLineLayer(this.conversionManager);
-        this.pianoKeyLayer = new PianoKeyLayer(this.conversionManager, this.secondaryBackingLayer);
+        this.pianoKeyLayer = new PianoKeyLayer(
+            this.conversionManager, 
+            this.secondaryBackingLayer,
+            livePlayInstrument
+        );
         this.contextMenuLayer = new ContextMenuLayer(this.conversionManager, this.secondaryBackingLayer);
         this.scrollManager = new ScrollManager(
             this.gridLayer,
