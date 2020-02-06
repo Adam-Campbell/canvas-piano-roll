@@ -9,10 +9,12 @@ import SectionSelection from './SectionSelection';
 import {
     ArrangerDragModes,
     Tools,
-    KonvaEvent
+    KonvaEvent,
+    Events
 } from '../Constants';
 import { genId } from '../genId';
-import { pipe } from '../utils';
+import { pipe, doesOverlap } from '../utils';
+import EventEmitter from '../EventEmitter';
 
 
 /*
@@ -46,15 +48,17 @@ export default class Arranger {
     private mouseStateManager: MouseStateManager;
     private keyboardStateManager: KeyboardStateManager;
     private sectionSelection: SectionSelection;
+    private emitter: EventEmitter;
     private _xScroll: number;
     private _yScroll: number;
     
 
-    constructor() {
+    constructor(eventEmitter: EventEmitter) {
         this.dragMode = null;
-        this.activeTool = Tools.pencil;
+        this.activeTool = Tools.cursor;
         this._xScroll = 0;
         this._yScroll = 0;
+        this.emitter = eventEmitter;
     }
 
     get xScroll() : number {
@@ -81,6 +85,8 @@ export default class Arranger {
         this.gridLayer.init();
         this.sectionLayer.init();
         this.registerStageSubscriptions();
+        this.registerKeyboardSubscriptions();
+        this.registerGlobalEventSubscriptions();
     }
 
     instantiateChildClasses() : void {
@@ -114,10 +120,45 @@ export default class Arranger {
         return newSection;
     }
 
-    registerStageSubscriptions() {
+    private registerStageSubscriptions() {
         this.stage.on('mousedown', (e: KonvaEvent) => this.handleInteractionStart(e));
         this.stage.on('mousemove', (e: KonvaEvent) => this.handleInteractionUpdate(e));
         this.stage.on('mouseup', (e: KonvaEvent) => this.handleInteractionEnd(e));
+    }
+
+    private registerKeyboardSubscriptions() : void {
+        this.keyboardStateManager.addKeyListener('1', () => {
+            if (this.keyboardStateManager.altKey) {
+                this.emitter.emit(Events.activeToolUpdate, 'cursor');
+            }
+        });
+        this.keyboardStateManager.addKeyListener('2', () => {
+            if (this.keyboardStateManager.altKey) {
+                this.emitter.emit(Events.activeToolUpdate, 'pencil');
+            }
+        });
+        this.keyboardStateManager.addKeyListener('3', () => {
+            if (this.keyboardStateManager.altKey) {
+                this.emitter.emit(Events.activeToolUpdate, 'marquee');
+            }
+        });
+    }
+
+    private registerGlobalEventSubscriptions() : void {
+        this.emitter.subscribe(Events.activeToolUpdate, tool => {
+            this.activeTool = tool;
+            console.log(this.activeTool);
+        });
+    }
+
+    private addSectionToSelection(sectionElement: Konva.Rect) : void {
+        this.sectionSelection.add(sectionElement);
+        this.sectionLayer.addSelectedAppearance(sectionElement);
+    }
+
+    private removeSectionFromSelection(sectionElement: Konva.Rect) : void {
+        this.sectionSelection.remove(sectionElement);
+        this.sectionLayer.removeSelectedAppearance(sectionElement);
     }
 
     private clearSelection() : void {
@@ -125,6 +166,39 @@ export default class Arranger {
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         selectedSectionElements.forEach(el => this.sectionLayer.removeSelectedAppearance(el));
         this.sectionSelection.clear();
+    }
+
+    private reconcileSectionSelectionWithSelectionArea(
+        selectionX1: number, 
+        selectionY1: number, 
+        selectionX2: number, 
+        selectionY2: number
+    ) : void {
+        const allSections = this.sectionCache.retrieveAll();
+
+        allSections.forEach(sectionRect => {
+            const { x, y, width, height } = sectionRect.attrs;
+            const sectionX1 = x;
+            const sectionX2 = x + width;
+            const sectionY1 = y;
+            const sectionY2 = y + height;
+            const overlapsWithSelection = doesOverlap(
+                sectionX1,
+                sectionX2,
+                sectionY1,
+                sectionY2,
+                selectionX1,
+                selectionX2,
+                selectionY1,
+                selectionY2
+            );
+            const isSelected = this.sectionSelection.has(sectionRect);
+            if (overlapsWithSelection && !isSelected) {
+                    this.addSectionToSelection(sectionRect);
+            } else if (!overlapsWithSelection && isSelected) {
+                this.removeSectionFromSelection(sectionRect);
+            }
+        });
     }
 
     private extractInfoFromEventObject(e: KonvaEvent) : {
@@ -165,17 +239,19 @@ export default class Arranger {
         const roundedX = this.conversionManager.roundDownToGridCol(xWithScroll);
         const roundedY = this.conversionManager.roundDownToGridRow(yWithScroll);
         this.mouseStateManager.addMouseDownEvent(xWithScroll, yWithScroll);
+
         if (this.activeTool === Tools.marquee) {
             this.dragMode = ArrangerDragModes.adjustSelection;
+
         } else if (this.activeTool === Tools.pencil) {
             this.dragMode = ArrangerDragModes.adjustSectionLength;
             this.clearSelection()
             this.addNewSection(roundedX, roundedY);
+
         } else if (this.activeTool === Tools.cursor) {
             const targetIsSection = target.name() === 'SECTION';
             if (targetIsSection) {
-                // once scrolling is introduced I must swap the rawX below to an xWithScroll.
-                this.handleSectionInteractionStart(target, rawX); 
+                this.handleSectionInteractionStart(target, xWithScroll); 
             }
         }
     }
@@ -216,7 +292,18 @@ export default class Arranger {
     }
 
     handleAdjustSelectionInteractionUpdate(e: KonvaEvent) : void {
-
+        const { rawX, rawY } = this.extractInfoFromEventObject(e);
+        //this.nudgeGridIfRequired(rawX, rawY, NudgeDirections.both);
+        const currentX = rawX - this.xScroll;
+        const currentY = rawY - this.yScroll;
+        const mouseDownX = this.mouseStateManager.x;
+        const mouseDownY = this.mouseStateManager.y;
+        const selectionX1 = Math.min(mouseDownX, currentX);
+        const selectionX2 = Math.max(mouseDownX, currentX);
+        const selectionY1 = Math.min(mouseDownY, currentY);
+        const selectionY2 = Math.max(mouseDownY, currentY);
+        this.sectionLayer.updateSelectionMarquee(selectionX1, selectionY1, selectionX2, selectionY2);
+        this.reconcileSectionSelectionWithSelectionArea(selectionX1, selectionY1, selectionX2, selectionY2);
     }
 
     handleInteractionEnd(e: KonvaEvent) : void {
@@ -247,6 +334,8 @@ export default class Arranger {
 
     handleAdjustSelectionInteractionEnd(e: KonvaEvent) : void {
         this.dragMode = null;
+        this.sectionLayer.clearSelectionMarquee();
+        // serialize state
     }
 
     

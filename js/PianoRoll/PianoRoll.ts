@@ -29,7 +29,6 @@ import {
     PianoRollOptions
 } from '../Constants';
 import { 
-    doesOverlap,
     canShiftUp,
     canShiftDown,
     canShiftLeft,
@@ -37,7 +36,7 @@ import {
     easingFns
 } from './pianoRollUtils';
 import { genId } from '../genId';
-import { clamp, pipe } from '../utils';
+import { clamp, pipe, doesOverlap } from '../utils';
 import { pitchesArray } from '../pitches';
 import { chordType } from '@tonaljs/chord-dictionary';
 

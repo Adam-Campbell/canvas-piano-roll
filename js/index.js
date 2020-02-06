@@ -8,8 +8,9 @@ import { initNoteDurationSelect } from './noteDurationSelect';
 //import { initChordTypeSelect } from './chordTypeSelect';
 import App from './App';
 import Arranger from './Arranger';
+import EventEmitter from './EventEmitter';
 
-const arranger = new Arranger();
+const arranger = new Arranger(new EventEmitter());
 arranger.init();
 
 
