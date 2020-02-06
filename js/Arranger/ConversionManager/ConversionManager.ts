@@ -28,14 +28,6 @@ export default class ConversionManager {
         this._numChannels = numChannels;
     }
 
-    roundDown(total: number, divisor: number) : number {
-        return total - (total % divisor);
-    }
-
-    round(total: number, divisor : number) : number {
-        return Math.round(total / divisor) * divisor;
-    }
-
     get stageWidth() : number {
         return this._stageWidth
     }
@@ -92,6 +84,29 @@ export default class ConversionManager {
         this._numChannels = num;
     }
 
+    roundDown(total: number, divisor: number) : number {
+        return total - (total % divisor);
+    }
+
+    round(total: number, divisor : number) : number {
+        return Math.round(total / divisor) * divisor;
+    }
+
+    roundDownToGridRow(y: number) : number {
+        return this.roundDown(y, this.rowHeight);
+    }
+
+    roundDownToGridCol(x: number) : number {
+        return this.roundDown(x, this.colWidth);
+    }
+
+    roundToGridRow(y: number) : number {
+        return this.round(y, this.rowHeight);
+    }
+
+    roundToGridCol(x: number) : number {
+        return this.round(x, this.colWidth);
+    }
 
 
 }

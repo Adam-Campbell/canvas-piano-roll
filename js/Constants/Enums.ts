@@ -28,6 +28,12 @@ export enum DragModes {
     adjustVelocityAreaHeight = 'adjustVelocityAreaHeight'
 }
 
+export enum ArrangerDragModes {
+    adjustSectionLength = 'adjustSectionLength',
+    adjustSectionPosition = 'adjustSectionPosition',
+    adjustSelection = 'adjustSelection'
+}
+
 export enum Tools {
     cursor = 'cursor',
     pencil = 'pencil',
