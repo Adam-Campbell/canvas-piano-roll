@@ -13,6 +13,7 @@ import {
 import CrazySquare from '../CrazySquare';
 import PianoRoll from '../PianoRoll';
 import AudioEngine from '../AudioEngine';
+import Arranger from '../Arranger';
 
 const windowsData = [
     { id: '0', title: 'Lead Synth' },
@@ -39,6 +40,11 @@ export default class App {
         
     }
 
+    init() {
+        this.renderApp();
+        this.addArrangerWindow();
+    }
+
     addWindow = (childClass: any, childContext: any) => {
         const data = windowsData[idx++];
         const newWindow = new Window({
@@ -54,6 +60,10 @@ export default class App {
         this.activeWindows.push(newWindow);
         this.renderApp();
         newWindow.init();
+    }
+
+    addArrangerWindow = () => {
+        this.addWindow(Arranger, {});
     }
 
     addPianoRollWindow = (sectionId: string) => {

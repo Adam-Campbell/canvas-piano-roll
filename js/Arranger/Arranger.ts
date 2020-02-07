@@ -6,14 +6,23 @@ import CanvasElementCache from './CanvasElementCache';
 import MouseStateManager from './MouseStateManager';
 import KeyboardStateManager from './KeyboardStateManager';
 import SectionSelection from './SectionSelection';
+import Clipboard from './Clipboard';
 import {
     ArrangerDragModes,
     Tools,
     KonvaEvent,
-    Events
+    Events,
+    ArrangerOptions
 } from '../Constants';
 import { genId } from '../genId';
-import { pipe, doesOverlap } from '../utils';
+import { 
+    pipe, 
+    doesOverlap,
+    canShiftUp,
+    canShiftDown,
+    canShiftLeft,
+    canShiftRight 
+} from '../utils';
 import EventEmitter from '../EventEmitter';
 
 
@@ -49,6 +58,7 @@ export default class Arranger {
     private keyboardStateManager: KeyboardStateManager;
     private sectionSelection: SectionSelection;
     private emitter: EventEmitter;
+    private clipboard: Clipboard;
     private _xScroll: number;
     private _yScroll: number;
     
@@ -79,8 +89,8 @@ export default class Arranger {
         // Will also manually update scroll on necessary layers.
     }
 
-    init() {
-        this.instantiateChildClasses();
+    init(arrangerOptions: ArrangerOptions) {
+        this.instantiateChildClasses(arrangerOptions);
         this.stage.add(this.primaryBackingLayer);
         this.gridLayer.init();
         this.sectionLayer.init();
@@ -89,27 +99,50 @@ export default class Arranger {
         this.registerGlobalEventSubscriptions();
     }
 
-    instantiateChildClasses() : void {
+    instantiateChildClasses({
+        container, 
+        initialWidth,
+        initialHeight
+    } : ArrangerOptions) : void {
         this.stage = new Konva.Stage({
-            container: 'arranger-container',
-            width: 750,
-            height: 600
+            container,
+            width: initialWidth,
+            height: initialHeight
         });
         this.conversionManager = new ConversionManager({
-            stageWidth: 750,
-            stageHeight: 600,
+            stageWidth: initialWidth,
+            stageHeight: initialHeight,
             barWidth: 40,
             barHeight: 40,
-            numBars: 16,
+            numBars: 64,
             numChannels: 4
         });
         this.mouseStateManager = new MouseStateManager();
-        this.keyboardStateManager = new KeyboardStateManager(this.stage.container());
+        this.keyboardStateManager = new KeyboardStateManager(container);
         this.sectionCache = new CanvasElementCache();
         this.sectionSelection = new SectionSelection();
+        this.clipboard = new Clipboard(this.conversionManager);
         this.primaryBackingLayer = new Konva.Layer();
         this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer);
         this.sectionLayer = new SectionLayer(this.conversionManager, this.primaryBackingLayer);
+    }
+
+    handleResize(containerWidth: number, containerHeight: number) : void {
+        this.stage.width(containerWidth);
+        this.conversionManager.stageWidth = containerWidth;
+        this.stage.height(containerHeight);
+        this.conversionManager.stageHeight = containerHeight;
+        this.gridLayer.redrawOnResize();
+        /*
+            Draw vs batchDraw for resizing
+
+            Draw is preferable to batchDraw if performance will allow it, which it seems to here, though
+            it may be different in PianoRoll. The calling of this handleResize method is already throttled
+            by requestAnimationFrame, and the extra throttling added by batchDraw sometimes makes the canvas
+            lag behind the window slightly. Draw does seem to be slightly more performance intensive still,
+            however this will probably be preferrable to the canvas lag. 
+        */
+        this.primaryBackingLayer.draw();
     }
 
     private addNewSection(x: number, y: number, width?: number) : Konva.Rect {
@@ -142,6 +175,10 @@ export default class Arranger {
                 this.emitter.emit(Events.activeToolUpdate, 'marquee');
             }
         });
+        this.keyboardStateManager.addKeyListener('ArrowUp', () => this.shiftSelectionUp());
+        this.keyboardStateManager.addKeyListener('ArrowDown', () => this.shiftSelectionDown());
+        this.keyboardStateManager.addKeyListener('ArrowLeft', () => this.shiftSelectionLeft());
+        this.keyboardStateManager.addKeyListener('ArrowRight', () => this.shiftSelectionRight());
     }
 
     private registerGlobalEventSubscriptions() : void {
@@ -149,6 +186,10 @@ export default class Arranger {
             this.activeTool = tool;
             console.log(this.activeTool);
         });
+    }
+
+    cleanup() {
+        this.stage.destroy();
     }
 
     private addSectionToSelection(sectionElement: Konva.Rect) : void {
@@ -166,6 +207,53 @@ export default class Arranger {
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         selectedSectionElements.forEach(el => this.sectionLayer.removeSelectedAppearance(el));
         this.sectionSelection.clear();
+    }
+
+    private shiftSelectionUp() {
+        const selectedSectionIds = this.sectionSelection.retrieveAll();
+        const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
+        if (canShiftUp(selectedSectionElements, this.conversionManager.rowHeight)) {
+            this.sectionLayer.shiftSectionsVertically(
+                selectedSectionElements, 
+                true
+            );
+            // then I must also update the audio engine and the history stack
+        }
+    }
+
+    private shiftSelectionDown() {
+        const selectedSectionIds = this.sectionSelection.retrieveAll();
+        const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
+        if (canShiftDown(
+            selectedSectionElements, 
+            this.conversionManager.gridHeight, 
+            this.conversionManager.rowHeight
+        )) {
+            this.sectionLayer.shiftSectionsVertically(selectedSectionElements, false);
+            // then update audio engine and history stack
+        }
+    }
+
+    private shiftSelectionLeft() : void {
+        const selectedSectionIds = this.sectionSelection.retrieveAll();
+        const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
+        if (canShiftLeft(selectedSectionElements)) {
+            this.sectionLayer.shiftSectionsHorizontally(selectedSectionElements, true);
+            // then update audio engine and history stack
+        }
+    }
+
+    private shiftSelectionRight() : void {
+        const selectedSectionIds = this.sectionSelection.retrieveAll();
+        const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
+        if (canShiftRight(
+            selectedSectionElements,
+            this.conversionManager.gridWidth,
+            this.conversionManager.colWidth
+        )) {
+            this.sectionLayer.shiftSectionsHorizontally(selectedSectionElements, false);
+            // then update audio engine and history stack
+        }
     }
 
     private reconcileSectionSelectionWithSelectionArea(

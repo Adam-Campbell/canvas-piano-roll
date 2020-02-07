@@ -29,14 +29,22 @@ import {
     PianoRollOptions
 } from '../Constants';
 import { 
-    canShiftUp,
-    canShiftDown,
-    canShiftLeft,
-    canShiftRight,
+    // canShiftUp,
+    // canShiftDown,
+    // canShiftLeft,
+    // canShiftRight,
     easingFns
 } from './pianoRollUtils';
 import { genId } from '../genId';
-import { clamp, pipe, doesOverlap } from '../utils';
+import { 
+    clamp, 
+    pipe, 
+    doesOverlap,
+    canShiftUp,
+    canShiftDown,
+    canShiftLeft,
+    canShiftRight, 
+} from '../utils';
 import { pitchesArray } from '../pitches';
 import { chordType } from '@tonaljs/chord-dictionary';
 

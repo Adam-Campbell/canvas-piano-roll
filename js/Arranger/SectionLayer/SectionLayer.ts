@@ -178,26 +178,32 @@ export default class SectionLayer {
     removeSelectedAppearance(sectionRect: Konva.Rect) : void {
         sectionRect.fill(Colours.primary.main);
         this.layer.batchDraw();
+    }   
+
+    shiftSectionsVertically(sectionRectsArray: Konva.Rect[], shouldShiftUp: boolean) : void {
+        const shiftDelta = shouldShiftUp ? 
+            this.conversionManager.rowHeight * -1 :
+            this.conversionManager.rowHeight;
+        sectionRectsArray.forEach(sectionRect => {
+            sectionRect.y(
+                sectionRect.y() + shiftDelta
+            );
+        });
+        this.layer.batchDraw();
+        this.updateSectionsAttributeCaches(sectionRectsArray);
     }
 
-    // todo
-    shiftSectionsUp() {
-
-    }
-
-    // todo
-    shiftSectionsDown() {
-
-    }
-
-    // todo
-    shiftSectionsLeft() {
-
-    }
-
-    // todo
-    shiftSectionsRight() {
-
+    shiftSectionsHorizontally(sectionRectsArray: Konva.Rect[], shouldShiftLeft: boolean) : void {
+        const shiftDelta = shouldShiftLeft ? 
+            this.conversionManager.colWidth * -1 :
+            this.conversionManager.colWidth;
+        sectionRectsArray.forEach(sectionRect => {
+            sectionRect.x(
+                sectionRect.x() + shiftDelta
+            );
+        });
+        this.layer.batchDraw();
+        this.updateSectionsAttributeCaches(sectionRectsArray);
     }
 
     // todo

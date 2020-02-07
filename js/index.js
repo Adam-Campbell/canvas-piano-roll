@@ -10,9 +10,11 @@ import App from './App';
 import Arranger from './Arranger';
 import EventEmitter from './EventEmitter';
 
-const arranger = new Arranger(new EventEmitter());
-arranger.init();
+//const arranger = new Arranger(new EventEmitter());
+//arranger.init();
 
+const app = new App();
+app.init();
 
 // const app = new App();
 // app.renderApp();

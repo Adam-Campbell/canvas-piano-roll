@@ -74,3 +74,9 @@ export interface ArrangerConversionManagerOptions {
     numBars: number,
     numChannels: number
 }
+
+export interface ArrangerOptions {
+    container: HTMLElement,
+    initialWidth: number,
+    initialHeight: number
+}
