@@ -37,7 +37,9 @@ export default class App {
         this.eventEmitter.subscribe(Events.closeWindow, this.removeWindow);
         this.eventEmitter.subscribe(Events.renderApp, this.renderApp);
         this.eventEmitter.subscribe(Events.focusWindow, this.focusWindow);
-        
+
+        window.audioEngine = this.audioEngine;
+        this.audioEngine.init();
     }
 
     init() {
@@ -63,7 +65,9 @@ export default class App {
     }
 
     addArrangerWindow = () => {
-        this.addWindow(Arranger, {});
+        this.addWindow(Arranger, {
+            audioEngine: this.audioEngine
+        });
     }
 
     addPianoRollWindow = (sectionId: string) => {

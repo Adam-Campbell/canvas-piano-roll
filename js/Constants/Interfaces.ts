@@ -1,5 +1,6 @@
 import EventEmitter from '../EventEmitter';
 import Section from '../AudioEngine/Section';
+import AudioEngine from '../AudioEngine';
 
 export interface KonvaEvent {
     evt: any,
@@ -78,5 +79,6 @@ export interface ArrangerConversionManagerOptions {
 export interface ArrangerOptions {
     container: HTMLElement,
     initialWidth: number,
-    initialHeight: number
+    initialHeight: number,
+    audioEngine: AudioEngine
 }

@@ -7,6 +7,7 @@ import MouseStateManager from './MouseStateManager';
 import KeyboardStateManager from './KeyboardStateManager';
 import SectionSelection from './SectionSelection';
 import Clipboard from './Clipboard';
+import AudioEngine from '../AudioEngine';
 import {
     ArrangerDragModes,
     Tools,
@@ -59,6 +60,7 @@ export default class Arranger {
     private sectionSelection: SectionSelection;
     private emitter: EventEmitter;
     private clipboard: Clipboard;
+    private audioEngine: AudioEngine;
     private _xScroll: number;
     private _yScroll: number;
     
@@ -102,13 +104,15 @@ export default class Arranger {
     instantiateChildClasses({
         container, 
         initialWidth,
-        initialHeight
+        initialHeight,
+        audioEngine
     } : ArrangerOptions) : void {
         this.stage = new Konva.Stage({
             container,
             width: initialWidth,
             height: initialHeight
         });
+        this.audioEngine = audioEngine;
         this.conversionManager = new ConversionManager({
             stageWidth: initialWidth,
             stageHeight: initialHeight,
@@ -194,6 +198,23 @@ export default class Arranger {
 
     cleanup() {
         this.stage.destroy();
+    }
+
+    private addSectionToAudioEngine(sectionElement: Konva.Rect) : void {
+        const channelIdx = sectionElement.y() / this.conversionManager.rowHeight;
+        const sectionStartNum = sectionElement.x() / this.conversionManager.colWidth;
+        const sectionNumBars = sectionElement.width() / this.conversionManager.colWidth;
+        const newSectionId = genId();
+        console.log(`
+            channelIdx: ${channelIdx}
+            sectionStart: ${sectionStartNum}
+            numBars: ${sectionNumBars}
+        `);
+        this.audioEngine.channels[channelIdx].addSection(
+            `${sectionStartNum}:0:0`,
+            sectionNumBars,
+            newSectionId
+        );
     }
 
     private addSectionToSelection(sectionElement: Konva.Rect) : void {
@@ -449,6 +470,7 @@ export default class Arranger {
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         this.sectionLayer.updateSectionsAttributeCaches(selectedSectionElements);
         // trigger update in audio engine and serialize state to update history stack.
+        selectedSectionElements.forEach(el => this.addSectionToAudioEngine(el));
     }
 
     handleAdjustSectionPositionInteractionEnd(e: KonvaEvent) : void {

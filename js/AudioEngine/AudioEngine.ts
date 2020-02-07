@@ -18,6 +18,13 @@ export default class AudioEngine {
 
     channels: Channel[] = [];
 
+    init() {
+        this.addChannel('Channel 1');
+        this.addChannel('Channel 2');
+        this.addChannel('Channel 3');
+        this.addChannel('Channel 4');
+    }
+
     addChannel(name: string) {
         const id = genId();
         this.channels.push(
@@ -37,6 +44,14 @@ export default class AudioEngine {
             section: channel.sectionCache[sectionId],
             livePlayInstrument: channel.livePlayInstrument 
         }
+    }
+
+    getSectionById(sectionId: string) {
+
+    }
+
+    deleteSection(sectionId: string) {
+
     }
 
     // serializes the state of the entire audio engine. 
