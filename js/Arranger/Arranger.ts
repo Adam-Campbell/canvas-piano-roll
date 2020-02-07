@@ -155,8 +155,12 @@ export default class Arranger {
 
     private registerStageSubscriptions() {
         this.stage.on('mousedown', (e: KonvaEvent) => this.handleInteractionStart(e));
+        this.stage.on('touchstart', (e: KonvaEvent) => this.handleInteractionStart(e));
         this.stage.on('mousemove', (e: KonvaEvent) => this.handleInteractionUpdate(e));
+        this.stage.on('touchmove', (e: KonvaEvent) => this.handleInteractionUpdate(e));
         this.stage.on('mouseup', (e: KonvaEvent) => this.handleInteractionEnd(e));
+        this.stage.on('touchend', (e: KonvaEvent) => this.handleInteractionEnd(e));
+        this.stage.on('dblclick', (e: KonvaEvent) => this.handleDoubleClick(e));
     }
 
     private registerKeyboardSubscriptions() : void {
@@ -316,6 +320,13 @@ export default class Arranger {
         }
     }
 
+    handleDoubleClick(e: KonvaEvent) : void {
+        const { target } = this.extractInfoFromEventObject(e);
+        if (target.name() === 'SECTION' && this.activeTool === Tools.cursor) {
+            console.log('Open up a piano roll window');
+        }
+    }
+
     handleInteractionStart(e: KonvaEvent) : void {
         // Return early if not a left mouse button press
         if (e.evt.button !== 0) {
@@ -345,7 +356,18 @@ export default class Arranger {
     }
 
     handleSectionInteractionStart(sectionElement: Konva.Rect, xWithScroll: number) : void {
-
+        const { x: rectX, width: rectWidth } = sectionElement.attrs;
+        const isEdgeClick = rectWidth + rectX - xWithScroll < 10;
+        const isSelected = this.sectionSelection.has(sectionElement);
+        if (isEdgeClick) {
+            if (!isSelected) {
+                this.clearSelection();
+                this.addSectionToSelection(sectionElement);
+            }
+            this.dragMode = ArrangerDragModes.adjustSectionLength
+        } else {
+            this.dragMode = ArrangerDragModes.adjustSectionPosition;
+        }
     }
 
     handleInteractionUpdate(e: KonvaEvent) : void {
@@ -376,7 +398,20 @@ export default class Arranger {
     }
 
     handleAdjustSectionPositionInteractionUpdate(e: KonvaEvent) : void {
-
+        const { rawX, rawY } = this.extractInfoFromEventObject(e);
+        //this.nudgeGridIfRequired(rawX, rawY, NudgeDirections.both);
+        const xWithScroll = rawX - this.xScroll;
+        const yWithScroll = rawY - this.yScroll;
+        this.mouseStateManager.updateHasTravelled(xWithScroll, yWithScroll);
+        const xDelta = this.conversionManager.roundToGridCol(
+            xWithScroll - this.mouseStateManager.x
+        );
+        const yDelta = this.conversionManager.roundToGridRow(
+            yWithScroll - this.mouseStateManager.y
+        );
+        const selectedSectionIds = this.sectionSelection.retrieveAll();
+        const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
+        this.sectionLayer.repositionSections(xDelta, yDelta, selectedSectionElements);
     }
 
     handleAdjustSelectionInteractionUpdate(e: KonvaEvent) : void {
@@ -418,6 +453,26 @@ export default class Arranger {
 
     handleAdjustSectionPositionInteractionEnd(e: KonvaEvent) : void {
         this.dragMode = null;
+        if (!this.mouseStateManager.hasTravelled) {
+            const { target } = e;
+            const isCurrentlySelected = this.sectionSelection.has(target);
+            if (this.keyboardStateManager.shiftKey) {
+                if (isCurrentlySelected) {
+                    this.removeSectionFromSelection(target);
+                } else {
+                    this.addSectionToSelection(target);
+                }
+            } else {
+                this.clearSelection();
+                if (!isCurrentlySelected) {
+                    this.addSectionToSelection(target);
+                }
+            }
+        }
+        const selectedSectionIds = this.sectionSelection.retrieveAll();
+        const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
+        this.sectionLayer.updateSectionsAttributeCaches(selectedSectionElements);
+        // then update the audio engine and history stack.
     }
 
     handleAdjustSelectionInteractionEnd(e: KonvaEvent) : void {

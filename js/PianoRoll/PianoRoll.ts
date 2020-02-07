@@ -570,7 +570,7 @@ export default class PianoRoll {
         const selectedVelocityMarkerElements = this.velocityMarkerCache.retrieve(
             selectedNoteIds
         );
-        if (canShiftRight(selectedNoteElements, this.conversionManager.gridWidth)) {
+        if (canShiftRight(selectedNoteElements, this.conversionManager.gridWidth, this.conversionManager.colWidth)) {
             this.noteLayer.shiftNotesRight(selectedNoteElements);
             this.velocityLayer.shiftVelocityMarkersRight(selectedVelocityMarkerElements);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
