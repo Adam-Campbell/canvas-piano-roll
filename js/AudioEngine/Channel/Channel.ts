@@ -1,7 +1,7 @@
 import Section from '../Section';
 import Tone from 'tone';
 import { genId } from '../../genId';
-import { SerializedChannelState } from '../AudioEngineConstants';
+import { SerializedChannelState, NoteCache } from '../AudioEngineConstants';
 
 interface SectionCache {
     [propName: string]: Section
@@ -30,12 +30,13 @@ export default class Channel {
         this.instrument.triggerAttackRelease(value.note, value.duration, time, value.velocity);
     }
 
-    addSection(start: string, numBars: number, id: string) : Section {
+    addSection(start: string, numBars: number, id: string, notesData?: NoteCache) : Section {
         const newSection = new Section(
             start,
             numBars,
             id, 
-            this.triggerAttackRelease
+            this.triggerAttackRelease,
+            notesData
         );
         this.sectionCache[id] = newSection;
         return newSection;

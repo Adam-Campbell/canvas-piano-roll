@@ -8,7 +8,8 @@ export interface SerializedSectionState {
     notes: NoteCache,
     id: string,
     start: string,
-    numBars: number
+    numBars: number,
+    channelIdx?: number
 }
 
 export interface SerializedSectionCache {

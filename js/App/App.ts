@@ -37,6 +37,7 @@ export default class App {
         this.eventEmitter.subscribe(Events.closeWindow, this.removeWindow);
         this.eventEmitter.subscribe(Events.renderApp, this.renderApp);
         this.eventEmitter.subscribe(Events.focusWindow, this.focusWindow);
+        this.eventEmitter.subscribe(Events.openPianoRollWindow, this.addPianoRollWindow);
 
         window.audioEngine = this.audioEngine;
         this.audioEngine.init();
@@ -71,6 +72,7 @@ export default class App {
     }
 
     addPianoRollWindow = (sectionId: string) => {
+        console.log(sectionId)
         const { section, livePlayInstrument } = this.audioEngine.getSectionContext(sectionId);
         this.addWindow(PianoRoll, {
             section,

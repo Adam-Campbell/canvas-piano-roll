@@ -17,7 +17,8 @@ export enum Events {
     deminimizeWindow = 'deminimizeWindow',
     renderApp = 'renderApp',
     focusWindow = 'focusWindow',
-    resizeWindow = 'resizeWindow'
+    resizeWindow = 'resizeWindow',
+    openPianoRollWindow = 'openPianoRollWindow'
 }
 
 export enum DragModes {

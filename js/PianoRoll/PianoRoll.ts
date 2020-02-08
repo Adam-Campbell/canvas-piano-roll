@@ -119,7 +119,23 @@ export default class PianoRoll {
         this.registerStageSubscriptions();
         this.registerKeyboardSubscriptions();
         this.registerGlobalEventSubscriptions();
-        this.forceToState(this.historyStack.currentEntry);
+        // const initialNotes = pianoRollOptions.section.serializeState().notes.map(note => {
+        //     // return {
+        //     //     ...note,
+        //     //     time: Tone.Ticks(note.time).toTicks(),
+        //     //     duration: Tone.Ticks(note.duration).toTicks()
+        //     // }
+        // })
+        // const notes = pianoRollOptions.section.serializeState().notes;
+        //console.log(notes);
+        const notes = Object.values(pianoRollOptions.section.serializeState().notes)
+        .map(note => ({
+            ...note,
+            time: Tone.Ticks(note.time).toTicks(),
+            duration: Tone.Ticks(note.duration).toTicks()
+        }));
+        //console.log(notes);
+        this.forceToState({ notes, selectedNoteIds: [] });
     }
 
     private instantiateChildClasses({

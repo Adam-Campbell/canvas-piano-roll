@@ -3,7 +3,7 @@ import Section from './Section';
 import { genId } from '../genId';
 import { SerializedAudioEngineState } from './AudioEngineConstants';
 
-const defaultInstrumentSettings = {
+const padInstrumentSettings = {
     envelope: {
         sustain: 0.9,
         release: 0.1
@@ -14,21 +14,43 @@ const defaultInstrumentSettings = {
     }
 };
 
+const bassInstrumentSettings = {
+    envelope: {
+        sustain: 0.9,
+        release: 0.1
+    },
+    oscillator: {
+        volume: -22,
+        type: 'fatsquare'
+    }
+}
+
+const leadInstrumentSettings = {
+    envelope: {
+        sustain: 0.9,
+        release: 0.1
+    },
+    oscillator: {
+        volume: -22,
+        type: 'triangle'
+    }
+}
+
 export default class AudioEngine {
 
     channels: Channel[] = [];
 
     init() {
-        this.addChannel('Channel 1');
-        this.addChannel('Channel 2');
-        this.addChannel('Channel 3');
+        this.addChannel('Channel 1', padInstrumentSettings);
+        this.addChannel('Channel 2', bassInstrumentSettings);
+        this.addChannel('Channel 3', leadInstrumentSettings);
         this.addChannel('Channel 4');
     }
 
-    addChannel(name: string) {
+    addChannel(name: string, settings = padInstrumentSettings) {
         const id = genId();
         this.channels.push(
-            new Channel(name, id, defaultInstrumentSettings)
+            new Channel(name, id, settings)
         );
     }
 

@@ -1,3 +1,4 @@
+import Tone from 'tone';
 import Konva from 'konva';
 import GridLayer from './GridLayer';
 import ConversionManager from './ConversionManager';
@@ -7,13 +8,15 @@ import MouseStateManager from './MouseStateManager';
 import KeyboardStateManager from './KeyboardStateManager';
 import SectionSelection from './SectionSelection';
 import Clipboard from './Clipboard';
+import AudioReconciler from './AudioReconciler';
 import AudioEngine from '../AudioEngine';
 import {
     ArrangerDragModes,
     Tools,
     KonvaEvent,
     Events,
-    ArrangerOptions
+    ArrangerOptions,
+    StaticMeasurements
 } from '../Constants';
 import { genId } from '../genId';
 import { 
@@ -25,6 +28,7 @@ import {
     canShiftRight 
 } from '../utils';
 import EventEmitter from '../EventEmitter';
+import { getBarNumFromBBSString } from './arrangerUtils';
 
 
 /*
@@ -60,6 +64,7 @@ export default class Arranger {
     private sectionSelection: SectionSelection;
     private emitter: EventEmitter;
     private clipboard: Clipboard;
+    private audioReconciler: AudioReconciler;
     private audioEngine: AudioEngine;
     private _xScroll: number;
     private _yScroll: number;
@@ -71,6 +76,7 @@ export default class Arranger {
         this._xScroll = 0;
         this._yScroll = 0;
         this.emitter = eventEmitter;
+        window.toneRef = Tone;
     }
 
     get xScroll() : number {
@@ -121,11 +127,12 @@ export default class Arranger {
             numBars: 64,
             numChannels: 4
         });
+        this.audioReconciler = new AudioReconciler(this.conversionManager, this.audioEngine);
         this.mouseStateManager = new MouseStateManager();
         this.keyboardStateManager = new KeyboardStateManager(container);
         this.sectionCache = new CanvasElementCache();
         this.sectionSelection = new SectionSelection();
-        this.clipboard = new Clipboard(this.conversionManager);
+        this.clipboard = new Clipboard(this.conversionManager, this.audioEngine);
         this.primaryBackingLayer = new Konva.Layer();
         this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer);
         this.sectionLayer = new SectionLayer(this.conversionManager, this.primaryBackingLayer);
@@ -147,14 +154,6 @@ export default class Arranger {
             however this will probably be preferrable to the canvas lag. 
         */
         this.primaryBackingLayer.draw();
-    }
-
-    private addNewSection(x: number, y: number, width?: number) : Konva.Rect {
-        const id = genId();
-        const newSection = this.sectionLayer.addNewSection(x, y, id, width);
-        this.sectionCache.add(newSection);
-        this.sectionSelection.add(newSection);
-        return newSection;
     }
 
     private registerStageSubscriptions() {
@@ -187,6 +186,11 @@ export default class Arranger {
         this.keyboardStateManager.addKeyListener('ArrowDown', () => this.shiftSelectionDown());
         this.keyboardStateManager.addKeyListener('ArrowLeft', () => this.shiftSelectionLeft());
         this.keyboardStateManager.addKeyListener('ArrowRight', () => this.shiftSelectionRight());
+        this.keyboardStateManager.addKeyListener('Delete', () => this.deleteSelectedSections());
+        this.keyboardStateManager.addKeyListener('x', () => this.keyboardStateManager.ctrlKey && this.cut());
+        this.keyboardStateManager.addKeyListener('c', () => this.keyboardStateManager.ctrlKey && this.copy());
+        this.keyboardStateManager.addKeyListener('v', () => this.keyboardStateManager.ctrlKey && this.paste());
+
     }
 
     private registerGlobalEventSubscriptions() : void {
@@ -200,11 +204,18 @@ export default class Arranger {
         this.stage.destroy();
     }
 
+    private addNewSection(x: number, y: number, id: string, width?: number) : Konva.Rect {
+        const newSection = this.sectionLayer.addNewSection(x, y, id, width);
+        this.sectionCache.add(newSection);
+        this.sectionSelection.add(newSection);
+        return newSection;
+    }
+
     private addSectionToAudioEngine(sectionElement: Konva.Rect) : void {
         const channelIdx = sectionElement.y() / this.conversionManager.rowHeight;
         const sectionStartNum = sectionElement.x() / this.conversionManager.colWidth;
         const sectionNumBars = sectionElement.width() / this.conversionManager.colWidth;
-        const newSectionId = genId();
+        const newSectionId = sectionElement.id();
         console.log(`
             channelIdx: ${channelIdx}
             sectionStart: ${sectionStartNum}
@@ -281,6 +292,41 @@ export default class Arranger {
         }
     }
 
+    private deleteSelectedSections() {
+        const selectedSectionIds = this.sectionSelection.retrieveAll();
+        const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
+        this.sectionLayer.deleteSections(selectedSectionElements);
+        this.sectionSelection.clear();
+        selectedSectionElements.forEach(section => {
+            this.sectionCache.remove(section);
+            this.audioReconciler.removeSection(section);
+        });
+    }
+
+    private copy() {
+        const selectedSectionIds = this.sectionSelection.retrieveAll();
+        const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
+        this.clipboard.add(selectedSectionElements);
+    }
+
+    private cut() {
+        this.copy();
+        this.deleteSelectedSections();
+    }
+
+    private paste() {
+        const currentBar = Math.floor(Tone.Transport.ticks / StaticMeasurements.ticksPerBar);
+        const newSectionsData = this.clipboard.produceCopy(currentBar);
+        
+        newSectionsData.forEach(serializedSection => {
+            const x = getBarNumFromBBSString(serializedSection.start) * this.conversionManager.colWidth;
+            const y = serializedSection.channelIdx * this.conversionManager.rowHeight;
+            const width = serializedSection.numBars * this.conversionManager.colWidth; 
+            this.addNewSection(x, y, serializedSection.id, width);
+            this.audioReconciler.addSectionFromSerializedState(serializedSection);
+        })
+    }
+
     private reconcileSectionSelectionWithSelectionArea(
         selectionX1: number, 
         selectionY1: number, 
@@ -345,6 +391,7 @@ export default class Arranger {
         const { target } = this.extractInfoFromEventObject(e);
         if (target.name() === 'SECTION' && this.activeTool === Tools.cursor) {
             console.log('Open up a piano roll window');
+            this.emitter.emit(Events.openPianoRollWindow, target.id());
         }
     }
 
@@ -365,8 +412,8 @@ export default class Arranger {
 
         } else if (this.activeTool === Tools.pencil) {
             this.dragMode = ArrangerDragModes.adjustSectionLength;
-            this.clearSelection()
-            this.addNewSection(roundedX, roundedY);
+            this.clearSelection();
+            this.addNewSection(roundedX, roundedY, genId());
 
         } else if (this.activeTool === Tools.cursor) {
             const targetIsSection = target.name() === 'SECTION';
@@ -470,7 +517,7 @@ export default class Arranger {
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         this.sectionLayer.updateSectionsAttributeCaches(selectedSectionElements);
         // trigger update in audio engine and serialize state to update history stack.
-        selectedSectionElements.forEach(el => this.addSectionToAudioEngine(el));
+        selectedSectionElements.forEach(el => this.audioReconciler.addSection(el));
     }
 
     handleAdjustSectionPositionInteractionEnd(e: KonvaEvent) : void {
@@ -495,6 +542,7 @@ export default class Arranger {
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         this.sectionLayer.updateSectionsAttributeCaches(selectedSectionElements);
         // then update the audio engine and history stack.
+        selectedSectionElements.forEach(sectionElement => this.audioReconciler.addSection(sectionElement));
     }
 
     handleAdjustSelectionInteractionEnd(e: KonvaEvent) : void {
