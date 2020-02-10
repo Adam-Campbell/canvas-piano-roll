@@ -189,6 +189,8 @@ export default class Arranger {
         this.keyboardStateManager.addKeyListener('x', () => this.keyboardStateManager.ctrlKey && this.cut());
         this.keyboardStateManager.addKeyListener('c', () => this.keyboardStateManager.ctrlKey && this.copy());
         this.keyboardStateManager.addKeyListener('v', () => this.keyboardStateManager.ctrlKey && this.paste());
+        this.keyboardStateManager.addKeyListener('z', () => this.keyboardStateManager.ctrlKey && this.undo());
+        this.keyboardStateManager.addKeyListener('y', () => this.keyboardStateManager.ctrlKey && this.redo());
         this.keyboardStateManager.addKeyListener('i', () => {
             this.keyboardStateManager.altKey && this.handleZoomAdjustment(true);
         });
@@ -202,6 +204,9 @@ export default class Arranger {
         this.emitter.subscribe(Events.activeToolUpdate, tool => {
             this.activeTool = tool;
             console.log(this.activeTool);
+        });
+        this.emitter.subscribe(Events.historyTravelled, state => {
+            console.log(state);
         });
     }
 
@@ -405,6 +410,18 @@ export default class Arranger {
             this.addNewSection(x, y, serializedSection.id, width);
             this.audioReconciler.addSectionFromSerializedState(serializedSection);
         })
+    }
+
+    private undo() {
+        this.emitter.emit(Events.undoAction);
+    }
+
+    private redo() {
+        this.emitter.emit(Events.redoAction);
+    }
+
+    private addToHistory() {
+        this.emitter.emit(Events.addStateToStack);
     }
 
     private reconcileSectionSelectionWithSelectionArea(
@@ -625,6 +642,7 @@ export default class Arranger {
         this.sectionLayer.updateSectionsAttributeCaches(selectedSectionElements);
         // trigger update in audio engine and serialize state to update history stack.
         selectedSectionElements.forEach(el => this.audioReconciler.addSection(el));
+        this.addToHistory();
     }
 
     handleAdjustSectionPositionInteractionEnd(e: KonvaEvent) : void {
@@ -650,6 +668,7 @@ export default class Arranger {
         this.sectionLayer.updateSectionsAttributeCaches(selectedSectionElements);
         // then update the audio engine and history stack.
         selectedSectionElements.forEach(sectionElement => this.audioReconciler.addSection(sectionElement));
+        this.addToHistory();
     }
 
     handleAdjustSelectionInteractionEnd(e: KonvaEvent) : void {

@@ -14,6 +14,7 @@ import CrazySquare from '../CrazySquare';
 import PianoRoll from '../PianoRoll';
 import AudioEngine from '../AudioEngine';
 import Arranger from '../Arranger';
+import HistoryStack from '../HistoryStack';
 
 const windowsData = [
     { id: '0', title: 'Lead Synth' },
@@ -30,14 +31,19 @@ export default class App {
     private activeWindows: Window[] = [];
     audioEngine: AudioEngine;
     eventEmitter: EventEmitter;
+    private historyStack: HistoryStack;
 
     constructor() {
         this.eventEmitter = new EventEmitter();
         this.audioEngine = new AudioEngine();
+        this.historyStack = new HistoryStack();
         this.eventEmitter.subscribe(Events.closeWindow, this.removeWindow);
         this.eventEmitter.subscribe(Events.renderApp, this.renderApp);
         this.eventEmitter.subscribe(Events.focusWindow, this.focusWindow);
         this.eventEmitter.subscribe(Events.openPianoRollWindow, this.addPianoRollWindow);
+        this.eventEmitter.subscribe(Events.addStateToStack, this.serializeStateAndAddToStack);
+        this.eventEmitter.subscribe(Events.undoAction, this.undoActionAndPushState);
+        this.eventEmitter.subscribe(Events.redoAction, this.redoActionAndPushState);
 
         window.audioEngine = this.audioEngine;
         this.audioEngine.init();
@@ -46,6 +52,31 @@ export default class App {
     init() {
         this.renderApp();
         this.addArrangerWindow();
+    }
+
+    private serializeStateAndAddToStack = () =>  {
+        // use the audio engine to get the new serialized state, then add it to the stack
+        this.historyStack.addEntry(
+            this.audioEngine.serializeState()
+        );
+    }
+
+    private undoActionAndPushState = () => {
+        //go back to previous history stack entry and emit historyTravelled event with that
+        // state
+        if (!this.historyStack.isAtStart) {
+            const nextState = this.historyStack.goBackwards();
+            this.eventEmitter.emit(Events.historyTravelled, nextState);
+        }
+    }
+
+    private redoActionAndPushState = () => {
+        // go forwards to next history stack entry and emit historyTravelled event with that
+        // state
+        if (!this.historyStack.isAtEnd) {
+            const nextState = this.historyStack.goForwards();
+            this.eventEmitter.emit(Events.historyTravelled, nextState);
+        }
     }
 
     addWindow = (childClass: any, childContext: any) => {
