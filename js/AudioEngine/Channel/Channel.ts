@@ -1,7 +1,7 @@
 import Section from '../Section';
 import Tone from 'tone';
 import { genId } from '../../genId';
-import { SerializedChannelState } from '../AudioEngineConstants';
+import { SerializedChannelState, NoteCache } from '../AudioEngineConstants';
 
 interface SectionCache {
     [propName: string]: Section
@@ -30,13 +30,13 @@ export default class Channel {
         this.instrument.triggerAttackRelease(value.note, value.duration, time, value.velocity);
     }
 
-    addSection(start: string, numBars: number) : Section {
-        const id = genId();
+    addSection(start: string, numBars: number, id: string, notesData?: NoteCache) : Section {
         const newSection = new Section(
             start,
             numBars,
             id, 
-            this.triggerAttackRelease
+            this.triggerAttackRelease,
+            notesData
         );
         this.sectionCache[id] = newSection;
         return newSection;
@@ -48,6 +48,13 @@ export default class Channel {
             section.cleanup();
             delete this.sectionCache[id];
         }
+    }
+
+    getDataForSection(sectionId: string) {
+        if (this.sectionCache[sectionId]) {
+            return this.sectionCache[sectionId].serializeState();
+        }
+        return null;
     }
 
     // Called before deleting the channel - takes care of anything that needs to be tidied

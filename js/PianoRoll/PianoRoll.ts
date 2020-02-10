@@ -29,15 +29,22 @@ import {
     PianoRollOptions
 } from '../Constants';
 import { 
+    // canShiftUp,
+    // canShiftDown,
+    // canShiftLeft,
+    // canShiftRight,
+    easingFns
+} from './pianoRollUtils';
+import { genId } from '../genId';
+import { 
+    clamp, 
+    pipe, 
     doesOverlap,
     canShiftUp,
     canShiftDown,
     canShiftLeft,
-    canShiftRight,
-    easingFns
-} from './pianoRollUtils';
-import { genId } from '../genId';
-import { clamp, pipe } from '../utils';
+    canShiftRight, 
+} from '../utils';
 import { pitchesArray } from '../pitches';
 import { chordType } from '@tonaljs/chord-dictionary';
 
@@ -112,7 +119,23 @@ export default class PianoRoll {
         this.registerStageSubscriptions();
         this.registerKeyboardSubscriptions();
         this.registerGlobalEventSubscriptions();
-        this.forceToState(this.historyStack.currentEntry);
+        // const initialNotes = pianoRollOptions.section.serializeState().notes.map(note => {
+        //     // return {
+        //     //     ...note,
+        //     //     time: Tone.Ticks(note.time).toTicks(),
+        //     //     duration: Tone.Ticks(note.duration).toTicks()
+        //     // }
+        // })
+        // const notes = pianoRollOptions.section.serializeState().notes;
+        //console.log(notes);
+        const notes = Object.values(pianoRollOptions.section.serializeState().notes)
+        .map(note => ({
+            ...note,
+            time: Tone.Ticks(note.time).toTicks(),
+            duration: Tone.Ticks(note.duration).toTicks()
+        }));
+        //console.log(notes);
+        this.forceToState({ notes, selectedNoteIds: [] });
     }
 
     private instantiateChildClasses({
@@ -237,9 +260,6 @@ export default class PianoRoll {
         });
         this.keyboardStateManager.addKeyListener('o', () => {
             this.keyboardStateManager.altKey && this.handleZoomAdjustment(false);
-        });
-        this.keyboardStateManager.addKeyListener('m', () => {
-            this.scrollManager.x = this.scrollManager.x - 100;
         });
         this.keyboardStateManager.addKeyListener(' ', () => this.handleTogglePlayback());
     }
@@ -563,7 +583,7 @@ export default class PianoRoll {
         const selectedVelocityMarkerElements = this.velocityMarkerCache.retrieve(
             selectedNoteIds
         );
-        if (canShiftRight(selectedNoteElements, this.conversionManager.gridWidth)) {
+        if (canShiftRight(selectedNoteElements, this.conversionManager.gridWidth, this.conversionManager.colWidth)) {
             this.noteLayer.shiftNotesRight(selectedNoteElements);
             this.velocityLayer.shiftVelocityMarkersRight(selectedVelocityMarkerElements);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));

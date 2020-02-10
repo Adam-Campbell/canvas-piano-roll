@@ -13,6 +13,7 @@ import {
 import CrazySquare from '../CrazySquare';
 import PianoRoll from '../PianoRoll';
 import AudioEngine from '../AudioEngine';
+import Arranger from '../Arranger';
 
 const windowsData = [
     { id: '0', title: 'Lead Synth' },
@@ -36,7 +37,15 @@ export default class App {
         this.eventEmitter.subscribe(Events.closeWindow, this.removeWindow);
         this.eventEmitter.subscribe(Events.renderApp, this.renderApp);
         this.eventEmitter.subscribe(Events.focusWindow, this.focusWindow);
-        
+        this.eventEmitter.subscribe(Events.openPianoRollWindow, this.addPianoRollWindow);
+
+        window.audioEngine = this.audioEngine;
+        this.audioEngine.init();
+    }
+
+    init() {
+        this.renderApp();
+        this.addArrangerWindow();
     }
 
     addWindow = (childClass: any, childContext: any) => {
@@ -56,7 +65,14 @@ export default class App {
         newWindow.init();
     }
 
+    addArrangerWindow = () => {
+        this.addWindow(Arranger, {
+            audioEngine: this.audioEngine
+        });
+    }
+
     addPianoRollWindow = (sectionId: string) => {
+        console.log(sectionId)
         const { section, livePlayInstrument } = this.audioEngine.getSectionContext(sectionId);
         this.addWindow(PianoRoll, {
             section,

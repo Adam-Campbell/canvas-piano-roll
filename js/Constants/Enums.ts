@@ -17,7 +17,8 @@ export enum Events {
     deminimizeWindow = 'deminimizeWindow',
     renderApp = 'renderApp',
     focusWindow = 'focusWindow',
-    resizeWindow = 'resizeWindow'
+    resizeWindow = 'resizeWindow',
+    openPianoRollWindow = 'openPianoRollWindow'
 }
 
 export enum DragModes {
@@ -26,6 +27,12 @@ export enum DragModes {
     adjustSelection = 'adjustSelection',
     adjustSelectionFromVelocityArea = 'adjustSelectionFromVelocityArea',
     adjustVelocityAreaHeight = 'adjustVelocityAreaHeight'
+}
+
+export enum ArrangerDragModes {
+    adjustSectionLength = 'adjustSectionLength',
+    adjustSectionPosition = 'adjustSectionPosition',
+    adjustSelection = 'adjustSelection'
 }
 
 export enum Tools {

@@ -10,7 +10,13 @@ export default class Section {
     numBars: number;
     id: string;
 
-    constructor(start: string, numBars: number, id: string, instrumentCallback: Function) {
+    constructor(
+        start: string, 
+        numBars: number, 
+        id: string, 
+        instrumentCallback: Function, 
+        notes: NoteCache = {}
+    ) {
         this.start = start;
         this.numBars = numBars;
         this.id = id;
@@ -18,6 +24,11 @@ export default class Section {
         this.part.start(start);
         this.part.loop = false;
         this.part.callback = instrumentCallback;
+        //console.log(notes)
+        Object.values(notes).forEach(noteObject => {
+            console.log(noteObject)
+            this.addNote(noteObject);
+        });
     }
 
     private addNoteToPart(noteObject: NoteBBS) : void {

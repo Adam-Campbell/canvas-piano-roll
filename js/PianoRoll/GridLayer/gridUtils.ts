@@ -1,12 +1,10 @@
-import { Colours } from '../../Constants';
+import { 
+    Colours,
+    KonvaLineData 
+} from '../../Constants';
 
-interface LineData {
-    points: number[],
-    stroke: string,
-    strokeWidth: number
-}
 
-export const getHorizontalLinesData = (gridWidthPx: number) : LineData[] => {
+export const getHorizontalLinesData = (gridWidthPx: number) : KonvaLineData[] => {
     let linesArr = [];
     for (let i = 0; i < 109; i++) {
         linesArr.push({
@@ -19,7 +17,7 @@ export const getHorizontalLinesData = (gridWidthPx: number) : LineData[] => {
 }
 
 export const getVerticalLinesData = (numBars: number, barWidthPx: number, 
-    colWidthPx: number, gridHeightPx: number) : LineData[] => {
+    colWidthPx: number, gridHeightPx: number) : KonvaLineData[] => {
     let gridLines = [];
     let total = 0;
     let escapeHatch = 0;

@@ -1,5 +1,6 @@
 import EventEmitter from '../EventEmitter';
 import Section from '../AudioEngine/Section';
+import AudioEngine from '../AudioEngine';
 
 export interface KonvaEvent {
     evt: any,
@@ -58,4 +59,27 @@ export interface WindowOptions {
     childContext: any,
     defaultWidth: number,
     defaultHeight: number
+}
+
+export interface KonvaLineData {
+    points: number[],
+    stroke: string,
+    strokeWidth: number
+}
+
+export interface ArrangerConversionManagerOptions {
+    stageWidth: number,
+    stageHeight: number,
+    barWidth: number,
+    barHeight: number,
+    numBars: number,
+    numChannels: number,
+    tickToPxRatio: number
+}
+
+export interface ArrangerOptions {
+    container: HTMLElement,
+    initialWidth: number,
+    initialHeight: number,
+    audioEngine: AudioEngine
 }
