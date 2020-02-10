@@ -261,9 +261,6 @@ export default class PianoRoll {
         this.keyboardStateManager.addKeyListener('o', () => {
             this.keyboardStateManager.altKey && this.handleZoomAdjustment(false);
         });
-        this.keyboardStateManager.addKeyListener('m', () => {
-            this.scrollManager.x = this.scrollManager.x - 100;
-        });
         this.keyboardStateManager.addKeyListener(' ', () => this.handleTogglePlayback());
     }
 

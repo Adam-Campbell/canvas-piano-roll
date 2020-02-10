@@ -11,6 +11,7 @@ export default class ConversionManager {
     private _barHeight: number;
     private _numBars: number;
     private _numChannels: number;
+    private _tickToPxRatio: number
     
     constructor({
         stageWidth,
@@ -19,6 +20,7 @@ export default class ConversionManager {
         barHeight,
         numBars,
         numChannels,
+        tickToPxRatio
     } : ArrangerConversionManagerOptions) {
         this._stageWidth = stageWidth;
         this._stageHeight = stageHeight;
@@ -26,6 +28,7 @@ export default class ConversionManager {
         this._barHeight = barHeight;
         this._numBars = numBars;
         this._numChannels = numChannels;
+        this._tickToPxRatio = tickToPxRatio;
     }
 
     get stageWidth() : number {
@@ -82,6 +85,22 @@ export default class ConversionManager {
 
     set numChannels(num: number) {
         this._numChannels = num;
+    }
+
+    get tickToPxRatio() : number {
+        return this._tickToPxRatio;
+    }
+
+    set tickToPxRatio(ratio: number) {
+        this._tickToPxRatio = ratio;
+    }
+
+    convertTicksToPx(ticks: number) : number {
+        return ticks * this._tickToPxRatio;
+    }
+
+    convertPxToTicks(px: number) : number {
+        return px / this._tickToPxRatio;
     }
 
     roundDown(total: number, divisor: number) : number {

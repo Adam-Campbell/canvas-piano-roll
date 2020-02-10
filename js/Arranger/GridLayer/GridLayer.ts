@@ -15,7 +15,7 @@ export default class GridLayer {
     constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
         this.layer = layerRef;
         this.conversionManager = conversionManager;
-        this.gridContainer = new Konva.Group();
+        this.gridContainer = new Konva.Group({ y: 30 });
     }
 
     init() {

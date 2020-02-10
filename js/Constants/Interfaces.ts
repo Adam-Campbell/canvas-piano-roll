@@ -73,7 +73,8 @@ export interface ArrangerConversionManagerOptions {
     barWidth: number,
     barHeight: number,
     numBars: number,
-    numChannels: number
+    numChannels: number,
+    tickToPxRatio: number
 }
 
 export interface ArrangerOptions {

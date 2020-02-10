@@ -8,6 +8,8 @@ import MouseStateManager from './MouseStateManager';
 import KeyboardStateManager from './KeyboardStateManager';
 import SectionSelection from './SectionSelection';
 import Clipboard from './Clipboard';
+import TransportLayer from './TransportLayer';
+import SeekerLineLayer from './SeekerLineLayer';
 import AudioReconciler from './AudioReconciler';
 import AudioEngine from '../AudioEngine';
 import {
@@ -66,16 +68,20 @@ export default class Arranger {
     private clipboard: Clipboard;
     private audioReconciler: AudioReconciler;
     private audioEngine: AudioEngine;
+    private transportLayer: TransportLayer;
+    private seekerLineLayer: SeekerLineLayer;
     private _xScroll: number;
     private _yScroll: number;
+    private playbackFromTicks: number;
     
 
     constructor(eventEmitter: EventEmitter) {
         this.dragMode = null;
         this.activeTool = Tools.cursor;
         this._xScroll = 0;
-        this._yScroll = 0;
+        this._yScroll = 30;
         this.emitter = eventEmitter;
+        this.playbackFromTicks = 0;
         window.toneRef = Tone;
     }
 
@@ -100,8 +106,11 @@ export default class Arranger {
     init(arrangerOptions: ArrangerOptions) {
         this.instantiateChildClasses(arrangerOptions);
         this.stage.add(this.primaryBackingLayer);
+        this.stage.add(this.seekerLineLayer.layer);
         this.gridLayer.init();
         this.sectionLayer.init();
+        this.transportLayer.init();
+        this.seekerLineLayer.init();
         this.registerStageSubscriptions();
         this.registerKeyboardSubscriptions();
         this.registerGlobalEventSubscriptions();
@@ -118,14 +127,16 @@ export default class Arranger {
             width: initialWidth,
             height: initialHeight
         });
+        console.log(`height is: ${initialHeight}`)
         this.audioEngine = audioEngine;
         this.conversionManager = new ConversionManager({
             stageWidth: initialWidth,
             stageHeight: initialHeight,
-            barWidth: 40,
+            barWidth: 48,
             barHeight: 40,
             numBars: 64,
-            numChannels: 4
+            numChannels: 4,
+            tickToPxRatio: 0.0625
         });
         this.audioReconciler = new AudioReconciler(this.conversionManager, this.audioEngine);
         this.mouseStateManager = new MouseStateManager();
@@ -136,6 +147,8 @@ export default class Arranger {
         this.primaryBackingLayer = new Konva.Layer();
         this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer);
         this.sectionLayer = new SectionLayer(this.conversionManager, this.primaryBackingLayer);
+        this.transportLayer = new TransportLayer(this.conversionManager, this.primaryBackingLayer);
+        this.seekerLineLayer = new SeekerLineLayer(this.conversionManager);
     }
 
     handleResize(containerWidth: number, containerHeight: number) : void {
@@ -190,7 +203,7 @@ export default class Arranger {
         this.keyboardStateManager.addKeyListener('x', () => this.keyboardStateManager.ctrlKey && this.cut());
         this.keyboardStateManager.addKeyListener('c', () => this.keyboardStateManager.ctrlKey && this.copy());
         this.keyboardStateManager.addKeyListener('v', () => this.keyboardStateManager.ctrlKey && this.paste());
-
+        this.keyboardStateManager.addKeyListener(' ', () => this.handleTogglePlayback());
     }
 
     private registerGlobalEventSubscriptions() : void {
@@ -202,6 +215,19 @@ export default class Arranger {
 
     cleanup() {
         this.stage.destroy();
+    }
+
+    private handleTogglePlayback() : void {
+        if (Tone.Transport.state === 'started') {
+            if (this.keyboardStateManager.shiftKey) {
+                Tone.Transport.pause();
+            } else {
+                Tone.Transport.stop();
+                Tone.Transport.ticks = this.playbackFromTicks;
+            }
+        } else {
+            Tone.Transport.start();
+        }
     }
 
     private addNewSection(x: number, y: number, id: string, width?: number) : Konva.Rect {
@@ -388,9 +414,23 @@ export default class Arranger {
     }
 
     handleDoubleClick(e: KonvaEvent) : void {
-        const { target } = this.extractInfoFromEventObject(e);
-        if (target.name() === 'SECTION' && this.activeTool === Tools.cursor) {
-            console.log('Open up a piano roll window');
+        // const { target } = this.extractInfoFromEventObject(e);
+        // if (target.name() === 'SECTION' && this.activeTool === Tools.cursor) {
+        //     console.log('Open up a piano roll window');
+        //     this.emitter.emit(Events.openPianoRollWindow, target.id());
+        // }
+        const { rawX, rawY, target } = this.extractInfoFromEventObject(e);
+        const isTransportAreaInteraction = rawY <= 30;
+        const isSectionInteraction = target.name() === 'SECTION';
+
+        if (isTransportAreaInteraction) {
+            const roundedX = this.conversionManager.roundDownToGridCol(
+                rawX - this.xScroll
+            );
+            const positionAsTicks = this.conversionManager.convertPxToTicks(roundedX);
+            this.playbackFromTicks = positionAsTicks;
+            this.transportLayer.repositionPlaybackMarker(positionAsTicks);
+        } else if (isSectionInteraction && this.activeTool === Tools.cursor) {
             this.emitter.emit(Events.openPianoRollWindow, target.id());
         }
     }
@@ -406,11 +446,23 @@ export default class Arranger {
         const roundedX = this.conversionManager.roundDownToGridCol(xWithScroll);
         const roundedY = this.conversionManager.roundDownToGridRow(yWithScroll);
         this.mouseStateManager.addMouseDownEvent(xWithScroll, yWithScroll);
+        // const isBelowGrid = Math.floor(yWithScroll / this.conversionManager.rowHeight) 
+        //     > this.conversionManager.numChannels;
+        const isBelowGrid = yWithScroll > this.conversionManager.gridHeight;
+        
+        const isTransportAreaInteraction = rawY <= 30;
+        if (isTransportAreaInteraction) {
+            this.handleTransportAreaInteraction(roundedX);
+            return;
+        }
 
         if (this.activeTool === Tools.marquee) {
             this.dragMode = ArrangerDragModes.adjustSelection;
 
         } else if (this.activeTool === Tools.pencil) {
+            if (isBelowGrid) {
+                return;
+            }
             this.dragMode = ArrangerDragModes.adjustSectionLength;
             this.clearSelection();
             this.addNewSection(roundedX, roundedY, genId());
@@ -421,6 +473,14 @@ export default class Arranger {
                 this.handleSectionInteractionStart(target, xWithScroll); 
             }
         }
+    }
+
+    handleTransportAreaInteraction(roundedX: number) {
+        console.log('transport area interaction');
+        const positionAsTicks = this.conversionManager.convertPxToTicks(roundedX);
+        const positionAsBBS = Tone.Ticks(positionAsTicks).toBarsBeatsSixteenths();
+        Tone.Transport.position = positionAsBBS;
+        this.seekerLineLayer.updateSeekerLinePosition();
     }
 
     handleSectionInteractionStart(sectionElement: Konva.Rect, xWithScroll: number) : void {

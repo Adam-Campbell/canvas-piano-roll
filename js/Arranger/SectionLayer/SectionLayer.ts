@@ -41,7 +41,7 @@ export default class SectionLayer {
     constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
-        this.sectionsContainer = new Konva.Group();
+        this.sectionsContainer = new Konva.Group({ y: 30 });
     }
 
     init() : void {
