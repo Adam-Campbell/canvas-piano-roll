@@ -24,7 +24,6 @@ export default class GridLayer {
 
     init() {
         this.layer.add(this.gridContainer);
-        this.background = this.constructBackground();
         this.drawGrid();
     }
 
@@ -38,11 +37,6 @@ export default class GridLayer {
         this.layer.batchDraw();
     }
 
-    redrawOnResize() : void {
-        this.background.height(this.conversionManager.stageHeight);
-        //this.layer.draw();
-    }
-
     private constructBackground() : Konva.Rect {
         return new Konva.Rect({
             fill: '#ddd',
@@ -54,6 +48,8 @@ export default class GridLayer {
     }
 
     private drawGrid() : void {
+        this.gridContainer.destroyChildren();
+        this.background = this.constructBackground();
         this.background.moveTo(this.gridContainer);
         const horizontalLinesData = getHorizontalLinesData(
             this.conversionManager.numChannels,
@@ -71,6 +67,10 @@ export default class GridLayer {
             line.moveTo(this.gridContainer);
         });
         this.layer.batchDraw();
+    }
+
+    redrawOnResize() : void {
+        this.background.height(this.conversionManager.stageHeight);
     }
 
     redrawOnZoomAdjustment() : void {

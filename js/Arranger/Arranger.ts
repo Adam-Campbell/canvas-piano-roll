@@ -26,6 +26,7 @@ import {
 import { genId } from '../genId';
 import { 
     pipe, 
+    clamp,
     doesOverlap,
     canShiftUp,
     canShiftDown,
@@ -47,8 +48,6 @@ NoteSelection (but give it a more general name such as SelectionManager)
 
 Additionally I think NoteLayer and its equivalent, SectionLayer, can be built using the same class, I just
 need to make sure the naming is more generic ie use the term rect instead of the terms note or section. 
-
-
 
 */
 
@@ -115,7 +114,6 @@ export default class Arranger {
             width: initialWidth,
             height: initialHeight
         });
-        console.log(`height is: ${initialHeight}`)
         this.audioEngine = audioEngine;
         this.conversionManager = new ConversionManager({
             stageWidth: initialWidth,
@@ -157,49 +155,6 @@ export default class Arranger {
         );
     }
 
-    handleResize(containerWidth: number, containerHeight: number) : void {
-
-
-        if (containerWidth !== this.conversionManager.stageWidth) {
-            this.conversionManager.stageWidth = containerWidth;
-            this.stage.width(containerWidth);
-            const willExposeOutOfBounds = this.scrollManager.x * -1 > this.conversionManager.gridWidth + StaticMeasurements.scrollbarWidth - containerWidth;
-            if (this.scrollbarLayer.shouldAllowHorizontalScrolling && willExposeOutOfBounds) {
-                // const newXScroll = (-1 * (this.scrollbarLayer.horizontalScrollRange)) + StaticMeasurements.pianoKeyWidth;
-                const newXScroll = (-1 * (this.scrollbarLayer.horizontalScrollRange)) + StaticMeasurements.channelInfoColWidth;
-                this.scrollManager.x = newXScroll;
-            }  
-        }
-
-        if (containerHeight !== this.conversionManager.stageHeight) {
-            this.conversionManager.stageHeight = containerHeight;
-            this.stage.height(containerHeight);
-            const willExposeOutOfBounds = this.scrollManager.y * -1 >= this.scrollbarLayer.verticalScrollRange;
-            if (this.scrollbarLayer.shouldAllowVerticalScrolling && willExposeOutOfBounds) {
-            //if (willExposeOutOfBounds) { 
-                const newYScroll = (-1 * this.scrollbarLayer.verticalScrollRange) + this.conversionManager.seekerAreaHeight;
-                this.scrollManager.y = newYScroll;
-            }
-        }
-        
-        this.gridLayer.redrawOnResize();
-        this.scrollbarLayer.redrawOnResize();
-        this.channelInfoLayer.redrawOnResize();
-        this.seekerLineLayer.redrawOnResize();
-        this.primaryBackingLayer.draw();
-        this.secondaryBackingLayer.draw();
-        /*
-            Draw vs batchDraw for resizing
-
-            Draw is preferable to batchDraw if performance will allow it, which it seems to here, though
-            it may be different in PianoRoll. The calling of this handleResize method is already throttled
-            by requestAnimationFrame, and the extra throttling added by batchDraw sometimes makes the canvas
-            lag behind the window slightly. Draw does seem to be slightly more performance intensive still,
-            however this will probably be preferrable to the canvas lag. 
-        */
-        //this.primaryBackingLayer.draw();
-    }
-
     private registerStageSubscriptions() {
         this.stage.on('mousedown', (e: KonvaEvent) => this.handleInteractionStart(e));
         this.stage.on('touchstart', (e: KonvaEvent) => this.handleInteractionStart(e));
@@ -234,6 +189,12 @@ export default class Arranger {
         this.keyboardStateManager.addKeyListener('x', () => this.keyboardStateManager.ctrlKey && this.cut());
         this.keyboardStateManager.addKeyListener('c', () => this.keyboardStateManager.ctrlKey && this.copy());
         this.keyboardStateManager.addKeyListener('v', () => this.keyboardStateManager.ctrlKey && this.paste());
+        this.keyboardStateManager.addKeyListener('i', () => {
+            this.keyboardStateManager.altKey && this.handleZoomAdjustment(true);
+        });
+        this.keyboardStateManager.addKeyListener('o', () => {
+            this.keyboardStateManager.altKey && this.handleZoomAdjustment(false);
+        });
         this.keyboardStateManager.addKeyListener(' ', () => this.handleTogglePlayback());
     }
 
@@ -246,6 +207,68 @@ export default class Arranger {
 
     cleanup() {
         this.stage.destroy();
+    }
+
+    handleResize(containerWidth: number, containerHeight: number) : void {
+        if (containerWidth !== this.conversionManager.stageWidth) {
+            this.conversionManager.stageWidth = containerWidth;
+            this.stage.width(containerWidth);
+            const willExposeOutOfBounds = this.scrollManager.x * -1 > this.conversionManager.gridWidth + StaticMeasurements.scrollbarWidth - containerWidth;
+            if (this.scrollbarLayer.shouldAllowHorizontalScrolling && willExposeOutOfBounds) {
+                // const newXScroll = (-1 * (this.scrollbarLayer.horizontalScrollRange)) + StaticMeasurements.pianoKeyWidth;
+                const newXScroll = (-1 * (this.scrollbarLayer.horizontalScrollRange)) + StaticMeasurements.channelInfoColWidth;
+                this.scrollManager.x = newXScroll;
+            }  
+        }
+
+        if (containerHeight !== this.conversionManager.stageHeight) {
+            this.conversionManager.stageHeight = containerHeight;
+            this.stage.height(containerHeight);
+            const willExposeOutOfBounds = this.scrollManager.y * -1 >= this.scrollbarLayer.verticalScrollRange;
+            if (this.scrollbarLayer.shouldAllowVerticalScrolling && willExposeOutOfBounds) {
+                const newYScroll = (-1 * this.scrollbarLayer.verticalScrollRange) + this.conversionManager.seekerAreaHeight;
+                this.scrollManager.y = newYScroll;
+            }
+        }
+        
+        this.gridLayer.redrawOnResize();
+        this.scrollbarLayer.redrawOnResize();
+        this.channelInfoLayer.redrawOnResize();
+        this.seekerLineLayer.redrawOnResize();
+        this.primaryBackingLayer.draw();
+        this.secondaryBackingLayer.draw();
+        /*
+            Draw vs batchDraw for resizing
+
+            Draw is preferable to batchDraw if performance will allow it, which it seems to here, though
+            it may be different in PianoRoll. The calling of this handleResize method is already throttled
+            by requestAnimationFrame, and the extra throttling added by batchDraw sometimes makes the canvas
+            lag behind the window slightly. Draw does seem to be slightly more performance intensive still,
+            however this will probably be preferrable to the canvas lag. 
+        */
+        //this.primaryBackingLayer.draw();
+    }
+
+    private handleZoomAdjustment(isZoomingIn: boolean) : void {
+        const zoomLevels = [
+            0.03125,
+            0.0625,
+            0.125
+        ];
+        const currentZoomIdx = zoomLevels.indexOf(this.conversionManager.tickToPxRatio);
+        const newZoomIdx = clamp(
+            isZoomingIn ? currentZoomIdx + 1 : currentZoomIdx - 1,
+            0,
+            zoomLevels.length - 1
+        );
+        if (currentZoomIdx !== newZoomIdx) {
+            const newZoomLevel = zoomLevels[newZoomIdx];
+            this.conversionManager.tickToPxRatio = newZoomLevel;
+            this.gridLayer.redrawOnZoomAdjustment();
+            this.sectionLayer.redrawOnZoomAdjustment(isZoomingIn);
+            this.transportLayer.redrawOnZoomAdjustment(isZoomingIn);
+            this.seekerLineLayer.redrawOnZoomAdjustment();
+        }
     }
 
     private handleTogglePlayback() : void {
@@ -310,7 +333,7 @@ export default class Arranger {
                 selectedSectionElements, 
                 true
             );
-            // then I must also update the audio engine and the history stack
+            selectedSectionElements.forEach(section => this.audioReconciler.addSection(section));
         }
     }
 
@@ -323,7 +346,7 @@ export default class Arranger {
             this.conversionManager.rowHeight
         )) {
             this.sectionLayer.shiftSectionsVertically(selectedSectionElements, false);
-            // then update audio engine and history stack
+            selectedSectionElements.forEach(section => this.audioReconciler.addSection(section));
         }
     }
 
@@ -332,7 +355,7 @@ export default class Arranger {
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         if (canShiftLeft(selectedSectionElements)) {
             this.sectionLayer.shiftSectionsHorizontally(selectedSectionElements, true);
-            // then update audio engine and history stack
+            selectedSectionElements.forEach(section => this.audioReconciler.addSection(section));
         }
     }
 
@@ -345,7 +368,7 @@ export default class Arranger {
             this.conversionManager.colWidth
         )) {
             this.sectionLayer.shiftSectionsHorizontally(selectedSectionElements, false);
-            // then update audio engine and history stack
+            selectedSectionElements.forEach(section => this.audioReconciler.addSection(section));
         }
     }
 
@@ -445,11 +468,6 @@ export default class Arranger {
     }
 
     handleDoubleClick(e: KonvaEvent) : void {
-        // const { target } = this.extractInfoFromEventObject(e);
-        // if (target.name() === 'SECTION' && this.activeTool === Tools.cursor) {
-        //     console.log('Open up a piano roll window');
-        //     this.emitter.emit(Events.openPianoRollWindow, target.id());
-        // }
         const { rawX, rawY, target } = this.extractInfoFromEventObject(e);
         const isTransportAreaInteraction = rawY <= 30;
         const isSectionInteraction = target.name() === 'SECTION';
@@ -467,8 +485,8 @@ export default class Arranger {
     }
 
     handleInteractionStart(e: KonvaEvent) : void {
-        // Return early if not a left mouse button press
-        if (e.evt.button !== 0) {
+        const isLeftMouseButtonPress = e.evt.button === 0;
+        if (!isLeftMouseButtonPress) {
             return;
         }
         const { rawX, rawY, isTouchEvent, target } = this.extractInfoFromEventObject(e);
@@ -477,11 +495,10 @@ export default class Arranger {
         const roundedX = this.conversionManager.roundDownToGridCol(xWithScroll);
         const roundedY = this.conversionManager.roundDownToGridRow(yWithScroll);
         this.mouseStateManager.addMouseDownEvent(xWithScroll, yWithScroll);
-        // const isBelowGrid = Math.floor(yWithScroll / this.conversionManager.rowHeight) 
-        //     > this.conversionManager.numChannels;
-        const isBelowGrid = yWithScroll > this.conversionManager.gridHeight;
         
+        const isBelowGrid = yWithScroll > this.conversionManager.gridHeight;
         const isTransportAreaInteraction = rawY <= 30;
+
         if (isTransportAreaInteraction) {
             this.handleTransportAreaInteraction(roundedX);
             return;
@@ -507,7 +524,6 @@ export default class Arranger {
     }
 
     handleTransportAreaInteraction(roundedX: number) {
-        console.log('transport area interaction');
         const positionAsTicks = this.conversionManager.convertPxToTicks(roundedX);
         const positionAsBBS = Tone.Ticks(positionAsTicks).toBarsBeatsSixteenths();
         Tone.Transport.position = positionAsBBS;

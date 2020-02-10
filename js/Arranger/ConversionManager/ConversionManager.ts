@@ -48,11 +48,7 @@ export default class ConversionManager {
     }
 
     get colWidth() : number {
-        return this._barWidth;
-    }
-
-    set colWidth(width: number) {
-        this._barWidth = width;
+        return this.convertTicksToPx(StaticMeasurements.ticksPerBar)
     }
 
     get rowHeight() : number {

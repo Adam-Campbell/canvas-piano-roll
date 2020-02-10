@@ -48,6 +48,11 @@ export default class AudioReconciler {
     }
 
     removeSection(sectionElement: Konva.Rect) : void {
+        const id = sectionElement.id();
+        const channel = this.audioEngine.channels.find(c => Boolean(c.sectionCache[id]));
+        if (channel) {
+            channel.removeSection(id);
+        }
     }
 
 }
