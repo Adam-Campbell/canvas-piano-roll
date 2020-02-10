@@ -2,6 +2,8 @@ import GridLayer from '../GridLayer';
 import SectionLayer from '../SectionLayer';
 import TransportLayer from '../TransportLayer';
 import SeekerLineLayer from '../SeekerLineLayer';
+import ChannelInfoLayer from '../ChannelInfoLayer';
+import { StaticMeasurements } from '../../Constants';
 
 export default class ScrollManager {
 
@@ -9,6 +11,7 @@ export default class ScrollManager {
     private sectionLayer: SectionLayer;
     private transportLayer: TransportLayer;
     private seekerLineLayer: SeekerLineLayer;
+    private channelInfoLayer: ChannelInfoLayer;
     private _x: number;
     private _y: number;
     
@@ -16,13 +19,15 @@ export default class ScrollManager {
         gridLayer: GridLayer, 
         sectionLayer: SectionLayer, 
         transportLayer: TransportLayer, 
-        seekerLineLayer: SeekerLineLayer
+        seekerLineLayer: SeekerLineLayer,
+        channelInfoLayer: ChannelInfoLayer
     ) {
         this.gridLayer = gridLayer;
         this.sectionLayer = sectionLayer;
         this.transportLayer = transportLayer;
         this.seekerLineLayer = seekerLineLayer;
-        this._x = 0;
+        this.channelInfoLayer = channelInfoLayer;
+        this._x = StaticMeasurements.channelInfoColWidth;
         this._y = 30;
     }
 
@@ -44,8 +49,9 @@ export default class ScrollManager {
 
     set y(y: number) {
         this._y = y;
-        //this.gridLayer.updateY(y);
-        //this.sectionLayer.updateY(y);
+        this.gridLayer.updateY(y);
+        this.sectionLayer.updateY(y);
+        this.channelInfoLayer.updateY(y);
     }
 
 }

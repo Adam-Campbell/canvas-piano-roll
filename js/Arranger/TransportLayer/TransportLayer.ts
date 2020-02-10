@@ -1,5 +1,8 @@
 import Konva from 'konva';
-import { Colours } from '../../Constants';
+import { 
+    Colours,
+    StaticMeasurements 
+} from '../../Constants';
 import ConversionManager from '../ConversionManager';
 
 export default class TransportLayer {
@@ -15,7 +18,9 @@ export default class TransportLayer {
     constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
-        this.layerGroup = new Konva.Group();
+        this.layerGroup = new Konva.Group({
+            x: StaticMeasurements.channelInfoColWidth
+        });
         this.background = this.constructBackground();
         this.border = this.constructBorder();
         this.numberMarkersArray = this.constructNumberMarkersArray();

@@ -1,6 +1,9 @@
 import Konva from 'konva';
 import Tone from 'tone';
-import { Colours } from '../../Constants';
+import { 
+    Colours,
+    StaticMeasurements 
+} from '../../Constants';
 import ConversionManager from '../ConversionManager';
 
 export default class SeekerLineLayer {
@@ -13,7 +16,9 @@ export default class SeekerLineLayer {
 
     constructor(conversionManager: ConversionManager) {
         this.conversionManager = conversionManager;
-        this.layer = new Konva.Layer();
+        this.layer = new Konva.Layer({
+            x: StaticMeasurements.channelInfoColWidth
+        });
         this.seekerLine = this.constructSeekerLine();
         this.isPlaying = Tone.Transport.state === 'started';
         this.animationFrameId = null;
@@ -90,6 +95,10 @@ export default class SeekerLineLayer {
         if (this.animationFrameId) {
             window.cancelAnimationFrame(this.animationFrameId);
         }
+    }
+
+    redrawOnResize() {
+        this.updateSeekerLinePosition();
     }
 
 }

@@ -4,6 +4,7 @@ import {
     getVerticalLinesData 
 } from './gridLayerUtils';
 import ConversionManager from '../ConversionManager';
+import { StaticMeasurements } from '../../Constants';
 
 export default class GridLayer {
 
@@ -15,7 +16,10 @@ export default class GridLayer {
     constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
         this.layer = layerRef;
         this.conversionManager = conversionManager;
-        this.gridContainer = new Konva.Group({ y: 30 });
+        this.gridContainer = new Konva.Group({
+            x: StaticMeasurements.channelInfoColWidth, 
+            y: this.conversionManager.seekerAreaHeight
+        });
     }
 
     init() {
@@ -30,7 +34,8 @@ export default class GridLayer {
     }
 
     updateY(y) : void {
-
+        this.gridContainer.y(y);
+        this.layer.batchDraw();
     }
 
     redrawOnResize() : void {

@@ -3,6 +3,7 @@ export const StaticMeasurements = {
     stageHeight: 450,
     rowHeight: 20,
     pianoKeyWidth: 120,
+    channelInfoColWidth: 120,
     scrollbarWidth: 24,
     scrollbarThumbLength: 40,
     scrollbarGutter: 4,

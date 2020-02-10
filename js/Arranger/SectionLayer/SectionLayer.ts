@@ -1,6 +1,9 @@
 import Konva from 'konva';
 import ConversionManager from '../ConversionManager';
-import { Colours } from '../../Constants';
+import { 
+    Colours,
+    StaticMeasurements 
+} from '../../Constants';
 
 /*
 
@@ -41,7 +44,10 @@ export default class SectionLayer {
     constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
-        this.sectionsContainer = new Konva.Group({ y: 30 });
+        this.sectionsContainer = new Konva.Group({ 
+            y: this.conversionManager.seekerAreaHeight,
+            x: StaticMeasurements.channelInfoColWidth 
+        });
     }
 
     init() : void {
@@ -49,13 +55,14 @@ export default class SectionLayer {
         this.layer.batchDraw();
     }
 
-    updateX(x) : void {
+    updateX(x: number) : void {
         this.sectionsContainer.x(x);
         this.layer.batchDraw();
     }
 
-    updateY(y) : void {
-
+    updateY(y: number) : void {
+        this.sectionsContainer.y(y);
+        this.layer.batchDraw();
     }
 
     redrawOnZoomAdjustment(isZoomingIn: boolean) : void {

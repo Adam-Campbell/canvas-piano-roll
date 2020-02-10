@@ -147,7 +147,8 @@ export default class Arranger {
             this.gridLayer,
             this.sectionLayer,
             this.transportLayer,
-            this.seekerLineLayer
+            this.seekerLineLayer,
+            this.channelInfoLayer
         );
         this.scrollbarLayer = new ScrollbarLayer(
             this.scrollManager,
@@ -163,9 +164,9 @@ export default class Arranger {
             this.conversionManager.stageWidth = containerWidth;
             this.stage.width(containerWidth);
             const willExposeOutOfBounds = this.scrollManager.x * -1 > this.conversionManager.gridWidth + StaticMeasurements.scrollbarWidth - containerWidth;
-            if (willExposeOutOfBounds) {
+            if (this.scrollbarLayer.shouldAllowHorizontalScrolling && willExposeOutOfBounds) {
                 // const newXScroll = (-1 * (this.scrollbarLayer.horizontalScrollRange)) + StaticMeasurements.pianoKeyWidth;
-                const newXScroll = (-1 * (this.scrollbarLayer.horizontalScrollRange));
+                const newXScroll = (-1 * (this.scrollbarLayer.horizontalScrollRange)) + StaticMeasurements.channelInfoColWidth;
                 this.scrollManager.x = newXScroll;
             }  
         }
@@ -174,22 +175,19 @@ export default class Arranger {
             this.conversionManager.stageHeight = containerHeight;
             this.stage.height(containerHeight);
             const willExposeOutOfBounds = this.scrollManager.y * -1 >= this.scrollbarLayer.verticalScrollRange;
-            if (willExposeOutOfBounds) {
+            if (this.scrollbarLayer.shouldAllowVerticalScrolling && willExposeOutOfBounds) {
+            //if (willExposeOutOfBounds) { 
                 const newYScroll = (-1 * this.scrollbarLayer.verticalScrollRange) + this.conversionManager.seekerAreaHeight;
                 this.scrollManager.y = newYScroll;
             }
         }
-
+        
         this.gridLayer.redrawOnResize();
         this.scrollbarLayer.redrawOnResize();
+        this.channelInfoLayer.redrawOnResize();
+        this.seekerLineLayer.redrawOnResize();
         this.primaryBackingLayer.draw();
         this.secondaryBackingLayer.draw();
-
-        //this.stage.width(containerWidth);
-        //this.conversionManager.stageWidth = containerWidth;
-        //this.stage.height(containerHeight);
-        //this.conversionManager.stageHeight = containerHeight;
-        //this.gridLayer.redrawOnResize();
         /*
             Draw vs batchDraw for resizing
 

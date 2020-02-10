@@ -1,54 +1,84 @@
 import Konva from 'konva';
 import ConversionManager from '../ConversionManager';
 import Channel from '../../AudioEngine/Channel';
-import { Colours } from '../../Constants';
+import { 
+    Colours,
+    StaticMeasurements 
+} from '../../Constants';
 
 export default class ChannelInfoLayer {
 
     private conversionManager: ConversionManager;
+    private background: Konva.Rect;
     private layer: Konva.Layer;
     private layerGroup: Konva.Group;
+    private channelInfoPodsGroup: Konva.Group;
     private channels: Channel[]
 
     constructor(conversionManager: ConversionManager, layerRef: Konva.Layer, channels) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
         this.channels = channels;
-        this.layerGroup = new Konva.Group({ y: this.conversionManager.seekerAreaHeight });
+        this.background = this.constructBackground();
+        this.layerGroup = new Konva.Group();
+        this.channelInfoPodsGroup = new Konva.Group({ y: this.conversionManager.seekerAreaHeight });
     }
 
     init() {
         // add the layerGroup to the backing layer provided
         this.layer.add(this.layerGroup);
         // call any drawing methods
-        this.draw();
+        this.background.moveTo(this.layerGroup);
+        this.drawChannelInfoPods();
+        this.channelInfoPodsGroup.moveTo(this.layerGroup);
         // draw the layer
         this.layer.batchDraw();
     }
 
-    draw() {
-        this.layerGroup.destroyChildren();
+    updateY(y: number) {
+        this.channelInfoPodsGroup.y(y);
+        this.layer.batchDraw();
+    }
+
+    private constructBackground() : Konva.Rect  {
+        return new Konva.Rect({
+            x: 0,
+            y: 0,
+            width: StaticMeasurements.channelInfoColWidth,
+            height: this.conversionManager.stageHeight,
+            fill: Colours.grayscale[4]
+        });
+    }
+
+    private drawChannelInfoPods() {
+        this.channelInfoPodsGroup.destroyChildren();
         const heightOfPod = this.conversionManager.rowHeight;
         this.channels.forEach((channel, idx) => {
             const topOfPod = idx * heightOfPod;
-            const topOfText = topOfPod + (heightOfPod / 2) - 8;
+            const topOfText = topOfPod + (heightOfPod / 2) - 5;
             const pod = new Konva.Rect({
-                fill: 'tomato',
-                width: 120,
+                fill: Colours.grayscale[4],
+                width: StaticMeasurements.channelInfoColWidth,
                 height: heightOfPod,
                 x: 0,
                 y: topOfPod,
-                stroke: 'green',
+                stroke: Colours.grayscale[7],
                 strokeWidth: 1
             });
             const text = new Konva.Text({
                 text: channel.name,
-                fill: 'pink',
+                fill: 'white',
                 x: 8,
                 y: topOfText
             });
-            pod.moveTo(this.layerGroup);
-            text.moveTo(this.layerGroup);
+            pod.moveTo(this.channelInfoPodsGroup);
+            text.moveTo(this.channelInfoPodsGroup);
         });
+    }
+
+    redrawOnResize() {
+        this.background.height(
+            this.conversionManager.stageHeight
+        );
     }
 }
