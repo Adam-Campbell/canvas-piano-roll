@@ -14,6 +14,7 @@ import AudioReconciler from './AudioReconciler';
 import AudioEngine from '../AudioEngine';
 import ScrollManager from './ScrollManager';
 import ScrollbarLayer from './ScrollbarLayer';
+import ChannelInfoLayer from './ChannelInfoLayer';
 import {
     ArrangerDragModes,
     Tools,
@@ -75,6 +76,7 @@ export default class Arranger {
     private seekerLineLayer: SeekerLineLayer;
     private scrollManager: ScrollManager;
     private scrollbarLayer: ScrollbarLayer;
+    private channelInfoLayer: ChannelInfoLayer;
     private playbackFromTicks: number;
     
 
@@ -95,6 +97,7 @@ export default class Arranger {
         this.sectionLayer.init();
         this.transportLayer.init();
         this.seekerLineLayer.init();
+        this.channelInfoLayer.init();
         this.scrollbarLayer.init();
         this.registerStageSubscriptions();
         this.registerKeyboardSubscriptions();
@@ -135,6 +138,11 @@ export default class Arranger {
         this.sectionLayer = new SectionLayer(this.conversionManager, this.primaryBackingLayer);
         this.transportLayer = new TransportLayer(this.conversionManager, this.primaryBackingLayer);
         this.seekerLineLayer = new SeekerLineLayer(this.conversionManager);
+        this.channelInfoLayer = new ChannelInfoLayer(
+            this.conversionManager,
+            this.secondaryBackingLayer,
+            this.audioEngine.channels
+        );
         this.scrollManager = new ScrollManager(
             this.gridLayer,
             this.sectionLayer,
@@ -149,11 +157,39 @@ export default class Arranger {
     }
 
     handleResize(containerWidth: number, containerHeight: number) : void {
-        this.stage.width(containerWidth);
-        this.conversionManager.stageWidth = containerWidth;
-        this.stage.height(containerHeight);
-        this.conversionManager.stageHeight = containerHeight;
+
+
+        if (containerWidth !== this.conversionManager.stageWidth) {
+            this.conversionManager.stageWidth = containerWidth;
+            this.stage.width(containerWidth);
+            const willExposeOutOfBounds = this.scrollManager.x * -1 > this.conversionManager.gridWidth + StaticMeasurements.scrollbarWidth - containerWidth;
+            if (willExposeOutOfBounds) {
+                // const newXScroll = (-1 * (this.scrollbarLayer.horizontalScrollRange)) + StaticMeasurements.pianoKeyWidth;
+                const newXScroll = (-1 * (this.scrollbarLayer.horizontalScrollRange));
+                this.scrollManager.x = newXScroll;
+            }  
+        }
+
+        if (containerHeight !== this.conversionManager.stageHeight) {
+            this.conversionManager.stageHeight = containerHeight;
+            this.stage.height(containerHeight);
+            const willExposeOutOfBounds = this.scrollManager.y * -1 >= this.scrollbarLayer.verticalScrollRange;
+            if (willExposeOutOfBounds) {
+                const newYScroll = (-1 * this.scrollbarLayer.verticalScrollRange) + this.conversionManager.seekerAreaHeight;
+                this.scrollManager.y = newYScroll;
+            }
+        }
+
         this.gridLayer.redrawOnResize();
+        this.scrollbarLayer.redrawOnResize();
+        this.primaryBackingLayer.draw();
+        this.secondaryBackingLayer.draw();
+
+        //this.stage.width(containerWidth);
+        //this.conversionManager.stageWidth = containerWidth;
+        //this.stage.height(containerHeight);
+        //this.conversionManager.stageHeight = containerHeight;
+        //this.gridLayer.redrawOnResize();
         /*
             Draw vs batchDraw for resizing
 
@@ -163,7 +199,7 @@ export default class Arranger {
             lag behind the window slightly. Draw does seem to be slightly more performance intensive still,
             however this will probably be preferrable to the canvas lag. 
         */
-        this.primaryBackingLayer.draw();
+        //this.primaryBackingLayer.draw();
     }
 
     private registerStageSubscriptions() {

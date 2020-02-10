@@ -34,7 +34,6 @@ export default class GridLayer {
     }
 
     redrawOnResize() : void {
-        this.background.width(this.conversionManager.stageWidth);
         this.background.height(this.conversionManager.stageHeight);
         //this.layer.draw();
     }
