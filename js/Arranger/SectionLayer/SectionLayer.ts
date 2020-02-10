@@ -50,7 +50,8 @@ export default class SectionLayer {
     }
 
     updateX(x) : void {
-
+        this.sectionsContainer.x(x);
+        this.layer.batchDraw();
     }
 
     updateY(y) : void {

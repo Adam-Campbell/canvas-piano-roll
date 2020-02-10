@@ -25,7 +25,8 @@ export default class GridLayer {
     }
 
     updateX(x) : void {
-
+        this.gridContainer.x(x);
+        this.layer.batchDraw();
     }
 
     updateY(y) : void {
@@ -43,7 +44,7 @@ export default class GridLayer {
             fill: '#ddd',
             x: 0,
             y: 0,
-            width: this.conversionManager.stageWidth,
+            width: this.conversionManager.gridWidth,
             height: this.conversionManager.stageHeight   
         });
     }

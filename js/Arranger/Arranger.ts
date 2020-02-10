@@ -12,6 +12,8 @@ import TransportLayer from './TransportLayer';
 import SeekerLineLayer from './SeekerLineLayer';
 import AudioReconciler from './AudioReconciler';
 import AudioEngine from '../AudioEngine';
+import ScrollManager from './ScrollManager';
+import ScrollbarLayer from './ScrollbarLayer';
 import {
     ArrangerDragModes,
     Tools,
@@ -58,6 +60,7 @@ export default class Arranger {
     private stage: Konva.Stage;
     private conversionManager: ConversionManager;
     private primaryBackingLayer: Konva.Layer;
+    private secondaryBackingLayer: Konva.Layer;
     private gridLayer: GridLayer;
     private sectionLayer: SectionLayer;
     private sectionCache: CanvasElementCache;
@@ -70,47 +73,29 @@ export default class Arranger {
     private audioEngine: AudioEngine;
     private transportLayer: TransportLayer;
     private seekerLineLayer: SeekerLineLayer;
-    private _xScroll: number;
-    private _yScroll: number;
+    private scrollManager: ScrollManager;
+    private scrollbarLayer: ScrollbarLayer;
     private playbackFromTicks: number;
     
 
     constructor(eventEmitter: EventEmitter) {
         this.dragMode = null;
         this.activeTool = Tools.cursor;
-        this._xScroll = 0;
-        this._yScroll = 30;
         this.emitter = eventEmitter;
         this.playbackFromTicks = 0;
         window.toneRef = Tone;
-    }
-
-    get xScroll() : number {
-        return this._xScroll;
-    }
-
-    set xScroll(x: number) {
-        this._xScroll = x;
-        // Will also manually update scroll on necessary layers.
-    }
-
-    get yScroll() : number {
-        return this._yScroll;
-    }
-
-    set yScroll(y: number) {
-        this._yScroll = y;
-        // Will also manually update scroll on necessary layers.
     }
 
     init(arrangerOptions: ArrangerOptions) {
         this.instantiateChildClasses(arrangerOptions);
         this.stage.add(this.primaryBackingLayer);
         this.stage.add(this.seekerLineLayer.layer);
+        this.stage.add(this.secondaryBackingLayer);
         this.gridLayer.init();
         this.sectionLayer.init();
         this.transportLayer.init();
         this.seekerLineLayer.init();
+        this.scrollbarLayer.init();
         this.registerStageSubscriptions();
         this.registerKeyboardSubscriptions();
         this.registerGlobalEventSubscriptions();
@@ -145,10 +130,22 @@ export default class Arranger {
         this.sectionSelection = new SectionSelection();
         this.clipboard = new Clipboard(this.conversionManager, this.audioEngine);
         this.primaryBackingLayer = new Konva.Layer();
+        this.secondaryBackingLayer = new Konva.Layer();
         this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer);
         this.sectionLayer = new SectionLayer(this.conversionManager, this.primaryBackingLayer);
         this.transportLayer = new TransportLayer(this.conversionManager, this.primaryBackingLayer);
         this.seekerLineLayer = new SeekerLineLayer(this.conversionManager);
+        this.scrollManager = new ScrollManager(
+            this.gridLayer,
+            this.sectionLayer,
+            this.transportLayer,
+            this.seekerLineLayer
+        );
+        this.scrollbarLayer = new ScrollbarLayer(
+            this.scrollManager,
+            this.conversionManager,
+            this.secondaryBackingLayer
+        );
     }
 
     handleResize(containerWidth: number, containerHeight: number) : void {
@@ -425,7 +422,7 @@ export default class Arranger {
 
         if (isTransportAreaInteraction) {
             const roundedX = this.conversionManager.roundDownToGridCol(
-                rawX - this.xScroll
+                rawX - this.scrollManager.x
             );
             const positionAsTicks = this.conversionManager.convertPxToTicks(roundedX);
             this.playbackFromTicks = positionAsTicks;
@@ -441,8 +438,8 @@ export default class Arranger {
             return;
         }
         const { rawX, rawY, isTouchEvent, target } = this.extractInfoFromEventObject(e);
-        const xWithScroll = rawX - this.xScroll;
-        const yWithScroll = rawY - this.yScroll;
+        const xWithScroll = rawX - this.scrollManager.x;
+        const yWithScroll = rawY - this.scrollManager.y;
         const roundedX = this.conversionManager.roundDownToGridCol(xWithScroll);
         const roundedY = this.conversionManager.roundDownToGridRow(yWithScroll);
         this.mouseStateManager.addMouseDownEvent(xWithScroll, yWithScroll);
@@ -515,7 +512,7 @@ export default class Arranger {
     handleAdjustSectionLengthInteractionUpdate(e: KonvaEvent) : void {
         const { rawX, rawY } = this.extractInfoFromEventObject(e);
         //this.nudgeGridIfRequired(rawX, rawY, NudgeDirections.horizontal);
-        const xWithScroll = rawX - this.xScroll;
+        const xWithScroll = rawX - this.scrollManager.x;
         const selectedSectionIds = this.sectionSelection.retrieveAll();
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         this.sectionLayer.updateSectionDurations(
@@ -528,8 +525,8 @@ export default class Arranger {
     handleAdjustSectionPositionInteractionUpdate(e: KonvaEvent) : void {
         const { rawX, rawY } = this.extractInfoFromEventObject(e);
         //this.nudgeGridIfRequired(rawX, rawY, NudgeDirections.both);
-        const xWithScroll = rawX - this.xScroll;
-        const yWithScroll = rawY - this.yScroll;
+        const xWithScroll = rawX - this.scrollManager.x;
+        const yWithScroll = rawY - this.scrollManager.y;
         this.mouseStateManager.updateHasTravelled(xWithScroll, yWithScroll);
         const xDelta = this.conversionManager.roundToGridCol(
             xWithScroll - this.mouseStateManager.x
@@ -545,8 +542,8 @@ export default class Arranger {
     handleAdjustSelectionInteractionUpdate(e: KonvaEvent) : void {
         const { rawX, rawY } = this.extractInfoFromEventObject(e);
         //this.nudgeGridIfRequired(rawX, rawY, NudgeDirections.both);
-        const currentX = rawX - this.xScroll;
-        const currentY = rawY - this.yScroll;
+        const currentX = rawX - this.scrollManager.x;
+        const currentY = rawY - this.scrollManager.y;
         const mouseDownX = this.mouseStateManager.x;
         const mouseDownY = this.mouseStateManager.y;
         const selectionX1 = Math.min(mouseDownX, currentX);

@@ -87,6 +87,10 @@ export default class ConversionManager {
         this._numChannels = num;
     }
 
+    get seekerAreaHeight() : number {
+        return StaticMeasurements.seekerAreaHeight;
+    } 
+
     get tickToPxRatio() : number {
         return this._tickToPxRatio;
     }
