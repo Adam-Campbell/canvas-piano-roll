@@ -1,13 +1,17 @@
 import Section from '../Section';
 import Tone from 'tone';
 import { genId } from '../../genId';
-import { SerializedChannelState, NoteCache } from '../AudioEngineConstants';
+import { 
+    SerializedChannelState, 
+    NoteCache, 
+    AudioEngineComponent 
+} from '../AudioEngineConstants';
 
 interface SectionCache {
     [propName: string]: Section
 }
 
-export default class Channel {
+export default class Channel implements AudioEngineComponent {
 
     name: string;
     id: string;

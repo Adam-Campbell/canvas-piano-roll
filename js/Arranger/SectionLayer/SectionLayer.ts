@@ -4,6 +4,12 @@ import {
     Colours,
     StaticMeasurements 
 } from '../../Constants';
+import { 
+    SerializedAudioEngineState,
+    SerializedChannelState,
+    SerializedSectionState
+} from '../../AudioEngine/AudioEngineConstants';
+import { getBarNumFromBBSString } from '../arrangerUtils';
 
 export default class SectionLayer {
 
@@ -20,9 +26,10 @@ export default class SectionLayer {
         });
     }
 
-    init() : void {
+    init(initialState: SerializedAudioEngineState) : void {
         this.layer.add(this.sectionsContainer);
-        this.layer.batchDraw();
+        //this.layer.batchDraw();
+        this.forceToState(initialState);
     }
 
     updateX(x: number) : void {
@@ -203,8 +210,36 @@ export default class SectionLayer {
     }
 
     // todo
-    forceToState(state) : void {
-
+    forceToState(state: SerializedAudioEngineState) : Konva.Rect[] {
+        // remove all current section rects from layer
+        // iterate over each channel
+        // for each channel...
+            // iterate over every section for that channel and create a rect on
+            // this layer, the x being derived from the sections start, the width being
+            // derived from the sections numBars, and the y being derived from the idx
+            // of the outer loop.
+        const sectionElements = [];
+        this.sectionsContainer.destroyChildren();
+        state.channels.forEach((channel: SerializedChannelState, idx) => {
+            const sectionRectY = idx * this.conversionManager.rowHeight;
+            Object.values(channel.sections)
+            .forEach((section: SerializedSectionState) => {
+                const sectionRectX = getBarNumFromBBSString(section.start) * this.conversionManager.colWidth;
+                const sectionRectWidth = section.numBars * this.conversionManager.colWidth;
+                const sectionRectId = section.id;
+                const sectionRect = this.createSectionElement(
+                    sectionRectX,
+                    sectionRectY,
+                    sectionRectWidth,
+                    sectionRectId,
+                    false
+                );
+                sectionRect.moveTo(this.sectionsContainer);
+                sectionElements.push(sectionRect);
+            });
+        });
+        this.layer.batchDraw();
+        return sectionElements;
     }
 
 }

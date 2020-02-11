@@ -1,8 +1,12 @@
 import Tone from 'tone';
 import { NoteBBS } from '../../Constants';
-import { SerializedSectionState, NoteCache } from '../AudioEngineConstants';
+import { 
+    SerializedSectionState,
+    NoteCache,
+    AudioEngineComponent
+} from '../AudioEngineConstants';
 
-export default class Section {
+export default class Section implements AudioEngineComponent {
 
     noteCache: NoteCache = {};
     part: any;
@@ -65,10 +69,21 @@ export default class Section {
         this.part.dispose();
     }
 
+    private serializeNoteCache(noteCache) {
+        let copiedNoteCache = {};
+        for (let key in noteCache) {
+            copiedNoteCache[key] = {
+                ...noteCache[key]
+            };
+        }
+        return copiedNoteCache;
+    }
+
     // serializes state for this particular section and returns it
     serializeState() : SerializedSectionState {
         return {
-            notes: this.noteCache,
+            //notes: this.noteCache,
+            notes: this.serializeNoteCache(this.noteCache),
             id: this.id,
             start: this.start,
             numBars: this.numBars

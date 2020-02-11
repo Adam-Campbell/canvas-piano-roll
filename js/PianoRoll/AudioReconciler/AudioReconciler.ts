@@ -63,6 +63,7 @@ export default class AudioReconciler {
     }
 
     addNote(noteElement: Konva.Rect, velocityMarkerElement: Konva.Rect) : void {
+        console.log('addNote method called on audio reconciler')
         const note = this.deriveNoteFromElements(noteElement, velocityMarkerElement);
         // if (this.cache[note.id]) {
         //     this.removeNoteFromEngine(this.cache[note.id]);

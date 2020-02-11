@@ -36,7 +36,10 @@ export default class App {
     constructor() {
         this.eventEmitter = new EventEmitter();
         this.audioEngine = new AudioEngine();
-        this.historyStack = new HistoryStack();
+        this.audioEngine.init();
+        const initialHistoryStackEntry = this.audioEngine.serializeState();
+        console.log('initialState: ', initialHistoryStackEntry)
+        this.historyStack = new HistoryStack(initialHistoryStackEntry);
         this.eventEmitter.subscribe(Events.closeWindow, this.removeWindow);
         this.eventEmitter.subscribe(Events.renderApp, this.renderApp);
         this.eventEmitter.subscribe(Events.focusWindow, this.focusWindow);
@@ -46,7 +49,8 @@ export default class App {
         this.eventEmitter.subscribe(Events.redoAction, this.redoActionAndPushState);
 
         window.audioEngine = this.audioEngine;
-        this.audioEngine.init();
+        window.historyStack = this.historyStack;
+        
     }
 
     init() {
@@ -56,9 +60,12 @@ export default class App {
 
     private serializeStateAndAddToStack = () =>  {
         // use the audio engine to get the new serialized state, then add it to the stack
-        this.historyStack.addEntry(
-            this.audioEngine.serializeState()
-        );
+        const newState = this.audioEngine.serializeState();
+        console.log('HAS SERIALIZED STATE, NEW STATE IS: ', newState);
+        this.historyStack.addEntry(newState);
+        // this.historyStack.addEntry(
+        //     this.audioEngine.serializeState()
+        // );
     }
 
     private undoActionAndPushState = () => {
@@ -66,6 +73,7 @@ export default class App {
         // state
         if (!this.historyStack.isAtStart) {
             const nextState = this.historyStack.goBackwards();
+            console.log('TRAVELLED BACK THROUGH HISTORY, NEXT STATE IS: ', nextState)
             this.eventEmitter.emit(Events.historyTravelled, nextState);
         }
     }

@@ -28,11 +28,7 @@ import {
     KonvaEvent,
     PianoRollOptions
 } from '../Constants';
-import { 
-    // canShiftUp,
-    // canShiftDown,
-    // canShiftLeft,
-    // canShiftRight,
+import {
     easingFns
 } from './pianoRollUtils';
 import { genId } from '../genId';
@@ -47,6 +43,8 @@ import {
 } from '../utils';
 import { pitchesArray } from '../pitches';
 import { chordType } from '@tonaljs/chord-dictionary';
+import { SerializedSectionState, SerializedAudioEngineState } from '../AudioEngine/AudioEngineConstants';
+import Section from '../AudioEngine/Section';
 
 enum NudgeDirections {
     horizontal = 'horizontal',
@@ -91,6 +89,7 @@ export default class PianoRoll {
     private scrollbarLayer: ScrollbarLayer;
     private emitter: EventEmitter;
     private unsubscribeFns: Function[] = [];
+    private section: Section;
 
     constructor(eventEmitter: EventEmitter) {
         // Initialize class properties
@@ -128,14 +127,17 @@ export default class PianoRoll {
         // })
         // const notes = pianoRollOptions.section.serializeState().notes;
         //console.log(notes);
-        const notes = Object.values(pianoRollOptions.section.serializeState().notes)
-        .map(note => ({
-            ...note,
-            time: Tone.Ticks(note.time).toTicks(),
-            duration: Tone.Ticks(note.duration).toTicks()
-        }));
-        //console.log(notes);
-        this.forceToState({ notes, selectedNoteIds: [] });
+        // const notes = Object.values(pianoRollOptions.section.serializeState().notes)
+        // .map(note => ({
+        //     ...note,
+        //     time: Tone.Ticks(note.time).toTicks(),
+        //     duration: Tone.Ticks(note.duration).toTicks()
+        // }));
+        // //console.log(notes);
+        // this.forceToState({ notes, selectedNoteIds: [] });
+        this.forceToState(
+            this.section.serializeState()
+        );
     }
 
     private instantiateChildClasses({
@@ -149,6 +151,7 @@ export default class PianoRoll {
         livePlayInstrument
     }: PianoRollOptions) : void {
         // Instantiate canvas stage
+        this.section = section;
         this.stage = new Konva.Stage({
             container,
             width: initialWidth,
@@ -272,11 +275,26 @@ export default class PianoRoll {
         this.emitter.subscribe(Events.chordTypeUpdate, chordType => {
             this.chordType = chordType;
         });
-        this.emitter.subscribe(Events.undoAction, () => this.undo());
-        this.emitter.subscribe(Events.redoAction, () => this.redo());
-        this.emitter.subscribe(Events.copyToClipboard, () => this.copy());
-        this.emitter.subscribe(Events.cutToClipboard, () => this.cut());
-        this.emitter.subscribe(Events.pasteFromClipboard, () => this.paste());
+        this.emitter.subscribe(Events.historyTravelled, (state: SerializedAudioEngineState) => {
+            //console.log(state);
+            //console.log('historyTravelled event received');
+            let serializedSection;
+            for (const channel of state.channels) {
+                if (channel.sections[this.section.id]) {
+                    serializedSection = channel.sections[this.section.id];
+                    break;
+                }
+            }
+            if (serializedSection) {
+                //console.log('serialized section located')
+            }
+            this.forceToState(serializedSection);
+        })
+        //this.emitter.subscribe(Events.undoAction, () => this.undo());
+        //this.emitter.subscribe(Events.redoAction, () => this.redo());
+        //this.emitter.subscribe(Events.copyToClipboard, () => this.copy());
+        //this.emitter.subscribe(Events.cutToClipboard, () => this.cut());
+        //this.emitter.subscribe(Events.pasteFromClipboard, () => this.paste());
         
         //window.addEventListener('resize', e => this.handleResize(e));
     }
@@ -442,13 +460,21 @@ export default class PianoRoll {
         this.historyStack.addEntry(serializedState);
     }
 
-    private forceToState(state: SerializedState) : void {
+    // private forceToState(state: SerializedState) : void {
+    //     const noteElements = this.noteLayer.forceToState(state);
+    //     const velocityMarkerElements = this.velocityLayer.forceToState(state);
+    //     this.noteCache.forceToState(noteElements);
+    //     this.velocityMarkerCache.forceToState(velocityMarkerElements);
+    //     this.noteSelection.forceToState(state.selectedNoteIds);
+    //     this.audioReconciler.forceToState(state.notes);
+    // }
+
+    private forceToState(state: SerializedSectionState) : void {
         const noteElements = this.noteLayer.forceToState(state);
         const velocityMarkerElements = this.velocityLayer.forceToState(state);
         this.noteCache.forceToState(noteElements);
         this.velocityMarkerCache.forceToState(velocityMarkerElements);
-        this.noteSelection.forceToState(state.selectedNoteIds);
-        this.audioReconciler.forceToState(state.notes);
+        this.noteSelection.forceToState([]);
     }
 
     private addNoteToAudioEngine(noteId: string) : void {
@@ -478,7 +504,8 @@ export default class PianoRoll {
         selectedNoteElements.forEach(el => this.noteCache.remove(el));
         selectedVelocityMarkerElements.forEach(el => this.velocityMarkerCache.remove(el));
         this.audioReconciler.removeNotes(selectedNoteIds);
-        this.serializeState();
+        //this.serializeState();
+        this.addToHistory();
     }
 
     private clearSelection() : void {
@@ -546,7 +573,8 @@ export default class PianoRoll {
         if (canShiftUp(selectedNoteElements, shiftAmount)) {
             this.noteLayer.shiftNotesUp(selectedNoteElements, shiftAmount);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
-            this.serializeState();
+            //this.serializeState();
+            this.addToHistory();
         }
     }
 
@@ -559,7 +587,8 @@ export default class PianoRoll {
         if (canShiftDown(selectedNoteElements, this.conversionManager.gridHeight, shiftAmount)) {
             this.noteLayer.shiftNotesDown(selectedNoteElements, shiftAmount);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
-            this.serializeState();
+            //this.serializeState();
+            this.addToHistory();
         }
     }
 
@@ -573,7 +602,8 @@ export default class PianoRoll {
             this.noteLayer.shiftNotesLeft(selectedNoteElements);
             this.velocityLayer.shiftVelocityMarkersLeft(selectedVelocityMarkerElements);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
-            this.serializeState();
+            //this.serializeState();
+            this.addToHistory()
         }
     }
 
@@ -587,7 +617,8 @@ export default class PianoRoll {
             this.noteLayer.shiftNotesRight(selectedNoteElements);
             this.velocityLayer.shiftVelocityMarkersRight(selectedVelocityMarkerElements);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
-            this.serializeState();
+            //this.serializeState();
+            this.addToHistory();
         }
     }
 
@@ -631,7 +662,8 @@ export default class PianoRoll {
         this.primaryBackingLayer.batchDraw();
         this.noteLayer.updateNotesAttributeCaches([ noteElementToUpdate ]);
         this.addNoteToAudioEngine(noteElementToUpdate.id());
-        this.serializeState();
+        //this.serializeState();
+        this.addToHistory();
     }
 
     private moveDownwardsThroughInversions() : void {
@@ -674,7 +706,8 @@ export default class PianoRoll {
         this.primaryBackingLayer.batchDraw();
         this.noteLayer.updateNotesAttributeCaches([ noteElementToUpdate ]);
         this.addNoteToAudioEngine(noteElementToUpdate.id());
-        this.serializeState();
+        //this.serializeState();
+        this.addToHistory();
     }
 
     private constructChordFromRootNote(rootNote: Konva.Rect, relativePositions: number[]) : void {
@@ -704,21 +737,28 @@ export default class PianoRoll {
             this.noteSelection.retrieveAll()
         );
         selectedNotes.forEach(note => this.constructChordFromRootNote(note, relativePositions));
-        this.serializeState();
+        //this.serializeState();
+        this.addToHistory();
     }
 
     private undo() : void {
-        if (!this.historyStack.isAtStart) {
-            const nextState = this.historyStack.goBackwards();
-            this.forceToState(nextState);
-        }
+        // if (!this.historyStack.isAtStart) {
+        //     const nextState = this.historyStack.goBackwards();
+        //     this.forceToState(nextState);
+        // }
+        this.emitter.emit(Events.undoAction);
     }
 
     private redo() : void {
-        if (!this.historyStack.isAtEnd) {
-            const nextState = this.historyStack.goForwards();
-            this.forceToState(nextState);
-        }
+        // if (!this.historyStack.isAtEnd) {
+        //     const nextState = this.historyStack.goForwards();
+        //     this.forceToState(nextState);
+        // }
+        this.emitter.emit(Events.redoAction);
+    }
+
+    private addToHistory() {
+        this.emitter.emit(Events.addStateToStack);
     }
 
     private copy() : void {
@@ -768,7 +808,8 @@ export default class PianoRoll {
         });
         //this._noteLayer.layer.batchDraw();
         this.primaryBackingLayer.batchDraw();
-        this.serializeState();
+        //this.serializeState();
+        this.addToHistory();
     }
 
     private handleContextMenu(e: KonvaEvent) : void {
@@ -1016,7 +1057,8 @@ export default class PianoRoll {
             const id = velocityRect.getAttr('id');
             this.addNoteToAudioEngine(id);
         });
-        this.serializeState();
+        //this.serializeState();
+        this.addToHistory();
     }
 
     private humanizeNoteVelocities(velocityMarkerElements: Konva.Rect[], range: number = 0.1) : void {
@@ -1033,7 +1075,8 @@ export default class PianoRoll {
             this.velocityLayer.updateVelocityMarkersHeight([ velocityElement ], newVelocityValue);
             this.addNoteToAudioEngine(id);
         });
-        this.serializeState();
+        //this.serializeState();
+        this.addToHistory();
     }
 
     private humanizeSelection() : void {
@@ -1085,7 +1128,8 @@ export default class PianoRoll {
             this.velocityLayer.updateVelocityMarkersHeight([ velocityElement ], newVelocityValue);
             this.addNoteToAudioEngine(id);
         });
-        this.serializeState();
+        //this.serializeState();
+        this.addToHistory();
     }
 
     private handleInteractionUpdate(e: KonvaEvent) : void {
@@ -1210,7 +1254,8 @@ export default class PianoRoll {
         this.noteLayer.updateNotesAttributeCaches(selectedNoteElements);
         this.velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
         selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
-        this.serializeState();
+        //this.serializeState();
+        this.addToHistory();
     }
 
     private handleAdjustNotePositionInteractionEnd(e: KonvaEvent) : void {
@@ -1236,14 +1281,15 @@ export default class PianoRoll {
         this.noteLayer.updateNotesAttributeCaches(selectedNoteElements);
         this.velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
         selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
-        this.serializeState();
+        //this.serializeState();
+        this.addToHistory();
         this.dragMode = null;
     }
 
     private handleAdjustSelectionInteractionEnd(e: KonvaEvent) : void {
         this.noteLayer.clearSelectionMarquee();
         this.dragMode = null;
-        this.serializeState();
+        //this.serializeState();
     }
 
     private handleAdjustSelectionFromVelocityInteractionEnd(e: KonvaEvent) : void {

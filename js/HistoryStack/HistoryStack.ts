@@ -4,8 +4,8 @@ const defaultState = { channels: [] };
 
 export default class HistoryStack {
     
-    private stack: any[];
-    private currentIndex: number;
+    stack: any[];
+    currentIndex: number;
 
     constructor(initialState = defaultState) {
         this.stack = [ initialState ];

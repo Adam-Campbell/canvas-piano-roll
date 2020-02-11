@@ -35,6 +35,7 @@ import {
 } from '../utils';
 import EventEmitter from '../EventEmitter';
 import { getBarNumFromBBSString } from './arrangerUtils';
+import { SerializedAudioEngineState } from '../AudioEngine/AudioEngineConstants';
 
 
 /*
@@ -92,11 +93,12 @@ export default class Arranger {
         this.stage.add(this.primaryBackingLayer);
         this.stage.add(this.seekerLineLayer.layer);
         this.stage.add(this.secondaryBackingLayer);
+        const initialState = this.audioEngine.serializeState();
         this.gridLayer.init();
-        this.sectionLayer.init();
+        this.sectionLayer.init(initialState);
         this.transportLayer.init();
         this.seekerLineLayer.init();
-        this.channelInfoLayer.init();
+        this.channelInfoLayer.init(initialState);
         this.scrollbarLayer.init();
         this.registerStageSubscriptions();
         this.registerKeyboardSubscriptions();
@@ -138,8 +140,7 @@ export default class Arranger {
         this.seekerLineLayer = new SeekerLineLayer(this.conversionManager);
         this.channelInfoLayer = new ChannelInfoLayer(
             this.conversionManager,
-            this.secondaryBackingLayer,
-            this.audioEngine.channels
+            this.secondaryBackingLayer
         );
         this.scrollManager = new ScrollManager(
             this.gridLayer,
@@ -206,7 +207,8 @@ export default class Arranger {
             console.log(this.activeTool);
         });
         this.emitter.subscribe(Events.historyTravelled, state => {
-            console.log(state);
+            //console.log(state);
+            this.forceToState(state);
         });
     }
 
@@ -294,23 +296,6 @@ export default class Arranger {
         this.sectionCache.add(newSection);
         this.sectionSelection.add(newSection);
         return newSection;
-    }
-
-    private addSectionToAudioEngine(sectionElement: Konva.Rect) : void {
-        const channelIdx = sectionElement.y() / this.conversionManager.rowHeight;
-        const sectionStartNum = sectionElement.x() / this.conversionManager.colWidth;
-        const sectionNumBars = sectionElement.width() / this.conversionManager.colWidth;
-        const newSectionId = sectionElement.id();
-        console.log(`
-            channelIdx: ${channelIdx}
-            sectionStart: ${sectionStartNum}
-            numBars: ${sectionNumBars}
-        `);
-        this.audioEngine.channels[channelIdx].addSection(
-            `${sectionStartNum}:0:0`,
-            sectionNumBars,
-            newSectionId
-        );
     }
 
     private addSectionToSelection(sectionElement: Konva.Rect) : void {
@@ -675,6 +660,15 @@ export default class Arranger {
         this.dragMode = null;
         this.sectionLayer.clearSelectionMarquee();
         // serialize state
+    }
+
+    forceToState(state: SerializedAudioEngineState) : void {
+        // renders the section rects to match the state given
+        const sectionElements = this.sectionLayer.forceToState(state);
+        this.sectionCache.forceToState(sectionElements);
+        this.sectionSelection.forceToState([]);
+        // renders the channel info pods to match the state given
+        this.channelInfoLayer.forceToState(state);
     }
 
     

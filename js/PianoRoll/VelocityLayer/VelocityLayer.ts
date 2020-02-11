@@ -1,10 +1,13 @@
 import Konva from 'konva';
+import Tone from 'tone';
 import {
     Colours,
     SerializedState,
     StaticMeasurements
 } from '../../Constants';
 import ConversionManager from '../ConversionManager';
+import { SerializedSectionState } from '../../AudioEngine/AudioEngineConstants'; 
+import { NoteBBS } from '../../Constants'; 
 
 export default class VelocityLayer {
 
@@ -242,29 +245,54 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
-    forceToState(state: SerializedState) : Konva.Rect[] {
+    forceToState(state: SerializedSectionState) : Konva.Rect[] {
         // delete all velocity markers from the layer.
         const existingVelocityElements = this.layer.find('.VELOCITY_MARKER');
         existingVelocityElements.forEach(el => el.destroy());
 
-        const newVelocityMarkerElements = state.notes.map(note => {
-            // calculate x, y, height, id, isSelected
-            const x = this.conversionManager.convertTicksToPx(note.time);
-            const height = note.velocity * (this.conversionManager.velocityAreaHeight - 10);
-            const y = this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth - height;
-            const isSelected = state.selectedNoteIds.includes(note.id);
-            const velocityMarkerElement = this.createVelocityMarker(
-                x,
-                y,
-                height,
-                note.id,
-                isSelected,
+        const velocityMarkerElements = Object.values(state.notes).map((note: NoteBBS) => {
+            const velocityRectX = this.conversionManager.convertTicksToPx(
+                Tone.Ticks(note.time).toTicks()
+            );
+            const velocityRectHeight = note.velocity * (this.conversionManager.velocityAreaHeight - 10);
+            const velocityRectY = this.conversionManager.stageHeight - 
+                StaticMeasurements.scrollbarWidth - velocityRectHeight;
+            const velocityRectId = note.id;
+            const velocityRect = this.createVelocityMarker(
+                velocityRectX,
+                velocityRectY,
+                velocityRectHeight,
+                velocityRectId,
+                false,
                 note.velocity
             );
-            return velocityMarkerElement;
+            return velocityRect;
         });
         this.layer.batchDraw();
-        return newVelocityMarkerElements;
+        return velocityMarkerElements;
+
+
+
+
+
+        // const newVelocityMarkerElements = state.notes.map(note => {
+        //     // calculate x, y, height, id, isSelected
+        //     const x = this.conversionManager.convertTicksToPx(note.time);
+        //     const height = note.velocity * (this.conversionManager.velocityAreaHeight - 10);
+        //     const y = this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth - height;
+        //     const isSelected = state.selectedNoteIds.includes(note.id);
+        //     const velocityMarkerElement = this.createVelocityMarker(
+        //         x,
+        //         y,
+        //         height,
+        //         note.id,
+        //         isSelected,
+        //         note.velocity
+        //     );
+        //     return velocityMarkerElement;
+        // });
+        // this.layer.batchDraw();
+        // return newVelocityMarkerElements;
 
         // map over the notes and use the addNewVelocityMarker method to create a 
         // velocity marker element for each note. Same as with note layer, return this

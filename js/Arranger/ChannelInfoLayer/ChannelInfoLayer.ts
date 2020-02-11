@@ -5,6 +5,10 @@ import {
     Colours,
     StaticMeasurements 
 } from '../../Constants';
+import { 
+    SerializedAudioEngineState,
+    SerializedChannelState 
+} from '../../AudioEngine/AudioEngineConstants';
 
 export default class ChannelInfoLayer {
 
@@ -13,26 +17,24 @@ export default class ChannelInfoLayer {
     private layer: Konva.Layer;
     private layerGroup: Konva.Group;
     private channelInfoPodsGroup: Konva.Group;
-    private channels: Channel[]
 
-    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer, channels) {
+    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
-        this.channels = channels;
         this.background = this.constructBackground();
         this.layerGroup = new Konva.Group();
         this.channelInfoPodsGroup = new Konva.Group({ y: this.conversionManager.seekerAreaHeight });
     }
 
-    init() {
+    init(initialState: SerializedAudioEngineState) {
         // add the layerGroup to the backing layer provided
         this.layer.add(this.layerGroup);
         // call any drawing methods
         this.background.moveTo(this.layerGroup);
-        this.drawChannelInfoPods();
+        //this.drawChannelInfoPods(initialState.channels);
         this.channelInfoPodsGroup.moveTo(this.layerGroup);
         // draw the layer
-        this.layer.batchDraw();
+        this.forceToState(initialState);
     }
 
     updateY(y: number) {
@@ -50,10 +52,10 @@ export default class ChannelInfoLayer {
         });
     }
 
-    private drawChannelInfoPods() {
+    private drawChannelInfoPods(channels: SerializedChannelState[]) {
         this.channelInfoPodsGroup.destroyChildren();
         const heightOfPod = this.conversionManager.rowHeight;
-        this.channels.forEach((channel, idx) => {
+        channels.forEach((channel: SerializedChannelState, idx: number) => {
             const topOfPod = idx * heightOfPod;
             const topOfText = topOfPod + (heightOfPod / 2) - 5;
             const pod = new Konva.Rect({
@@ -80,5 +82,10 @@ export default class ChannelInfoLayer {
         this.background.height(
             this.conversionManager.stageHeight
         );
+    }
+
+    forceToState(state: SerializedAudioEngineState) : void {
+        this.drawChannelInfoPods(state.channels);
+        this.layer.batchDraw();
     }
 }

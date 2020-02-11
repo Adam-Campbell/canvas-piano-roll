@@ -1,6 +1,9 @@
 import Konva from 'konva';
+import Tone from 'tone';
 import ConversionManager from '../ConversionManager';
-import { Colours, SerializedState } from '../../Constants';
+import { Colours, SerializedState, NoteBBS } from '../../Constants';
+import { SerializedSectionState } from '../../AudioEngine/AudioEngineConstants';
+
 
 export default class NoteLayer {
 
@@ -216,7 +219,7 @@ export default class NoteLayer {
         this.updateNotesAttributeCaches(noteRectsArray);
     }
 
-    forceToState(state: SerializedState) : Konva.Rect[] {
+    forceToState(state: SerializedSectionState) : Konva.Rect[] {
         // delete all note elements currently on the layer
         this.notesContainer.destroyChildren();
         // delete marquee element if exists
@@ -225,26 +228,48 @@ export default class NoteLayer {
             marqueeElement.destroy();
         }
 
-        const noteElements = state.notes.map(note => {
-            const isSelected = state.selectedNoteIds.includes(note.id);
-            const x = this.conversionManager.convertTicksToPx(note.time);
-            const y = this.conversionManager.deriveYFromPitch(note.note);
-            const width = this.conversionManager.convertTicksToPx(note.duration);
-            console.log(x, width);
-            const noteElement = this.createNoteElement(
-                x,
-                y,
-                width,
-                note.id,
-                isSelected
+        const noteElements = Object.values(state.notes).map((note: NoteBBS) => {
+            const noteRectX = this.conversionManager.convertTicksToPx(
+                Tone.Ticks(note.time).toTicks()
             );
-            this.notesContainer.add(noteElement);
-            return noteElement;
+            const noteRectWidth = this.conversionManager.convertTicksToPx(
+                Tone.Ticks(note.duration).toTicks()
+            );
+            const noteRectY = this.conversionManager.deriveYFromPitch(note.note);
+            const noteRectId = note.id;
+            const noteRect = this.createNoteElement(
+                noteRectX,
+                noteRectY,
+                noteRectWidth,
+                noteRectId,
+                false
+            );
+            noteRect.moveTo(this.notesContainer);
+            return noteRect;
         });
-
         this.layer.batchDraw();
-
         return noteElements;
+
+        // const noteElements = state.notes.map(note => {
+        //     const isSelected = state.selectedNoteIds.includes(note.id);
+        //     const x = this.conversionManager.convertTicksToPx(note.time);
+        //     const y = this.conversionManager.deriveYFromPitch(note.note);
+        //     const width = this.conversionManager.convertTicksToPx(note.duration);
+        //     console.log(x, width);
+        //     const noteElement = this.createNoteElement(
+        //         x,
+        //         y,
+        //         width,
+        //         note.id,
+        //         isSelected
+        //     );
+        //     this.notesContainer.add(noteElement);
+        //     return noteElement;
+        // });
+
+        // this.layer.batchDraw();
+
+        // return noteElements;
 
         // map over notes array, for each note use the addNewNote method to add a note
         // element to the layer. Return the result of this in the map function. The end 

@@ -1,7 +1,7 @@
 import Channel from './Channel';
 import Section from './Section';
 import { genId } from '../genId';
-import { SerializedAudioEngineState } from './AudioEngineConstants';
+import { SerializedAudioEngineState, AudioEngineComponent } from './AudioEngineConstants';
 
 const padInstrumentSettings = {
     envelope: {
@@ -36,7 +36,7 @@ const leadInstrumentSettings = {
     }
 }
 
-export default class AudioEngine {
+export default class AudioEngine implements AudioEngineComponent {
 
     channels: Channel[] = [];
 
@@ -84,7 +84,7 @@ export default class AudioEngine {
     }
 
     // forces the entire audio engine to a given state
-    forceToState() : void {
+    forceToState(state: SerializedAudioEngineState) : void {
     
     }
 
