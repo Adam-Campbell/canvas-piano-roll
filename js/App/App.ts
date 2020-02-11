@@ -35,7 +35,7 @@ export default class App {
 
     constructor() {
         this.eventEmitter = new EventEmitter();
-        this.audioEngine = new AudioEngine();
+        this.audioEngine = new AudioEngine(this.eventEmitter);
         this.audioEngine.init();
         const initialHistoryStackEntry = this.audioEngine.serializeState();
         console.log('initialState: ', initialHistoryStackEntry)

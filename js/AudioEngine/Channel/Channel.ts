@@ -84,7 +84,35 @@ export default class Channel implements AudioEngineComponent {
 
     // forces this channel, its instrument and sections to a given state.
     forceToState(state: SerializedChannelState) : void {
+        // First reconcile the channel details with the provided state
+        if (this.name !== state.name) {
+           this.name = state.name; 
+        }
+        // TODO: reconcile instrumentSettings.
 
+        // Iterate over sections in engine
+        // If any are not in state, remove from engine.
+        for (const sectionId in this.sectionCache) {
+            if (!state.sections[sectionId]) {
+                this.removeSection(sectionId);
+            }
+        }
+        // Then, iterate over sections in state.
+        // If a section does not exist in engine, add it. 
+        // If a section already exists in engine, reconcile it. 
+        for (const sectionId in state.sections) {
+            const section = state.sections[sectionId];
+            if (this.sectionCache[sectionId]) {
+                this.sectionCache[sectionId].forceToState(section);
+            } else {
+                this.addSection(
+                    section.start,
+                    section.numBars,
+                    section.id,
+                    section.notes
+                );
+            }
+        }
     }
 
 }
