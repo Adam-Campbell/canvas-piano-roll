@@ -19,3 +19,8 @@ export const doesOverlap = (A_x1: number, A_x2: number, A_y1: number, A_y2: numb
     return doesOverlapAlongAxis(A_x1, A_x2, B_x1, B_x2) &&
         doesOverlapAlongAxis(A_y1, A_y2, B_y1, B_y2);
 }
+
+export const getBarNumFromBBSString = (startString: string) : number => {
+    const barString = startString.split(':')[0];
+    return parseInt(barString);
+}

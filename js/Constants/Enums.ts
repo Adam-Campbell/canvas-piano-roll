@@ -18,7 +18,9 @@ export enum Events {
     renderApp = 'renderApp',
     focusWindow = 'focusWindow',
     resizeWindow = 'resizeWindow',
-    openPianoRollWindow = 'openPianoRollWindow'
+    openPianoRollWindow = 'openPianoRollWindow',
+    historyTravelled = 'historyTravelled',
+    addStateToStack = 'addStateToStack'
 }
 
 export enum DragModes {

@@ -27,7 +27,8 @@ export interface SerializedAudioEngineState {
     channels: SerializedChannelState[]
 }
 
+
 export interface AudioEngineComponent {
-    forceToState(state: any) : void,
+    forceToState(state: SerializedAudioEngineState | SerializedChannelState | SerializedSectionState) : void,
     serializeState() : SerializedAudioEngineState | SerializedChannelState | SerializedSectionState
 }
