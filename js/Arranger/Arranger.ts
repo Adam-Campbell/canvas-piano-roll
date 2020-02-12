@@ -207,7 +207,6 @@ export default class Arranger {
             console.log(this.activeTool);
         });
         this.emitter.subscribe(Events.historyTravelled, state => {
-            //console.log(state);
             this.forceToState(state);
         });
     }
@@ -216,6 +215,10 @@ export default class Arranger {
         this.stage.destroy();
     }
 
+    /**
+     * Called by the parent window class when it changes size. Updates various parts of
+     * the canvas as needed with the new width and height and then redraws the canvas.
+     */
     handleResize(containerWidth: number, containerHeight: number) : void {
         if (containerWidth !== this.conversionManager.stageWidth) {
             this.conversionManager.stageWidth = containerWidth;
@@ -256,6 +259,10 @@ export default class Arranger {
         //this.primaryBackingLayer.draw();
     }
 
+    /**
+     * Updates the necessary parts of the canvas and redraws the canvas when the level of 
+     * zoom updates.
+     */
     private handleZoomAdjustment(isZoomingIn: boolean) : void {
         const zoomLevels = [
             0.03125,
@@ -291,6 +298,10 @@ export default class Arranger {
         }
     }
 
+    /**
+     * Adds a Konva.Rect for a new section to the canvas, however does not add a new section
+     * to the audio engine.
+     */
     private addNewSection(x: number, y: number, id: string, width?: number) : Konva.Rect {
         const newSection = this.sectionLayer.addNewSection(x, y, id, width);
         this.sectionCache.add(newSection);
@@ -315,8 +326,17 @@ export default class Arranger {
         this.sectionSelection.clear();
     }
 
+    /**
+     * Shifts all selected sections up to the channel above their current channel, if this
+     * is possible. If it is not possible for any of the sections, then none of the sections
+     * are shifted. This method also updates the audio engine and adds a new entry to the
+     * history stack.
+     */
     private shiftSelectionUp() {
         const selectedSectionIds = this.sectionSelection.retrieveAll();
+        if (selectedSectionIds.length === 0) {
+            return;
+        }
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         if (canShiftUp(selectedSectionElements, this.conversionManager.rowHeight)) {
             this.sectionLayer.shiftSectionsVertically(
@@ -324,11 +344,21 @@ export default class Arranger {
                 true
             );
             selectedSectionElements.forEach(section => this.audioReconciler.addSection(section));
+            this.addToHistory();
         }
     }
 
+    /**
+     * Shifts all selected sections down to the channel below their current channel, if this
+     * is possible. If it is not possible for any of the sections, then none of the sections
+     * are shifted. This method also updates the audio engine and adds a new entry to the
+     * history stack.
+     */
     private shiftSelectionDown() {
         const selectedSectionIds = this.sectionSelection.retrieveAll();
+        if (selectedSectionIds.length === 0) {
+            return;
+        }
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         if (canShiftDown(
             selectedSectionElements, 
@@ -337,20 +367,40 @@ export default class Arranger {
         )) {
             this.sectionLayer.shiftSectionsVertically(selectedSectionElements, false);
             selectedSectionElements.forEach(section => this.audioReconciler.addSection(section));
+            this.addToHistory();
         }
     }
 
+    /**
+     * Shifts all selected sections back to the bar before their current bar, if this is
+     * possible. If it is not possible for any of the sections, then none of the sections
+     * are shifted. This method also updates the audio engine and adds a new entry to the
+     * history stack.
+     */
     private shiftSelectionLeft() : void {
         const selectedSectionIds = this.sectionSelection.retrieveAll();
+        if (selectedSectionIds.length === 0) {
+            return;
+        }
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         if (canShiftLeft(selectedSectionElements)) {
             this.sectionLayer.shiftSectionsHorizontally(selectedSectionElements, true);
             selectedSectionElements.forEach(section => this.audioReconciler.addSection(section));
+            this.addToHistory();
         }
     }
 
+    /**
+     * Shifts all selected sections forwards to the bar after their current bar, if this is
+     * possible. If it is not possible for any of the sections, then none of the sections
+     * are shifted. This method also updates the audio engine and adds a new entry to the
+     * history stack.
+     */
     private shiftSelectionRight() : void {
         const selectedSectionIds = this.sectionSelection.retrieveAll();
+        if (selectedSectionIds.length === 0) {
+            return;
+        }
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         if (canShiftRight(
             selectedSectionElements,
@@ -359,11 +409,20 @@ export default class Arranger {
         )) {
             this.sectionLayer.shiftSectionsHorizontally(selectedSectionElements, false);
             selectedSectionElements.forEach(section => this.audioReconciler.addSection(section));
+            this.addToHistory();
         }
     }
 
+    /**
+     * If no sections are selected then this does nothing, but if any are selected then they are
+     * deleted from the canvas, cleaned up and deleted from the audio engine, and a new entry is
+     * added to the history stack.
+     */
     private deleteSelectedSections() {
         const selectedSectionIds = this.sectionSelection.retrieveAll();
+        if (selectedSectionIds.length === 0) {
+            return;
+        }
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         this.sectionLayer.deleteSections(selectedSectionElements);
         this.sectionSelection.clear();
@@ -371,22 +430,39 @@ export default class Arranger {
             this.sectionCache.remove(section);
             this.audioReconciler.removeSection(section);
         });
+        this.addToHistory();
     }
 
+    /**
+     * Copies current selection to clipboard, but has no impact on the audio engine or history stack.
+     */
     private copy() {
         const selectedSectionIds = this.sectionSelection.retrieveAll();
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         this.clipboard.add(selectedSectionElements);
     }
 
+    /**
+     * Copies current selection to clipboard and then deletes it. This also removes it from the audio
+     * engine and results in a new entry being added to the history stack.
+     */
     private cut() {
         this.copy();
         this.deleteSelectedSections();
     }
 
+    /**
+     * If there is anything on the clipboard, it creates new sections to be added based on the data in the
+     * clipboard and current Transport position of the track. The new sections are added to the canvas,
+     * to the audio engine and a new entry is added to the history stack. 
+     */
     private paste() {
         const currentBar = Math.floor(Tone.Transport.ticks / StaticMeasurements.ticksPerBar);
         const newSectionsData = this.clipboard.produceCopy(currentBar);
+
+        if (newSectionsData.length === 0) {
+            return;
+        }
         
         newSectionsData.forEach(serializedSection => {
             const x = getBarNumFromBBSString(serializedSection.start) * this.conversionManager.colWidth;
@@ -394,7 +470,8 @@ export default class Arranger {
             const width = serializedSection.numBars * this.conversionManager.colWidth; 
             this.addNewSection(x, y, serializedSection.id, width);
             this.audioReconciler.addSectionFromSerializedState(serializedSection);
-        })
+        });
+        this.addToHistory();
     }
 
     private undo() {
@@ -409,6 +486,12 @@ export default class Arranger {
         this.emitter.emit(Events.addStateToStack);
     }
 
+    /**
+     * Iterates over all sections and adds them to / removes them from the current selection based on 
+     * whether they overlap with selection rectangle described by the coordinates given. This only affects
+     * the appearance of the canvas elements and this classes selected sections cache, it does not affect the
+     * audio engine or the history stack. 
+     */
     private reconcileSectionSelectionWithSelectionArea(
         selectionX1: number, 
         selectionY1: number, 
@@ -442,6 +525,11 @@ export default class Arranger {
         });
     }
 
+    /**
+     * Takes a Konva event object and returns an accurate x and y coordinate for the event regardless of
+     * whether it is a pointer or touch event. Also provides metadata such as the target and whether it is
+     * a touch event. 
+     */
     private extractInfoFromEventObject(e: KonvaEvent) : {
         isTouchEvent : boolean,
         target: any,
@@ -653,13 +741,14 @@ export default class Arranger {
         this.sectionLayer.updateSectionsAttributeCaches(selectedSectionElements);
         // then update the audio engine and history stack.
         selectedSectionElements.forEach(sectionElement => this.audioReconciler.addSection(sectionElement));
-        this.addToHistory();
+        if (this.mouseStateManager.hasTravelled) {
+            this.addToHistory();
+        }
     }
 
     handleAdjustSelectionInteractionEnd(e: KonvaEvent) : void {
         this.dragMode = null;
         this.sectionLayer.clearSelectionMarquee();
-        // serialize state
     }
 
     forceToState(state: SerializedAudioEngineState) : void {

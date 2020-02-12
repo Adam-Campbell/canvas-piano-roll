@@ -118,23 +118,6 @@ export default class PianoRoll {
         this.registerStageSubscriptions();
         this.registerKeyboardSubscriptions();
         this.registerGlobalEventSubscriptions();
-        // const initialNotes = pianoRollOptions.section.serializeState().notes.map(note => {
-        //     // return {
-        //     //     ...note,
-        //     //     time: Tone.Ticks(note.time).toTicks(),
-        //     //     duration: Tone.Ticks(note.duration).toTicks()
-        //     // }
-        // })
-        // const notes = pianoRollOptions.section.serializeState().notes;
-        //console.log(notes);
-        // const notes = Object.values(pianoRollOptions.section.serializeState().notes)
-        // .map(note => ({
-        //     ...note,
-        //     time: Tone.Ticks(note.time).toTicks(),
-        //     duration: Tone.Ticks(note.duration).toTicks()
-        // }));
-        // //console.log(notes);
-        // this.forceToState({ notes, selectedNoteIds: [] });
         this.forceToState(
             this.section.serializeState()
         );
@@ -276,8 +259,6 @@ export default class PianoRoll {
             this.chordType = chordType;
         });
         this.emitter.subscribe(Events.historyTravelled, (state: SerializedAudioEngineState) => {
-            //console.log(state);
-            //console.log('historyTravelled event received');
             let serializedSection;
             for (const channel of state.channels) {
                 if (channel.sections[this.section.id]) {
@@ -285,24 +266,48 @@ export default class PianoRoll {
                     break;
                 }
             }
-            if (serializedSection) {
-                //console.log('serialized section located')
-            }
             this.forceToState(serializedSection);
-        })
-        //this.emitter.subscribe(Events.undoAction, () => this.undo());
-        //this.emitter.subscribe(Events.redoAction, () => this.redo());
-        //this.emitter.subscribe(Events.copyToClipboard, () => this.copy());
-        //this.emitter.subscribe(Events.cutToClipboard, () => this.cut());
-        //this.emitter.subscribe(Events.pasteFromClipboard, () => this.paste());
-        
-        //window.addEventListener('resize', e => this.handleResize(e));
+        });
     }
 
     cleanup() {
         this.stage.destroy();
     }
 
+    /**
+     * Called by the parent window class when it changes size. Updates various parts of
+     * the canvas as needed with the new width and height and then redraws the canvas.
+     */
+    handleResize(containerWidth: number, containerHeight: number) : void {
+        if (containerWidth !== this.conversionManager.stageWidth) {
+            this.conversionManager.stageWidth = containerWidth;
+            this.stage.width(containerWidth);
+            const willExposeOutOfBounds = this.scrollManager.x * -1 > this.conversionManager.gridWidth + StaticMeasurements.scrollbarWidth - containerWidth;
+            if (willExposeOutOfBounds) {
+                const newXScroll = (-1 * (this.scrollbarLayer.horizontalScrollRange)) + StaticMeasurements.pianoKeyWidth;
+                this.scrollManager.x = newXScroll;
+            }
+            
+        }
+        if (containerHeight !== this.conversionManager.stageHeight) {
+            this.conversionManager.stageHeight = containerHeight;
+            this.stage.height(containerHeight);
+            const willExposeOutOfBounds = this.scrollManager.y * -1 >= this.scrollbarLayer.verticalScrollRange;
+            if (willExposeOutOfBounds) {
+                const newYScroll = (-1 * this.scrollbarLayer.verticalScrollRange) + this.conversionManager.seekerAreaHeight;
+                this.scrollManager.y = newYScroll;
+            }
+        }
+        this.velocityLayer.redrawOnVerticalResize();
+        this.scrollbarLayer.redrawOnHorizontalResize();
+        this.scrollbarLayer.redrawOnVerticalResize();
+        this.pianoKeyLayer.redrawOnVerticalResize();
+    }
+
+    /**
+     * Updates the necessary parts of the canvas and redraws the canvas when the level of 
+     * zoom updates.
+     */
     private handleZoomAdjustment(isZoomingIn: boolean) : void {
         const zoomLevels = [0.125, 0.25, 0.5, 1];
         const currentZoomIdx = zoomLevels.indexOf(this.conversionManager.tickToPxRatio);
@@ -322,56 +327,6 @@ export default class PianoRoll {
         }
     }
 
-    handleResize(containerWidth: number, containerHeight: number) : void {
-        // grab clientWidth and clientHeight from event
-
-        // if clientWidth not equals stageWidth
-            // update stage width
-            // if new clientWidth would expose stage OOB
-                // adjust x scroll accordingly
-            // call method to update scrollbar layer horizontally
-        // if clientHeight not equals stageHeight
-            // update stage height
-            // if new clientHeight would expose stage OOB
-                // adjust y scroll accordingly
-            // call method to update scrollbar layer vertically
-        //const window = e.target;
-        //const { clientWidth, clientHeight } = window.document.documentElement;
-
-        if (containerWidth !== this.conversionManager.stageWidth) {
-            this.conversionManager.stageWidth = containerWidth;
-            this.stage.width(containerWidth);
-            const willExposeOutOfBounds = this.scrollManager.x * -1 > this.conversionManager.gridWidth + StaticMeasurements.scrollbarWidth - containerWidth;
-            if (willExposeOutOfBounds) {
-                const newXScroll = (-1 * (this.scrollbarLayer.horizontalScrollRange)) + StaticMeasurements.pianoKeyWidth;
-                this.scrollManager.x = newXScroll;
-            }
-            
-        }
-        // if (clientHeight - 50 !== this.conversionManager.stageHeight) {
-        //     this.conversionManager.stageHeight = clientHeight - 50;
-        //     this.stage.height(clientHeight - 50);
-        //     const willExposeOutOfBounds = this.scrollManager.y * -1 >= this.scrollbarLayer.verticalScrollRange;
-        //     if (willExposeOutOfBounds) {
-        //         const newYScroll = (-1 * this.scrollbarLayer.verticalScrollRange) + this.conversionManager.seekerAreaHeight;
-        //         this.scrollManager.y = newYScroll;
-        //     }
-        // }
-        if (containerHeight !== this.conversionManager.stageHeight) {
-            this.conversionManager.stageHeight = containerHeight;
-            this.stage.height(containerHeight);
-            const willExposeOutOfBounds = this.scrollManager.y * -1 >= this.scrollbarLayer.verticalScrollRange;
-            if (willExposeOutOfBounds) {
-                const newYScroll = (-1 * this.scrollbarLayer.verticalScrollRange) + this.conversionManager.seekerAreaHeight;
-                this.scrollManager.y = newYScroll;
-            }
-        }
-        this.velocityLayer.redrawOnVerticalResize();
-        this.scrollbarLayer.redrawOnHorizontalResize();
-        this.scrollbarLayer.redrawOnVerticalResize();
-        this.pianoKeyLayer.redrawOnVerticalResize();
-    }
-
     private handleTogglePlayback() : void {
         if (Tone.Transport.state === 'started') {
             if (this.keyboardStateManager.shiftKey) {
@@ -385,7 +340,7 @@ export default class PianoRoll {
         }
     }
 
-    // Valid values for nudgeDirection are 'BOTH', 'VERTICAL' and 'HORIZONTAL'
+    
     private nudgeGridIfRequired(
         x: number, 
         y: number, 
@@ -430,53 +385,13 @@ export default class PianoRoll {
         }
     }
 
-    private serializeState() : void {
-        // grab all of the noteElements
-        // grab all of the velocityMarkerElements
-        // for each pair of noteElement & velocityMarkerElement, produce a plain object
-        // representing that note. 
-        // grab the ids of all selected notes. 
-        // use all of this information to produce the complete serialized state. Return it. 
-
-        const serializedNotes = this.noteCache.retrieveAll().map(noteElement => {
-            const velocityMarkerElement = this.velocityMarkerCache.retrieveOne(
-                noteElement.attrs.id
-            );
-            return {
-                note: this.conversionManager.derivePitchFromY(noteElement.attrs.y),
-                time: this.conversionManager.convertPxToTicks(noteElement.attrs.x),
-                duration: this.conversionManager.convertPxToTicks(noteElement.attrs.width),
-                velocity: velocityMarkerElement.attrs.velocity,
-                id: noteElement.attrs.id
-            }
-        });
-        
-        const selectedNoteIds = this.noteSelection.retrieveAll();
-        const serializedState = {
-            notes: serializedNotes,
-            selectedNoteIds
-        };
-        
-        this.historyStack.addEntry(serializedState);
-    }
-
-    // private forceToState(state: SerializedState) : void {
-    //     const noteElements = this.noteLayer.forceToState(state);
-    //     const velocityMarkerElements = this.velocityLayer.forceToState(state);
-    //     this.noteCache.forceToState(noteElements);
-    //     this.velocityMarkerCache.forceToState(velocityMarkerElements);
-    //     this.noteSelection.forceToState(state.selectedNoteIds);
-    //     this.audioReconciler.forceToState(state.notes);
-    // }
-
-    private forceToState(state: SerializedSectionState) : void {
-        const noteElements = this.noteLayer.forceToState(state);
-        const velocityMarkerElements = this.velocityLayer.forceToState(state);
-        this.noteCache.forceToState(noteElements);
-        this.velocityMarkerCache.forceToState(velocityMarkerElements);
-        this.noteSelection.forceToState([]);
-    }
-
+    /**
+     * Adds a note to the audio engine, deriving its values from the canvas elements representing
+     * that note and its velocity marker. This method does not trigger adding a new entry to the 
+     * history stack, this allows it to be called repeatedly to add multiple notes as part of the
+     * same 'transaction' without producing a new entry on the history stack after the addition of
+     * each individual note. 
+     */
     private addNoteToAudioEngine(noteId: string) : void {
         const noteElement = this.noteCache.retrieveOne(noteId);
         const velocityMarkerElement = this.velocityMarkerCache.retrieveOne(noteId);
@@ -484,6 +399,10 @@ export default class PianoRoll {
         this.audioReconciler.addNote(noteElement, velocityMarkerElement);
     }
 
+    /**
+     * Adds a new note, and its associated velocity marker, to the canvas, but does not affect the
+     * audio engine or history stack.
+     */
     private addNewNote(x: number, y: number, width?: number) : Konva.Rect {
         const id = genId();
         const newNote = this.noteLayer.addNewNote(x, y, id, width);
@@ -494,8 +413,16 @@ export default class PianoRoll {
         return newNote;
     }    
 
+    /**
+     * If no notes are selected then this does nothing, but if any are selected then they are
+     * deleted from the canvas (along with their associated velocity markers), cleaned up and 
+     * deleted from the audio engine, and a new entry is added to the history stack.
+     */
     private deleteSelectedNotes() : void {
         const selectedNoteIds = this.noteSelection.retrieveAll();
+        if (selectedNoteIds.length === 0) {
+            return;
+        }
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
         const selectedVelocityMarkerElements = this.velocityMarkerCache.retrieve(selectedNoteIds);
         this.noteLayer.deleteNotes(selectedNoteElements);
@@ -504,7 +431,6 @@ export default class PianoRoll {
         selectedNoteElements.forEach(el => this.noteCache.remove(el));
         selectedVelocityMarkerElements.forEach(el => this.velocityMarkerCache.remove(el));
         this.audioReconciler.removeNotes(selectedNoteIds);
-        //this.serializeState();
         this.addToHistory();
     }
 
@@ -531,6 +457,12 @@ export default class PianoRoll {
         this.velocityLayer.removeSelectedAppearance(velocityMarkerElement);
     }
 
+    /**
+     * Iterates over all notes and adds them to / removes them from the current selection based on 
+     * whether they overlap with selection rectangle described by the coordinates given. This only affects
+     * the appearance of the canvas elements for the notes and their velocity markers, as well as this classes 
+     * selected notes cache, it does not affect the audio engine or the history stack. 
+     */
     private reconcileNoteSelectionWithSelectionArea(
         selectionX1: number, 
         selectionY1: number, 
@@ -564,36 +496,63 @@ export default class PianoRoll {
         });
     }
 
+    /**
+     * Shifts all selected notes up to the pitch above their current pitch, if this is
+     * possible. If it is not possible for any of the notes, then none of the notes
+     * are shifted. This method also updates the audio engine and adds a new entry to the
+     * history stack. Also accepts a boolean shiftByOctave which, if true, attempts to shift
+     * the note by 12 pitch increments rather than 1.
+     */
     private shiftSelectionUp(shiftByOctave: boolean) : void {
         const shiftAmount = shiftByOctave ? 
             this.conversionManager.rowHeight * 12 : 
             this.conversionManager.rowHeight;
         const selectedNoteIds = this.noteSelection.retrieveAll();
+        if (selectedNoteIds.length === 0) {
+            return;
+        }
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
         if (canShiftUp(selectedNoteElements, shiftAmount)) {
             this.noteLayer.shiftNotesUp(selectedNoteElements, shiftAmount);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
-            //this.serializeState();
             this.addToHistory();
         }
     }
 
+    /**
+     * Shifts all selected notes down to the pitch below their current pitch, if this is
+     * possible. If it is not possible for any of the notes, then none of the notes
+     * are shifted. This method also updates the audio engine and adds a new entry to the
+     * history stack. Also accepts a boolean shiftByOctave which, if true, attempts to shift
+     * the note by 12 pitch increments rather than 1.
+     */
     private shiftSelectionDown(shiftByOctave: boolean) : void {
         const shiftAmount = shiftByOctave ?
             this.conversionManager.rowHeight * 12 :
             this.conversionManager.rowHeight;
         const selectedNoteIds = this.noteSelection.retrieveAll();
+        if (selectedNoteIds.length === 0) {
+            return;
+        }
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
         if (canShiftDown(selectedNoteElements, this.conversionManager.gridHeight, shiftAmount)) {
             this.noteLayer.shiftNotesDown(selectedNoteElements, shiftAmount);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
-            //this.serializeState();
             this.addToHistory();
         }
     }
 
+    /**
+     * Shifts all selected notes back to an earlier start time which is based on the current 
+     * quantize value, if this is possible. If it is not possible for any of the notes, then 
+     * none of the notes are shifted. This method also updates the audio engine and adds a new 
+     * entry to the history stack.
+     */
     private shiftSelectionLeft() : void {
         const selectedNoteIds = this.noteSelection.retrieveAll();
+        if (selectedNoteIds.length === 0) {
+            return;
+        }
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
         const selectedVelocityMarkerElements = this.velocityMarkerCache.retrieve(
             selectedNoteIds
@@ -602,13 +561,21 @@ export default class PianoRoll {
             this.noteLayer.shiftNotesLeft(selectedNoteElements);
             this.velocityLayer.shiftVelocityMarkersLeft(selectedVelocityMarkerElements);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
-            //this.serializeState();
             this.addToHistory()
         }
     }
 
+    /**
+     * Shifts all selected notes forward to a later start time which is based on the current 
+     * quantize value, if this is possible. If it is not possible for any of the notes, then 
+     * none of the notes are shifted. This method also updates the audio engine and adds a new 
+     * entry to the history stack.
+     */
     private shiftSelectionRight() : void {
         const selectedNoteIds = this.noteSelection.retrieveAll();
+        if (selectedNoteIds.length === 0) {
+            return;
+        }
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
         const selectedVelocityMarkerElements = this.velocityMarkerCache.retrieve(
             selectedNoteIds
@@ -617,15 +584,24 @@ export default class PianoRoll {
             this.noteLayer.shiftNotesRight(selectedNoteElements);
             this.velocityLayer.shiftVelocityMarkersRight(selectedVelocityMarkerElements);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
-            //this.serializeState();
             this.addToHistory();
         }
     }
 
+    /**
+     * Updates the selected chord by moving upwards through inversions, meaning that the lowest
+     * pitched note is moved to the first available higher pitch that belongs to the chord and is
+     * not currently being used. This method also updates the audio engine and adds a new entry to
+     * the history stack. If there is no suitable pitch for the note to be moved to then this method
+     * does nothing and does not affect the audio engine or history stack. 
+     */
     private moveUpwardsThroughInversions() : void {
         const noteElements = this.noteCache.retrieve(
             this.noteSelection.retrieveAll()
         );
+        if (noteElements.length === 0) {
+            return;
+        }
 
         const sortedNotesAndRowIndexes = noteElements.map(noteElement => {
             return {
@@ -662,14 +638,23 @@ export default class PianoRoll {
         this.primaryBackingLayer.batchDraw();
         this.noteLayer.updateNotesAttributeCaches([ noteElementToUpdate ]);
         this.addNoteToAudioEngine(noteElementToUpdate.id());
-        //this.serializeState();
         this.addToHistory();
     }
 
+    /**
+     * Updates the selected chord by moving downwards through inversions, meaning that the highest
+     * pitched note is moved to the first available lower pitch that belongs to the chord and is
+     * not currently being used. This method also updates the audio engine and adds a new entry to
+     * the history stack. If there is no suitable pitch for the note to be moved to then this method
+     * does nothing and does not affect the audio engine or history stack. 
+     */
     private moveDownwardsThroughInversions() : void {
         const noteElements = this.noteCache.retrieve(
             this.noteSelection.retrieveAll()
         );
+        if (noteElements.length === 0) {
+            return;
+        }
 
         const sortedNotesAndRowIndexes = noteElements.map(noteElement => {
             return {
@@ -706,10 +691,16 @@ export default class PianoRoll {
         this.primaryBackingLayer.batchDraw();
         this.noteLayer.updateNotesAttributeCaches([ noteElementToUpdate ]);
         this.addNoteToAudioEngine(noteElementToUpdate.id());
-        //this.serializeState();
         this.addToHistory();
     }
 
+    /**
+     * This method used internally by constructChordsFromSelectedRootNotes, it adds notes to the
+     * canvas and to the audio engine based on the rootNote and relativePositions arguments provided
+     * to it. It does not add a new entry to the history stack, which allows the
+     * constructChordsFromSelectedRootNotes to call this method sevral times as part of the same
+     * 'transaction' without creating a new entry on the history stack each time. 
+     */
     private constructChordFromRootNote(rootNote: Konva.Rect, relativePositions: number[]) : void {
         const rootX = rootNote.x();
         const rootY = rootNote.y();
@@ -725,7 +716,19 @@ export default class PianoRoll {
         });
     }
 
+    /**
+     * Takes the currently selected notes and converts them into chords, with the selected notes
+     * acting as the root note and the additional notes added being based on the global chord
+     * settings. The added notes are also added to the audio engine and a single new entry is 
+     * added to the history stack after all notes have been added. 
+     */
     private constructChordsFromSelectedRootNotes() : void {
+        const selectedNotes = this.noteCache.retrieve(
+            this.noteSelection.retrieveAll()
+        );
+        if (selectedNotes.length === 0) {
+            return;
+        }
         const { chroma } = chordType(this.chordType);
         let relativePositions = [];
         chroma.split('').forEach((binary, idx) => {
@@ -733,27 +736,15 @@ export default class PianoRoll {
                 relativePositions.push(idx);
             }
         });
-        const selectedNotes = this.noteCache.retrieve(
-            this.noteSelection.retrieveAll()
-        );
         selectedNotes.forEach(note => this.constructChordFromRootNote(note, relativePositions));
-        //this.serializeState();
         this.addToHistory();
     }
 
     private undo() : void {
-        // if (!this.historyStack.isAtStart) {
-        //     const nextState = this.historyStack.goBackwards();
-        //     this.forceToState(nextState);
-        // }
         this.emitter.emit(Events.undoAction);
     }
 
     private redo() : void {
-        // if (!this.historyStack.isAtEnd) {
-        //     const nextState = this.historyStack.goForwards();
-        //     this.forceToState(nextState);
-        // }
         this.emitter.emit(Events.redoAction);
     }
 
@@ -761,6 +752,9 @@ export default class PianoRoll {
         this.emitter.emit(Events.addStateToStack);
     }
 
+    /**
+     * Copies current selection to clipboard, but has no impact on the audio engine or history stack.
+     */
     private copy() : void {
         const selectedNoteIds = this.noteSelection.retrieveAll();
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
@@ -768,11 +762,21 @@ export default class PianoRoll {
         this.clipboard.add(selectedNoteElements, selectedVelocityMarkerElements);
     }
 
+    /**
+     * Copies current selection to clipboard and then deletes it. This also removes it from the audio
+     * engine and results in a new entry being added to the history stack.
+     */
     private cut() : void {
         this.copy();
         this.deleteSelectedNotes();
     }
 
+    /**
+     * If there is anything on the clipboard, it creates new notes to be added based on the data in the
+     * clipboard and current Transport position of the track. The new notes are added to the canvas (in 
+     * addition to velocity markers), the notes are also added to the audio engine and a new entry is 
+     * added to the history stack. 
+     */
     private paste() : void {
         const currentQuantizeAsTicks = this.conversionManager.convertPxToTicks(
             this.conversionManager.colWidth
@@ -782,6 +786,9 @@ export default class PianoRoll {
             currentQuantizeAsTicks
         );
         const newNoteData = this.clipboard.produceCopy(roundedStartTime);
+        if (newNoteData.length === 0) {
+            return;
+        }
         this.clearSelection();
         newNoteData.forEach(noteObject => {
             const noteElement = this.noteLayer.createNoteElement(
@@ -806,12 +813,14 @@ export default class PianoRoll {
             this.audioReconciler.addNote(noteElement, velocityMarkerElement);
             this.noteSelection.add(noteElement);
         });
-        //this._noteLayer.layer.batchDraw();
         this.primaryBackingLayer.batchDraw();
-        //this.serializeState();
         this.addToHistory();
     }
 
+    /**
+     * Handles contextMenu events by adding the appropriate context menu to the canvas depending on 
+     * where the event was fired from. 
+     */
     private handleContextMenu(e: KonvaEvent) : void {
         const { rawX, rawY, target } = this.extractInfoFromEventObject(e);
         e.evt.preventDefault();
@@ -826,6 +835,9 @@ export default class PianoRoll {
         }
     }
 
+    /**
+     * Adds a context menu containing options related to note velocities.
+     */
     private addVelocityContextMenu(rawX: number, rawY: number) : void {
         const menuItems = [
             { 
@@ -852,6 +864,9 @@ export default class PianoRoll {
         this.contextMenuLayer.addContextMenu({ rawX, rawY, menuItems });
     }
 
+    /**
+     * Adds a context menu containing general options.
+     */
     private addGridContextMenu(rawX: number, rawY: number) : void {
         const menuItems = [
             {
@@ -874,6 +889,9 @@ export default class PianoRoll {
         this.contextMenuLayer.addContextMenu({ rawX, rawY, menuItems });
     }
 
+    /**
+     * Adds a context menu containing options related to notes.
+     */
     private addNoteContextMenu(rawX: number, rawY: number) : void {
         const menuItems = [
             {
@@ -896,6 +914,11 @@ export default class PianoRoll {
         this.contextMenuLayer.addContextMenu({ rawX, rawY, menuItems });
     }
 
+    /**
+     * Takes a Konva event object and returns an accurate x and y coordinate for the event regardless of
+     * whether it is a pointer or touch event. Also provides metadata such as the target and whether it is
+     * a touch event. 
+     */
     private extractInfoFromEventObject(e: KonvaEvent) : {
         isTouchEvent : boolean,
         target: any,
@@ -1057,48 +1080,64 @@ export default class PianoRoll {
             const id = velocityRect.getAttr('id');
             this.addNoteToAudioEngine(id);
         });
-        //this.serializeState();
         this.addToHistory();
     }
 
-    private humanizeNoteVelocities(velocityMarkerElements: Konva.Rect[], range: number = 0.1) : void {
-        velocityMarkerElements.forEach(velocityElement => {
-            const { velocity, id } = velocityElement.attrs;
-            // Ensure the the velocity value that we randomize is at least `range` distance
-            // from the highest legal value (1) and the lowest legal value (0).
-            const safeVelocityValue = clamp(
-                velocity,
-                range,
-                1 - range
-            );
-            const newVelocityValue = safeVelocityValue + (Math.random() * range * 2) - range;
-            this.velocityLayer.updateVelocityMarkersHeight([ velocityElement ], newVelocityValue);
-            this.addNoteToAudioEngine(id);
-        });
-        //this.serializeState();
-        this.addToHistory();
-    }
-
+    /**
+     * If there are currently selected notes this method will humanize their velocities by 
+     * increasing or decreasing each one by a random amount. The random amount cannot exceed
+     * 0.1, which is 10% of the range that note velocities can occupy. This method updates the
+     * velocity markers on the canvas as required, then updates the audio engine and finally adds
+     * a new entry to the history stack once all note velocities have been updated. 
+     */
     private humanizeSelection() : void {
         const allVelocityMarkers = this.velocityMarkerCache.retrieveAll();
         const selectedMarkers = allVelocityMarkers.filter(el => this.noteSelection.has(el));
-        this.humanizeNoteVelocities(selectedMarkers, 0.1);
+        //this.humanizeNoteVelocities(selectedMarkers, 0.1);
+        if (selectedMarkers.length === 0) {
+            return;
+        }
+        const variationAmount = 0.1;
+        selectedMarkers.forEach(velocityElement => {
+            const { velocity, id } = velocityElement.attrs;
+            // Ensure the the velocity value that we randomize is at least `variationAmount` distance
+            // from the highest legal value (1) and the lowest legal value (0).
+            const safeVelocityValue = clamp(
+                velocity,
+                variationAmount,
+                1 - variationAmount
+            );
+            const newVelocityValue = safeVelocityValue + (Math.random() * variationAmount * 2) - variationAmount;
+            this.velocityLayer.updateVelocityMarkersHeight([ velocityElement ], newVelocityValue);
+            this.addNoteToAudioEngine(id);
+        });
+        this.addToHistory();
     }
 
+    /**
+     * If there are currently selected notes this method transforms the velocities of all the inner
+     * notes according to a function whose domain is derived from the time of the first and last notes,
+     * and range is determined by velocity of the first and last notes. The exact velocity for a given
+     * note is determined by its position within the domain and the easing mode that is currently active.
+     * As an example if the first note in the selection has a velocity of 0 and the last note a velocity of 1,
+     * and the easing mode is linear, a note halfway between the two will have a velocity of 0.5, a note
+     * three quarters of the way will have a velocity of 0.75, etc.
+     * 
+     * This method updates the velocity markers on the canvas as well as updating the audio engine, and once
+     * all notes have been updated it adds a new entry to the history stack. 
+     */
     private transformSelection(easingMode: EasingModes = EasingModes.linear) : void {
         const allVelocityMarkers = this.velocityMarkerCache.retrieveAll();
         const selectedMarkers = allVelocityMarkers.filter(el => this.noteSelection.has(el));
-        this.transformNoteVelocities(selectedMarkers, easingMode);
-    }
-
-    private transformNoteVelocities(velocityMarkerElements: Konva.Rect, easingMode: EasingModes) : void {
-        
+        if (selectedMarkers.length === 0) {
+            return;
+        }
         let originX;
         let terminalX;
         let originVelocity;
         let terminalVelocity;
 
-        velocityMarkerElements.forEach(el => {
+        selectedMarkers.forEach(el => {
             if (originX === undefined || el.attrs.x < originX) {
                 originX = el.attrs.x;
                 originVelocity = el.attrs.velocity;
@@ -1122,13 +1161,12 @@ export default class PianoRoll {
             adjustForFnRange
         );
 
-        velocityMarkerElements.forEach(velocityElement => {
+        selectedMarkers.forEach(velocityElement => {
             const { x, id } = velocityElement.attrs;
             const newVelocityValue = transformFn(x);
             this.velocityLayer.updateVelocityMarkersHeight([ velocityElement ], newVelocityValue);
             this.addNoteToAudioEngine(id);
         });
-        //this.serializeState();
         this.addToHistory();
     }
 
@@ -1254,11 +1292,11 @@ export default class PianoRoll {
         this.noteLayer.updateNotesAttributeCaches(selectedNoteElements);
         this.velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
         selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
-        //this.serializeState();
         this.addToHistory();
     }
 
     private handleAdjustNotePositionInteractionEnd(e: KonvaEvent) : void {
+        this.dragMode = null;
         if (!this.mouseStateManager.hasTravelled) {
             const { target } = e;
             const isCurrentlySelected = this.noteSelection.has(target);
@@ -1281,25 +1319,31 @@ export default class PianoRoll {
         this.noteLayer.updateNotesAttributeCaches(selectedNoteElements);
         this.velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
         selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
-        //this.serializeState();
-        this.addToHistory();
-        this.dragMode = null;
+        if (this.mouseStateManager.hasTravelled) {
+            this.addToHistory();
+        }
     }
 
     private handleAdjustSelectionInteractionEnd(e: KonvaEvent) : void {
         this.noteLayer.clearSelectionMarquee();
         this.dragMode = null;
-        //this.serializeState();
     }
 
     private handleAdjustSelectionFromVelocityInteractionEnd(e: KonvaEvent) : void {
         this.velocityLayer.clearSelectionMarquee();
         this.dragMode = null;
-        this.serializeState();
     }
 
     private handleAdjustVelocityAreaHeightInteractionEnd(e: KonvaEvent) : void {
         this.dragMode = null;
+    }
+
+    private forceToState(state: SerializedSectionState) : void {
+        const noteElements = this.noteLayer.forceToState(state);
+        const velocityMarkerElements = this.velocityLayer.forceToState(state);
+        this.noteCache.forceToState(noteElements);
+        this.velocityMarkerCache.forceToState(velocityMarkerElements);
+        this.noteSelection.forceToState([]);
     }
 
 }
