@@ -153,7 +153,7 @@ export default class PianoRoll {
             initialNoteDuration,
             numBars
         );
-        this.audioReconciler = new AudioReconciler(this.conversionManager, section);
+        this.audioReconciler = new AudioReconciler(this.conversionManager, this.section);
         this.noteSelection = new NoteSelection();
         this.clipboard = new Clipboard(this.conversionManager);
         // Instantiate canvas layer related classes
@@ -163,7 +163,7 @@ export default class PianoRoll {
         this.noteLayer = new NoteLayer(this.conversionManager, this.primaryBackingLayer);
         this.velocityLayer = new VelocityLayer(this.conversionManager, this.primaryBackingLayer);
         this.transportLayer = new TransportLayer(this.conversionManager, this.primaryBackingLayer);
-        this.seekerLineLayer = new SeekerLineLayer(this.conversionManager);
+        this.seekerLineLayer = new SeekerLineLayer(this.conversionManager, this.section);
         this.pianoKeyLayer = new PianoKeyLayer(
             this.conversionManager, 
             this.secondaryBackingLayer,
@@ -954,7 +954,8 @@ export default class PianoRoll {
                 rawX - this.scrollManager.x
             );
             const positionAsTicks = this.conversionManager.convertPxToTicks(roundedX);
-            this.playbackFromTicks = positionAsTicks;
+            const sectionStartAsTicks = Tone.Ticks(this.section.start).toTicks();
+            this.playbackFromTicks = sectionStartAsTicks + positionAsTicks;
             this.transportLayer.repositionPlaybackMarker(positionAsTicks);
         }
     }
@@ -976,8 +977,10 @@ export default class PianoRoll {
 
         if (isTransportAreaClick) {
             const positionAsTicks = this.conversionManager.convertPxToTicks(roundedX);
-            const positionAsBBS = Tone.Ticks(positionAsTicks).toBarsBeatsSixteenths();
-            Tone.Transport.position = positionAsBBS;
+            const sectionStartAsTicks = Tone.Ticks(this.section.start).toTicks();
+            const absolutePositionAsBBS = Tone.Ticks(positionAsTicks + sectionStartAsTicks)
+            .toBarsBeatsSixteenths();
+            Tone.Transport.position = absolutePositionAsBBS;
             this.seekerLineLayer.updateSeekerLinePosition();
             return;
         }
