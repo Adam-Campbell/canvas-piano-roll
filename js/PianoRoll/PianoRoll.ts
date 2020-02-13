@@ -19,6 +19,7 @@ import SeekerLineLayer from './SeekerLineLayer';
 import PianoKeyLayer from './PianoKeyLayer';
 import ScrollbarLayer from './ScrollbarLayer';
 import ContextMenuLayer from './ContextMenuLayer';
+import BackgroundLayer from './BackgroundLayer';
 import { 
     DragModes,
     Tools,
@@ -87,6 +88,7 @@ export default class PianoRoll {
     private contextMenuLayer: ContextMenuLayer;
     private scrollManager: ScrollManager;
     private scrollbarLayer: ScrollbarLayer;
+    private backgroundLayer: BackgroundLayer;
     private emitter: EventEmitter;
     private unsubscribeFns: Function[] = [];
     private section: Section;
@@ -108,6 +110,7 @@ export default class PianoRoll {
         this.stage.add(this.primaryBackingLayer);
         this.stage.add(this.seekerLineLayer.layer);
         this.stage.add(this.secondaryBackingLayer);
+        this.backgroundLayer.init();
         this.gridLayer.init();
         this.noteLayer.init();
         this.velocityLayer.init();
@@ -159,6 +162,7 @@ export default class PianoRoll {
         // Instantiate canvas layer related classes
         this.primaryBackingLayer = new Konva.Layer();
         this.secondaryBackingLayer = new Konva.Layer();
+        this.backgroundLayer = new BackgroundLayer(this.conversionManager, this.primaryBackingLayer);
         this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer, this.emitter);
         this.noteLayer = new NoteLayer(this.conversionManager, this.primaryBackingLayer);
         this.velocityLayer = new VelocityLayer(this.conversionManager, this.primaryBackingLayer);
@@ -298,6 +302,7 @@ export default class PianoRoll {
                 this.scrollManager.y = newYScroll;
             }
         }
+        this.backgroundLayer.redrawOnResize();
         this.velocityLayer.redrawOnVerticalResize();
         this.scrollbarLayer.redrawOnHorizontalResize();
         this.scrollbarLayer.redrawOnVerticalResize();
