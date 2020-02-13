@@ -92,6 +92,10 @@ export default class PianoRoll {
     private emitter: EventEmitter;
     private unsubscribeFns: Function[] = [];
     private section: Section;
+    private interactionXDeltaMax: number;
+    private interactionXDeltaMin: number;
+    private interactionYDeltaMax: number;
+    private interactionYDeltaMin: number;
 
     constructor(eventEmitter: EventEmitter) {
         // Initialize class properties
@@ -951,13 +955,59 @@ export default class PianoRoll {
         }
     }
 
+    /**
+     * Takes the currently selected notes and determines the maximum and minimum x and y deltas that 
+     * they can be moved as a group such that none of the individual notes exit the grid. These 
+     * maximum and minimum deltas are stored as class properties so that they can then be referenced
+     * throughout the rest of the interaction (preventing the boundaries from having to be recalculated
+     * on every `tick` of the interaction update). At the end of the interaction the class properties are
+     * reset to null. 
+     */
+    private calculateDeltaBoundaries() {
+        const selectedNoteIds = this.noteSelection.retrieveAll();
+        const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
+        let totalMaxX = Infinity;
+        let totalMinX = -Infinity;
+        let totalMaxY = Infinity;
+        let totalMinY = -Infinity;
+        selectedNoteElements.forEach(el => {
+            const thisMaxX = this.conversionManager.gridWidth - (el.x() + el.width());
+            if (thisMaxX < totalMaxX) {
+                totalMaxX = thisMaxX;
+            }
+            const thisMinX = -1 * el.x();
+            if (thisMinX > totalMinX) {
+                totalMinX = thisMinX;
+            }
+            const thisMaxY = this.conversionManager.gridHeight - (el.y() + el.height());
+            if (thisMaxY < totalMaxY) {
+                totalMaxY = thisMaxY;
+            }
+            const thisMinY = -1 * el.y();
+            if (thisMinY > totalMinY) {
+                totalMinY = thisMinY;
+            }
+        });
+        this.interactionXDeltaMax = totalMaxX;
+        this.interactionXDeltaMin = totalMinX;
+        this.interactionYDeltaMax = totalMaxY;
+        this.interactionYDeltaMin = totalMinY;
+    }
+
+    private resetDeltaBoundaries() {
+        this.interactionXDeltaMax = null;
+        this.interactionXDeltaMin = null;
+        this.interactionYDeltaMax = null;
+        this.interactionYDeltaMin = null;
+    }
+
     private handleDoubleClick(e: KonvaEvent) : void {
         const { rawX, rawY } = this.extractInfoFromEventObject(e);
         const isTransportAreaClick = rawY <= 30;
-        if (isTransportAreaClick) {
-            const roundedX = this.conversionManager.roundDownToGridCol(
-                rawX - this.scrollManager.x
-            );
+        const xWithScroll = rawX - this.scrollManager.x;
+        const isOutOfBounds = xWithScroll > this.conversionManager.gridWidth;
+        if (isTransportAreaClick && !isOutOfBounds) {
+            const roundedX = this.conversionManager.roundDownToGridCol(xWithScroll);
             const positionAsTicks = this.conversionManager.convertPxToTicks(roundedX);
             const sectionStartAsTicks = Tone.Ticks(this.section.start).toTicks();
             this.playbackFromTicks = sectionStartAsTicks + positionAsTicks;
@@ -975,9 +1025,14 @@ export default class PianoRoll {
         const yWithScroll = rawY - this.scrollManager.y;
         const roundedX = this.conversionManager.roundDownToGridCol(xWithScroll);
         const roundedY = this.conversionManager.roundDownToGridRow(yWithScroll);
-
+        
         const isVelocityAreaClick = this.conversionManager.stageHeight - rawY <= this.conversionManager.velocityAreaHeight + StaticMeasurements.scrollbarWidth;
         const isTransportAreaClick = rawY <= 30;
+        const isOutOfBounds = xWithScroll > this.conversionManager.gridWidth;
+        if (isOutOfBounds) {
+            return;
+        }
+
         this.mouseStateManager.addMouseDownEvent(xWithScroll, yWithScroll);
 
         if (isTransportAreaClick) {
@@ -1004,6 +1059,7 @@ export default class PianoRoll {
                 this.dragMode = DragModes.adjustNoteSize;
                 this.clearSelection();
                 this.addNewNote(roundedX, roundedY); 
+                this.calculateDeltaBoundaries();
             }
         } else if (this.activeTool === Tools.cursor) {
             if (isVelocityAreaClick) {
@@ -1027,8 +1083,10 @@ export default class PianoRoll {
                 this.clearSelection();
                 this.addNoteToSelection(noteElement);
             } 
+            this.calculateDeltaBoundaries();
             this.dragMode = DragModes.adjustNoteSize
         } else {
+            this.calculateDeltaBoundaries();
             this.dragMode = DragModes.adjustNotePosition;
         }
     }
@@ -1206,11 +1264,14 @@ export default class PianoRoll {
         const xWithScroll = rawX - this.scrollManager.x;
         const selectedNoteIds = this.noteSelection.retrieveAll();
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
-        this.noteLayer.updateNoteDurations(
-            this.mouseStateManager.x, 
-            xWithScroll, 
-            selectedNoteElements
-        );
+        const xDelta = xWithScroll - this.mouseStateManager.x;
+        if (xDelta <= this.interactionXDeltaMax) {
+            this.noteLayer.updateNoteDurations(
+                this.mouseStateManager.x, 
+                xWithScroll, 
+                selectedNoteElements
+            );
+        }
     }
 
     private handleAdjustNotePositionInteractionUpdate(e: KonvaEvent) : void {
@@ -1228,8 +1289,18 @@ export default class PianoRoll {
         const selectedNoteIds = this.noteSelection.retrieveAll();
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
         const selectedVelocityMarkerElements = this.velocityMarkerCache.retrieve(selectedNoteIds);
-        this.noteLayer.repositionNotes(xDelta, yDelta, selectedNoteElements);
-        this.velocityLayer.repositionVelocityMarkers(xDelta, selectedVelocityMarkerElements);
+        const safeXDelta = clamp(
+            xDelta,
+            this.interactionXDeltaMin,
+            this.interactionXDeltaMax
+        );
+        const safeYDelta = clamp(
+            yDelta,
+            this.interactionYDeltaMin,
+            this.interactionYDeltaMax
+        );
+        this.noteLayer.repositionNotes(safeXDelta, safeYDelta, selectedNoteElements);
+        this.velocityLayer.repositionVelocityMarkers(safeXDelta, selectedVelocityMarkerElements);
     }
 
     private handleAdjustSelectionInteractionUpdate(e: KonvaEvent) : void {
@@ -1294,6 +1365,7 @@ export default class PianoRoll {
 
     private handleAdjustNoteSizeInteractionEnd(e: KonvaEvent) : void {
         this.dragMode = null;
+        this.resetDeltaBoundaries();
         const selectedNoteIds = this.noteSelection.retrieveAll();
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
         const selectedVelocityMarkerElements = this.velocityMarkerCache.retrieve(selectedNoteIds);
@@ -1305,6 +1377,7 @@ export default class PianoRoll {
 
     private handleAdjustNotePositionInteractionEnd(e: KonvaEvent) : void {
         this.dragMode = null;
+        this.resetDeltaBoundaries();
         if (!this.mouseStateManager.hasTravelled) {
             const { target } = e;
             const isCurrentlySelected = this.noteSelection.has(target);

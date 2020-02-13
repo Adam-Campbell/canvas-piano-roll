@@ -78,6 +78,10 @@ export default class Arranger {
     private scrollbarLayer: ScrollbarLayer;
     private channelInfoLayer: ChannelInfoLayer;
     private playbackFromTicks: number;
+    private interactionXDeltaMax: number;
+    private interactionXDeltaMin: number;
+    private interactionYDeltaMax: number;
+    private interactionYDeltaMin: number;
     
 
     constructor(eventEmitter: EventEmitter) {
@@ -557,15 +561,60 @@ export default class Arranger {
         }
     }
 
+    /**
+     * Takes the currently selected notes and determines the maximum and minimum x and y deltas that 
+     * they can be moved as a group such that none of the individual notes exit the grid. These 
+     * maximum and minimum deltas are stored as class properties so that they can then be referenced
+     * throughout the rest of the interaction (preventing the boundaries from having to be recalculated
+     * on every `tick` of the interaction update). At the end of the interaction the class properties are
+     * reset to null. 
+     */
+    private calculateDeltaBoundaries() {
+        const selectedSectionIds = this.sectionSelection.retrieveAll();
+        const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
+        let totalMaxX = Infinity;
+        let totalMinX = -Infinity;
+        let totalMaxY = Infinity;
+        let totalMinY = -Infinity;
+        selectedSectionElements.forEach(el => {
+            const thisMaxX = this.conversionManager.gridWidth - (el.x() + el.width());
+            if (thisMaxX < totalMaxX) {
+                totalMaxX = thisMaxX;
+            }
+            const thisMinX = -1 * el.x();
+            if (thisMinX > totalMinX) {
+                totalMinX = thisMinX;
+            }
+            const thisMaxY = this.conversionManager.gridHeight - (el.y() + el.height());
+            if (thisMaxY < totalMaxY) {
+                totalMaxY = thisMaxY;
+            }
+            const thisMinY = -1 * el.y();
+            if (thisMinY > totalMinY) {
+                totalMinY = thisMinY;
+            }
+        });
+        this.interactionXDeltaMax = totalMaxX;
+        this.interactionXDeltaMin = totalMinX;
+        this.interactionYDeltaMax = totalMaxY;
+        this.interactionYDeltaMin = totalMinY;
+    }
+
+    private resetDeltaBoundaries() {
+        this.interactionXDeltaMax = null;
+        this.interactionXDeltaMin = null;
+        this.interactionYDeltaMax = null;
+        this.interactionYDeltaMin = null;
+    }
+
     handleDoubleClick(e: KonvaEvent) : void {
         const { rawX, rawY, target } = this.extractInfoFromEventObject(e);
         const isTransportAreaInteraction = rawY <= 30;
         const isSectionInteraction = target.name() === 'SECTION';
-
-        if (isTransportAreaInteraction) {
-            const roundedX = this.conversionManager.roundDownToGridCol(
-                rawX - this.scrollManager.x
-            );
+        const xWithScroll = rawX - this.scrollManager.x;
+        const isOutOfBounds = xWithScroll > this.conversionManager.gridWidth;
+        if (isTransportAreaInteraction && !isOutOfBounds) {
+            const roundedX = this.conversionManager.roundDownToGridCol(xWithScroll);
             const positionAsTicks = this.conversionManager.convertPxToTicks(roundedX);
             this.playbackFromTicks = positionAsTicks;
             this.transportLayer.repositionPlaybackMarker(positionAsTicks);
@@ -584,6 +633,12 @@ export default class Arranger {
         const yWithScroll = rawY - this.scrollManager.y;
         const roundedX = this.conversionManager.roundDownToGridCol(xWithScroll);
         const roundedY = this.conversionManager.roundDownToGridRow(yWithScroll);
+
+        const isOutOfBounds = xWithScroll > this.conversionManager.gridWidth;
+        if (isOutOfBounds) {
+            return;
+        }
+
         this.mouseStateManager.addMouseDownEvent(xWithScroll, yWithScroll);
         
         const isBelowGrid = yWithScroll > this.conversionManager.gridHeight;
@@ -604,6 +659,7 @@ export default class Arranger {
             this.dragMode = ArrangerDragModes.adjustSectionLength;
             this.clearSelection();
             this.addNewSection(roundedX, roundedY, genId());
+            this.calculateDeltaBoundaries();
 
         } else if (this.activeTool === Tools.cursor) {
             const targetIsSection = target.name() === 'SECTION';
@@ -629,8 +685,10 @@ export default class Arranger {
                 this.clearSelection();
                 this.addSectionToSelection(sectionElement);
             }
+            this.calculateDeltaBoundaries();
             this.dragMode = ArrangerDragModes.adjustSectionLength
         } else {
+            this.calculateDeltaBoundaries();
             this.dragMode = ArrangerDragModes.adjustSectionPosition;
         }
     }
@@ -655,11 +713,14 @@ export default class Arranger {
         const xWithScroll = rawX - this.scrollManager.x;
         const selectedSectionIds = this.sectionSelection.retrieveAll();
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
-        this.sectionLayer.updateSectionDurations(
-            this.mouseStateManager.x, 
-            xWithScroll, 
-            selectedSectionElements
-        );
+        const xDelta = xWithScroll - this.mouseStateManager.x;
+        if (xDelta < this.interactionXDeltaMax) {
+            this.sectionLayer.updateSectionDurations(
+                this.mouseStateManager.x, 
+                xWithScroll, 
+                selectedSectionElements
+            );
+        }
     }
 
     handleAdjustSectionPositionInteractionUpdate(e: KonvaEvent) : void {
@@ -674,9 +735,19 @@ export default class Arranger {
         const yDelta = this.conversionManager.roundToGridRow(
             yWithScroll - this.mouseStateManager.y
         );
+        const safeXDelta = clamp(
+            xDelta, 
+            this.interactionXDeltaMin,
+            this.interactionXDeltaMax
+        );
+        const safeYDelta = clamp(
+            yDelta,
+            this.interactionYDeltaMin,
+            this.interactionYDeltaMax
+        );
         const selectedSectionIds = this.sectionSelection.retrieveAll();
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
-        this.sectionLayer.repositionSections(xDelta, yDelta, selectedSectionElements);
+        this.sectionLayer.repositionSections(safeXDelta, safeYDelta, selectedSectionElements);
     }
 
     handleAdjustSelectionInteractionUpdate(e: KonvaEvent) : void {
@@ -710,6 +781,7 @@ export default class Arranger {
 
     handleAdjustSectionLengthInteractionEnd(e: KonvaEvent) : void {
         this.dragMode = null;
+        this.resetDeltaBoundaries();
         const selectedSectionIds = this.sectionSelection.retrieveAll();
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         this.sectionLayer.updateSectionsAttributeCaches(selectedSectionElements);
@@ -720,6 +792,7 @@ export default class Arranger {
 
     handleAdjustSectionPositionInteractionEnd(e: KonvaEvent) : void {
         this.dragMode = null;
+        this.resetDeltaBoundaries();
         if (!this.mouseStateManager.hasTravelled) {
             const { target } = e;
             const isCurrentlySelected = this.sectionSelection.has(target);
