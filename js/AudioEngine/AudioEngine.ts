@@ -66,14 +66,17 @@ export default class AudioEngine implements AudioEngineComponent {
 
     getSectionContext(sectionId: string) : {
         section: Section,
+        sectionTitle: string,
         livePlayInstrument: any
     } | null {
         const channel = this.channels.find(c => c.sectionCache.hasOwnProperty(sectionId));
         if (!channel) {
             return null;
         }
+        const section = channel.sectionCache[sectionId]
         return {
-            section: channel.sectionCache[sectionId],
+            section,
+            sectionTitle: `${channel.name} -- ${section.start}`,
             livePlayInstrument: channel.livePlayInstrument 
         }
     }
