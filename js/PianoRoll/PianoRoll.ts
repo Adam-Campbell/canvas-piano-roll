@@ -954,10 +954,10 @@ export default class PianoRoll {
     private handleDoubleClick(e: KonvaEvent) : void {
         const { rawX, rawY } = this.extractInfoFromEventObject(e);
         const isTransportAreaClick = rawY <= 30;
-        if (isTransportAreaClick) {
-            const roundedX = this.conversionManager.roundDownToGridCol(
-                rawX - this.scrollManager.x
-            );
+        const xWithScroll = rawX - this.scrollManager.x;
+        const isOutOfBounds = xWithScroll > this.conversionManager.gridWidth;
+        if (isTransportAreaClick && !isOutOfBounds) {
+            const roundedX = this.conversionManager.roundDownToGridCol(xWithScroll);
             const positionAsTicks = this.conversionManager.convertPxToTicks(roundedX);
             const sectionStartAsTicks = Tone.Ticks(this.section.start).toTicks();
             this.playbackFromTicks = sectionStartAsTicks + positionAsTicks;
@@ -975,9 +975,14 @@ export default class PianoRoll {
         const yWithScroll = rawY - this.scrollManager.y;
         const roundedX = this.conversionManager.roundDownToGridCol(xWithScroll);
         const roundedY = this.conversionManager.roundDownToGridRow(yWithScroll);
-
+        
         const isVelocityAreaClick = this.conversionManager.stageHeight - rawY <= this.conversionManager.velocityAreaHeight + StaticMeasurements.scrollbarWidth;
         const isTransportAreaClick = rawY <= 30;
+        const isOutOfBounds = xWithScroll > this.conversionManager.gridWidth;
+        if (isOutOfBounds) {
+            return;
+        }
+
         this.mouseStateManager.addMouseDownEvent(xWithScroll, yWithScroll);
 
         if (isTransportAreaClick) {
