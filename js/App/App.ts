@@ -21,7 +21,17 @@ const windowsData = [
     { id: '1', title: 'Wubby Bass' },
     { id: '2', title: 'Ethereal Pads' },
     { id: '3', title: 'Electro Drums' },
-    { id: '4', title: 'Arps' }
+    { id: '4', title: 'Arps' },
+    { id: '5', title: 'Lead Synth' },
+    { id: '6', title: 'Wubby Bass' },
+    { id: '7', title: 'Ethereal Pads' },
+    { id: '8', title: 'Electro Drums' },
+    { id: '9', title: 'Arps' },
+    { id: '10', title: 'Lead Synth' },
+    { id: '11', title: 'Wubby Bass' },
+    { id: '12', title: 'Ethereal Pads' },
+    { id: '13', title: 'Electro Drums' },
+    { id: '14', title: 'Arps' }
 ];
 
 let idx = 0;
