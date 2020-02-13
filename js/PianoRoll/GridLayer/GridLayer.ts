@@ -19,6 +19,7 @@ export default class GridLayer {
     
     private conversionManager: ConversionManager;
     private layer: Konva.Layer;
+    private background: Konva.Rect;
     private gridContainer: Konva.Group;
     private scaleHighlightsSubContainer: Konva.Group;
     private gridLinesSubContainer: Konva.Group;
@@ -113,14 +114,6 @@ export default class GridLayer {
 
     private drawGrid() {
         this.gridContainer.destroyChildren();
-        const background = new Konva.Rect({
-            x: 0,
-            y: 0,
-            width: this.conversionManager.gridWidth,
-            height: this.conversionManager.gridHeight,
-            fill: Colours.grayscale[1]
-        });
-        background.moveTo(this.gridContainer);
         this.scaleHighlightsSubContainer = new Konva.Group();
         this.scaleHighlightsSubContainer.moveTo(this.gridContainer);
         if (this.shouldDisplayScaleHighlighting) {
@@ -135,5 +128,7 @@ export default class GridLayer {
     redrawOnZoomAdjustment() {
         this.drawGrid();
     }
+
+    
 
 }

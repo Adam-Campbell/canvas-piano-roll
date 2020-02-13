@@ -41,6 +41,7 @@ export default class TransportLayer {
             x: 0,
             y: 0,
             height: 30,
+            //width: Math.max(this.conversionManager.gridWidth, this.conversionManager.stageWidth),
             width: this.conversionManager.gridWidth,
             fill: Colours.grayscale[2]
         });
@@ -51,6 +52,7 @@ export default class TransportLayer {
         const border = new Konva.Rect({
             x: 0,
             y: 27,
+            //width: Math.max(this.conversionManager.gridWidth, this.conversionManager.stageWidth),
             width: this.conversionManager.gridWidth,
             height: 3,
             fill: Colours.grayscale[7]
