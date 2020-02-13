@@ -97,11 +97,11 @@ export default class App {
         }
     }
 
-    addWindow = (childClass: any, childContext: any) => {
-        const data = windowsData[idx++];
+    addWindow = (title: string, id: string, childClass: any, childContext: any) => {
+        //const data = windowsData[idx++];
         const newWindow = new Window({
-            id: data.id,
-            title: data.title,
+            id,
+            title,
             eventEmitter: this.eventEmitter,
             initialZIndex: this.activeWindows.length,
             childClass,
@@ -115,15 +115,19 @@ export default class App {
     }
 
     addArrangerWindow = () => {
-        this.addWindow(Arranger, {
+        this.addWindow('Arranger', '-1', Arranger, {
             audioEngine: this.audioEngine
         });
     }
 
     addPianoRollWindow = (sectionId: string) => {
         console.log(sectionId)
-        const { section, livePlayInstrument } = this.audioEngine.getSectionContext(sectionId);
-        this.addWindow(PianoRoll, {
+        const { 
+            section, 
+            sectionTitle, 
+            livePlayInstrument 
+        } = this.audioEngine.getSectionContext(sectionId);
+        this.addWindow(sectionTitle, section.id, PianoRoll, {
             section,
             livePlayInstrument,
             numBars: section.numBars,
