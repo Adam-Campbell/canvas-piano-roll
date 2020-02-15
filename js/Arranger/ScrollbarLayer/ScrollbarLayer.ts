@@ -175,7 +175,7 @@ export default class ScrollbarLayer {
             // within the scroll range, so here we can simply map the position in the scroll range to a position
             // in the thumb movement range to get the new thumb position.
             const scrollPositionAsDecimal = (this.scrollManager.y - this.conversionManager.seekerAreaHeight) * -1 / this.verticalScrollRange;
-            const newThumbPosition = (scrollPositionAsDecimal * this.verticalThumbMovementRange) +StaticMeasurements.scrollbarGutter;
+            const newThumbPosition = (scrollPositionAsDecimal * this.verticalThumbMovementRange) + StaticMeasurements.scrollbarGutter;
             this.verticalThumb.y(newThumbPosition);
             this.verticalThumb.show();
         } else {

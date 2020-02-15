@@ -290,27 +290,37 @@ export default class PianoRoll {
         if (containerWidth !== this.conversionManager.stageWidth) {
             this.conversionManager.stageWidth = containerWidth;
             this.stage.width(containerWidth);
-            const willExposeOutOfBounds = this.scrollManager.x * -1 > this.conversionManager.gridWidth + StaticMeasurements.scrollbarWidth - containerWidth;
-            if (willExposeOutOfBounds) {
-                const newXScroll = (-1 * (this.scrollbarLayer.horizontalScrollRange)) + StaticMeasurements.pianoKeyWidth;
-                this.scrollManager.x = newXScroll;
+            if (!this.scrollbarLayer.shouldAllowHorizontalScrolling) {
+                if (this.scrollManager.x !== StaticMeasurements.pianoKeyWidth) {
+                    this.scrollManager.x = StaticMeasurements.pianoKeyWidth;
+                }
+            } else {
+                const endOfScrollRange = (this.scrollbarLayer.horizontalScrollRange * -1) + StaticMeasurements.pianoKeyWidth;
+                if (this.scrollManager.x < endOfScrollRange) {
+                    this.scrollManager.x = endOfScrollRange;
+                }
             }
-            
         }
         if (containerHeight !== this.conversionManager.stageHeight) {
             this.conversionManager.stageHeight = containerHeight;
             this.stage.height(containerHeight);
-            const willExposeOutOfBounds = this.scrollManager.y * -1 >= this.scrollbarLayer.verticalScrollRange;
-            if (willExposeOutOfBounds) {
-                const newYScroll = (-1 * this.scrollbarLayer.verticalScrollRange) + this.conversionManager.seekerAreaHeight;
-                this.scrollManager.y = newYScroll;
+            if (!this.scrollbarLayer.shouldAllowVerticalScrolling) {
+                if (this.scrollManager.y !== this.conversionManager.seekerAreaHeight) {
+                    this.scrollManager.y = this.conversionManager.seekerAreaHeight;
+                }
+            } else {
+                const endOfScrollRange = (this.scrollbarLayer.verticalScrollRange * -1) + this.conversionManager.seekerAreaHeight;
+                if (this.scrollManager.y < endOfScrollRange) {
+                    this.scrollManager.y = endOfScrollRange;
+                }
             }
         }
         this.backgroundLayer.redrawOnResize();
         this.velocityLayer.redrawOnVerticalResize();
-        this.scrollbarLayer.redrawOnHorizontalResize();
-        this.scrollbarLayer.redrawOnVerticalResize();
         this.pianoKeyLayer.redrawOnVerticalResize();
+        this.scrollbarLayer.redrawOnResize();
+        this.primaryBackingLayer.draw();
+        this.secondaryBackingLayer.draw();
     }
 
     /**
@@ -328,11 +338,19 @@ export default class PianoRoll {
         if (currentZoomIdx !== newZoomIdx) {
             const newZoomLevel = zoomLevels[newZoomIdx];
             this.conversionManager.tickToPxRatio = newZoomLevel;
+            if (
+                !this.scrollbarLayer.shouldAllowHorizontalScrolling &&
+                this.scrollManager.x !== StaticMeasurements.pianoKeyWidth
+            ) {
+                this.scrollManager.x = StaticMeasurements.pianoKeyWidth;
+            }
+            
             this.gridLayer.redrawOnZoomAdjustment();
             this.noteLayer.redrawOnZoomAdjustment(isZoomingIn);
             this.velocityLayer.redrawOnZoomAdjustment(isZoomingIn);
             this.transportLayer.redrawOnZoomAdjustment(isZoomingIn);
             this.seekerLineLayer.redrawOnZoomAdjustment();
+            this.scrollbarLayer.syncHorizontalThumb();
         }
     }
 
@@ -368,11 +386,11 @@ export default class PianoRoll {
             if (isAtLeftEdge) {
                 const scrollLimit = StaticMeasurements.pianoKeyWidth;
                 this.scrollManager.x = Math.min(scrollLimit, this.scrollManager.x + 100);
-                this.scrollbarLayer.syncHorizontalThumbToScrollPosition();
+                this.scrollbarLayer.syncHorizontalThumb();
             } else if (isAtRightEdge) {
                 const scrollLimit = -1 * (this.conversionManager.gridWidth - this.conversionManager.stageWidth + StaticMeasurements.scrollbarWidth);
                 this.scrollManager.x = Math.max(scrollLimit, this.scrollManager.x - 100);
-                this.scrollbarLayer.syncHorizontalThumbToScrollPosition();
+                this.scrollbarLayer.syncHorizontalThumb();
             }
         }
 
@@ -382,14 +400,14 @@ export default class PianoRoll {
             if (isAtTopEdge) {
                 const scrollLimit = this.conversionManager.seekerAreaHeight;
                 this.scrollManager.y = Math.min(scrollLimit, this.scrollManager.y + 100);
-                this.scrollbarLayer.syncVerticalThumbToScrollPosition();
+                this.scrollbarLayer.syncVerticalThumb();
             } else if (isAtBottomEdge) {
                 const scrollLimit = -1 * (
                     this.conversionManager.gridHeight - this.conversionManager.stageHeight + 
                     StaticMeasurements.scrollbarWidth + this.conversionManager.velocityAreaHeight
                 );
                 this.scrollManager.y = Math.max(scrollLimit, this.scrollManager.y - 100);
-                this.scrollbarLayer.syncVerticalThumbToScrollPosition();
+                this.scrollbarLayer.syncVerticalThumb();
             }
         }
     }
