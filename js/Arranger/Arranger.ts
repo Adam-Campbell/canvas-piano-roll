@@ -15,6 +15,7 @@ import AudioEngine from '../AudioEngine';
 import ScrollManager from './ScrollManager';
 import ScrollbarLayer from './ScrollbarLayer';
 import ChannelInfoLayer from './ChannelInfoLayer';
+import BackgroundLayer from './BackgroundLayer';
 import {
     ArrangerDragModes,
     Tools,
@@ -77,6 +78,7 @@ export default class Arranger {
     private scrollManager: ScrollManager;
     private scrollbarLayer: ScrollbarLayer;
     private channelInfoLayer: ChannelInfoLayer;
+    private backgroundLayer: BackgroundLayer;
     private playbackFromTicks: number;
     private interactionXDeltaMax: number;
     private interactionXDeltaMin: number;
@@ -90,6 +92,7 @@ export default class Arranger {
         this.emitter = eventEmitter;
         this.playbackFromTicks = 0;
         window.toneRef = Tone;
+        window.arranger = this;
     }
 
     init(arrangerOptions: ArrangerOptions) {
@@ -98,6 +101,7 @@ export default class Arranger {
         this.stage.add(this.seekerLineLayer.layer);
         this.stage.add(this.secondaryBackingLayer);
         const initialState = this.audioEngine.serializeState();
+        this.backgroundLayer.init();
         this.gridLayer.init();
         this.sectionLayer.init(initialState);
         this.transportLayer.init();
@@ -127,7 +131,7 @@ export default class Arranger {
             barWidth: 48,
             barHeight: 40,
             numBars: 64,
-            numChannels: 4,
+            numChannels: 6,
             tickToPxRatio: 0.0625
         });
         this.audioReconciler = new AudioReconciler(this.conversionManager, this.audioEngine);
@@ -138,6 +142,7 @@ export default class Arranger {
         this.clipboard = new Clipboard(this.conversionManager, this.audioEngine);
         this.primaryBackingLayer = new Konva.Layer();
         this.secondaryBackingLayer = new Konva.Layer();
+        this.backgroundLayer = new BackgroundLayer(this.conversionManager, this.primaryBackingLayer);
         this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer);
         this.sectionLayer = new SectionLayer(this.conversionManager, this.primaryBackingLayer);
         this.transportLayer = new TransportLayer(this.conversionManager, this.primaryBackingLayer);
@@ -227,25 +232,33 @@ export default class Arranger {
         if (containerWidth !== this.conversionManager.stageWidth) {
             this.conversionManager.stageWidth = containerWidth;
             this.stage.width(containerWidth);
-            const willExposeOutOfBounds = this.scrollManager.x * -1 > this.conversionManager.gridWidth + StaticMeasurements.scrollbarWidth - containerWidth;
-            if (this.scrollbarLayer.shouldAllowHorizontalScrolling && willExposeOutOfBounds) {
-                // const newXScroll = (-1 * (this.scrollbarLayer.horizontalScrollRange)) + StaticMeasurements.pianoKeyWidth;
-                const newXScroll = (-1 * (this.scrollbarLayer.horizontalScrollRange)) + StaticMeasurements.channelInfoColWidth;
-                this.scrollManager.x = newXScroll;
-            }  
+            if (!this.scrollbarLayer.shouldAllowHorizontalScrolling) {
+                if (this.scrollManager.x !== StaticMeasurements.channelInfoColWidth) {
+                    this.scrollManager.x = StaticMeasurements.channelInfoColWidth;
+                }
+            } else {
+                const endOfScrollRange = (this.scrollbarLayer.horizontalScrollRange * -1) + StaticMeasurements.channelInfoColWidth;
+                if (this.scrollManager.x < endOfScrollRange) {
+                    this.scrollManager.x = endOfScrollRange;
+                }
+            }
         }
-
         if (containerHeight !== this.conversionManager.stageHeight) {
             this.conversionManager.stageHeight = containerHeight;
             this.stage.height(containerHeight);
-            const willExposeOutOfBounds = this.scrollManager.y * -1 >= this.scrollbarLayer.verticalScrollRange;
-            if (this.scrollbarLayer.shouldAllowVerticalScrolling && willExposeOutOfBounds) {
-                const newYScroll = (-1 * this.scrollbarLayer.verticalScrollRange) + this.conversionManager.seekerAreaHeight;
-                this.scrollManager.y = newYScroll;
+            if (!this.scrollbarLayer.shouldAllowVerticalScrolling) {
+                if (this.scrollManager.y !== this.conversionManager.seekerAreaHeight) {
+                    this.scrollManager.y = this.conversionManager.seekerAreaHeight;
+                }
+            } else {
+                const endOfScrollRange = (this.scrollbarLayer.verticalScrollRange * -1) + this.conversionManager.seekerAreaHeight;
+                if (this.scrollManager.y < endOfScrollRange) {
+                    this.scrollManager.y = endOfScrollRange;
+                }
             }
         }
         
-        this.gridLayer.redrawOnResize();
+        this.backgroundLayer.redrawOnResize();
         this.scrollbarLayer.redrawOnResize();
         this.channelInfoLayer.redrawOnResize();
         this.seekerLineLayer.redrawOnResize();
@@ -260,7 +273,6 @@ export default class Arranger {
             lag behind the window slightly. Draw does seem to be slightly more performance intensive still,
             however this will probably be preferrable to the canvas lag. 
         */
-        //this.primaryBackingLayer.draw();
     }
 
     /**
@@ -281,11 +293,33 @@ export default class Arranger {
         );
         if (currentZoomIdx !== newZoomIdx) {
             const newZoomLevel = zoomLevels[newZoomIdx];
+            // Calculate the current scroll values position, as a decimal, within the total scrolling
+            // range. If the scrolling range is 0 (no scrolling available because the entire width of
+            // the window is visible) then just use the value 0.
+            const startScrollPosInRange = (this.scrollManager.x - StaticMeasurements.pianoKeyWidth) * -1;
+            const startScrollPosAsDec = this.scrollbarLayer.horizontalScrollRange > 0 ? 
+                startScrollPosInRange / this.scrollbarLayer.horizontalScrollRange :
+                0;
+            // Updating the tickToPxRatio value in conversionManager will effect the way various things
+            // are calculated. 
             this.conversionManager.tickToPxRatio = newZoomLevel;
+            // With the tickToPxRatio updated, recalculate the scroll value, clamping it between the
+            // maximum and minimum legal values to ensure that it is valid, then update scrollManager
+            // with the new value. 
+            const newScrollPosInRange = startScrollPosAsDec * this.scrollbarLayer.horizontalScrollRange;
+            const newScrollValue = (newScrollPosInRange * -1) + StaticMeasurements.pianoKeyWidth;
+            const endOfAllowedScrollValues = (this.scrollbarLayer.horizontalScrollRange * -1) + StaticMeasurements.pianoKeyWidth;
+            const safeNewScrollValue = clamp(
+                newScrollValue,
+                endOfAllowedScrollValues,
+                StaticMeasurements.pianoKeyWidth 
+            );
+            this.scrollManager.x = safeNewScrollValue;
             this.gridLayer.redrawOnZoomAdjustment();
             this.sectionLayer.redrawOnZoomAdjustment(isZoomingIn);
             this.transportLayer.redrawOnZoomAdjustment(isZoomingIn);
             this.seekerLineLayer.redrawOnZoomAdjustment();
+            this.scrollbarLayer.syncHorizontalThumb();
         }
     }
 

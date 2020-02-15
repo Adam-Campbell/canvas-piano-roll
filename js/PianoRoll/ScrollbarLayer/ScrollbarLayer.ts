@@ -36,6 +36,12 @@ export default class ScrollbarLayer {
         this.horizontalTrack.moveTo(this.layerGroup);
         this.horizontalThumb.moveTo(this.layerGroup);
         this.layer.add(this.layerGroup);
+        if (!this.shouldAllowHorizontalScrolling) {
+            this.horizontalThumb.hide();
+        }
+        if (!this.shouldAllowVerticalScrolling) {
+            this.verticalThumb.hide();
+        }
         this.layer.batchDraw();
         this.registerGroupEventSubscriptions();
     }
@@ -50,19 +56,33 @@ export default class ScrollbarLayer {
     }
 
     get verticalScrollRange() : number {
-        return this.conversionManager.gridHeight - this.conversionManager.stageHeight + StaticMeasurements.scrollbarWidth + this.conversionManager.velocityAreaHeight + this.conversionManager.seekerAreaHeight;
+        return Math.max(
+            this.conversionManager.gridHeight + StaticMeasurements.scrollbarWidth + this.conversionManager.velocityAreaHeight + this.conversionManager.seekerAreaHeight - this.conversionManager.stageHeight,
+            0
+        );
     }
 
     get verticalThumbMovementRange() : number {
         return this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth - StaticMeasurements.scrollbarThumbLength - (StaticMeasurements.scrollbarGutter * 2);
     }
 
+    get shouldAllowVerticalScrolling() : boolean {
+        return this.verticalScrollRange > 0;
+    }
+
     get horizontalScrollRange() : number {
-        return this.conversionManager.gridWidth - this.conversionManager.stageWidth + StaticMeasurements.scrollbarWidth + StaticMeasurements.pianoKeyWidth;
+        return Math.max(
+            this.conversionManager.gridWidth + StaticMeasurements.scrollbarWidth + StaticMeasurements.pianoKeyWidth - this.conversionManager.stageWidth,
+            0
+        );
     }
 
     get horizontalThumbMovementRange() : number {
         return this.conversionManager.stageWidth - StaticMeasurements.scrollbarWidth - StaticMeasurements.scrollbarThumbLength - (StaticMeasurements.scrollbarGutter * 2)
+    }
+
+    get shouldAllowHorizontalScrolling() : boolean {
+        return this.horizontalScrollRange > 0;
     }
 
     private constructVerticalTrack() : Konva.Rect {
@@ -141,46 +161,68 @@ export default class ScrollbarLayer {
         return horizontalThumb;
     }
 
-    redrawOnVerticalResize() : void {
-        // calculate scroll position as decimal and multiply by the total movement range of the 
-        // thumb to get its new position.
-        const scrollPositionAsDecimal = Math.abs(this.scrollManager.y / this.verticalScrollRange);
-        const newThumbY = this.verticalThumbMovementRange * scrollPositionAsDecimal + StaticMeasurements.scrollbarGutter;
-        // Update the thumb with the newly calculate position, and update various other elements
-        // according to the new stage height
-        this.verticalThumb.y(newThumbY);
+    redrawOnVerticalResize() : void { 
+        if (this.shouldAllowVerticalScrolling) {
+            // The main method that calls this one already ensures that the scroll position is a legal value
+            // within the scroll range, so here we can simply map the position in the scroll range to a position
+            // in the thumb movement range to get the new thumb position.
+            const scrollPositionAsDecimal = (this.scrollManager.y - this.conversionManager.seekerAreaHeight) * -1 / this.verticalScrollRange;
+            const newThumbPosition = (scrollPositionAsDecimal * this.verticalThumbMovementRange) + StaticMeasurements.scrollbarGutter;
+            this.verticalThumb.y(newThumbPosition);
+            this.verticalThumb.show();
+        } else {
+            this.verticalThumb.hide();
+        }
         this.horizontalTrack.y(this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth);
         this.horizontalThumb.y(this.conversionManager.stageHeight - 20);
         this.verticalTrack.height(this.conversionManager.stageHeight);
-        this.layer.batchDraw();
-        
     }
 
     redrawOnHorizontalResize() : void {
-        // calculate scroll position as decimal and multiply by the total movement range of the 
-        // thumb to get its new position.
-        const scrollPositionAsDecimal = Math.abs((this.scrollManager.x - StaticMeasurements.pianoKeyWidth) / this.horizontalScrollRange);
-        const newThumbX = this.horizontalThumbMovementRange * scrollPositionAsDecimal + StaticMeasurements.scrollbarGutter;
-        // Update the thumb with the newly calculate position, and update various other elements
-        // according to the new stage height
-        this.horizontalThumb.x(newThumbX);
+        if (this.shouldAllowHorizontalScrolling) {
+            // The main method that calls this one already ensures that the scroll position is a legal value
+            // within the scroll range, so here we can simply map the position in the scroll range to a position
+            // in the thumb movement range to get the new thumb position.
+            const scrollPositionAsDecimal = (this.scrollManager.x - StaticMeasurements.pianoKeyWidth) * -1 / this.horizontalScrollRange;
+            const newThumbPosition = (scrollPositionAsDecimal * this.horizontalThumbMovementRange) + StaticMeasurements.scrollbarGutter;
+            this.horizontalThumb.x(newThumbPosition);
+            this.horizontalThumb.show();
+        } else {
+            this.horizontalThumb.hide();
+        }
+        // In addition to the horizontal thumb, we must also update the position of the vertical track and 
+        // thumb, and the length of the horizontal track. 
         this.horizontalTrack.width(this.conversionManager.stageWidth);
         this.verticalTrack.x(this.conversionManager.stageWidth - StaticMeasurements.scrollbarWidth);
         this.verticalThumb.x(this.conversionManager.stageWidth - 20);
+    }
+
+    redrawOnResize() : void {
+        this.redrawOnHorizontalResize();
+        this.redrawOnVerticalResize();
+    }
+
+    syncHorizontalThumb() : void {
+        if (this.shouldAllowHorizontalScrolling) {
+            const scrollPositionAsDecimal = (this.scrollManager.x - StaticMeasurements.pianoKeyWidth) * -1 / this.horizontalScrollRange;
+            const newThumbPosition = (scrollPositionAsDecimal * this.horizontalThumbMovementRange) + StaticMeasurements.scrollbarGutter;
+            this.horizontalThumb.x(newThumbPosition);
+            this.horizontalThumb.show();
+        } else {
+            this.horizontalThumb.hide();
+        }
         this.layer.batchDraw();
     }
 
-    syncHorizontalThumbToScrollPosition() : void {
-        const scrollPositionAsDecimal = Math.abs((this.scrollManager.x - StaticMeasurements.pianoKeyWidth) / this.horizontalScrollRange);
-        const newThumbX = this.horizontalThumbMovementRange * scrollPositionAsDecimal + StaticMeasurements.scrollbarGutter;
-        this.horizontalThumb.x(newThumbX);
-        this.layer.batchDraw();
-    }
-
-    syncVerticalThumbToScrollPosition() : void {
-        const scrollPositionAsDecimal = Math.abs(this.scrollManager.y / this.verticalScrollRange);
-        const newThumbY = this.verticalThumbMovementRange * scrollPositionAsDecimal + StaticMeasurements.scrollbarGutter;
-        this.verticalThumb.y(newThumbY);
+    syncVerticalThumb() : void {
+        if (this.shouldAllowVerticalScrolling) {
+            const scrollPositionAsDecimal = (this.scrollManager.y - this.conversionManager.seekerAreaHeight) * -1 / this.verticalScrollRange;
+            const newThumbPosition = (scrollPositionAsDecimal * this.verticalThumbMovementRange) + StaticMeasurements.scrollbarGutter;
+            this.verticalThumb.y(newThumbPosition);
+            this.verticalThumb.show();
+        } else {
+            this.verticalThumb.hide();
+        }
         this.layer.batchDraw();
     }
     
