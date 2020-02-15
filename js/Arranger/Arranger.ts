@@ -130,7 +130,7 @@ export default class Arranger {
             stageHeight: initialHeight,
             barWidth: 48,
             barHeight: 40,
-            numBars: 128,
+            numBars: 64,
             numChannels: 6,
             tickToPxRatio: 0.0625
         });
@@ -293,11 +293,33 @@ export default class Arranger {
         );
         if (currentZoomIdx !== newZoomIdx) {
             const newZoomLevel = zoomLevels[newZoomIdx];
+            // Calculate the current scroll values position, as a decimal, within the total scrolling
+            // range. If the scrolling range is 0 (no scrolling available because the entire width of
+            // the window is visible) then just use the value 0.
+            const startScrollPosInRange = (this.scrollManager.x - StaticMeasurements.pianoKeyWidth) * -1;
+            const startScrollPosAsDec = this.scrollbarLayer.horizontalScrollRange > 0 ? 
+                startScrollPosInRange / this.scrollbarLayer.horizontalScrollRange :
+                0;
+            // Updating the tickToPxRatio value in conversionManager will effect the way various things
+            // are calculated. 
             this.conversionManager.tickToPxRatio = newZoomLevel;
+            // With the tickToPxRatio updated, recalculate the scroll value, clamping it between the
+            // maximum and minimum legal values to ensure that it is valid, then update scrollManager
+            // with the new value. 
+            const newScrollPosInRange = startScrollPosAsDec * this.scrollbarLayer.horizontalScrollRange;
+            const newScrollValue = (newScrollPosInRange * -1) + StaticMeasurements.pianoKeyWidth;
+            const endOfAllowedScrollValues = (this.scrollbarLayer.horizontalScrollRange * -1) + StaticMeasurements.pianoKeyWidth;
+            const safeNewScrollValue = clamp(
+                newScrollValue,
+                endOfAllowedScrollValues,
+                StaticMeasurements.pianoKeyWidth 
+            );
+            this.scrollManager.x = safeNewScrollValue;
             this.gridLayer.redrawOnZoomAdjustment();
             this.sectionLayer.redrawOnZoomAdjustment(isZoomingIn);
             this.transportLayer.redrawOnZoomAdjustment(isZoomingIn);
             this.seekerLineLayer.redrawOnZoomAdjustment();
+            this.scrollbarLayer.syncHorizontalThumb();
         }
     }
 

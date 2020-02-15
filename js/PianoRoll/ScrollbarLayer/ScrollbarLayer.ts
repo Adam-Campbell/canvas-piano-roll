@@ -36,6 +36,12 @@ export default class ScrollbarLayer {
         this.horizontalTrack.moveTo(this.layerGroup);
         this.horizontalThumb.moveTo(this.layerGroup);
         this.layer.add(this.layerGroup);
+        if (!this.shouldAllowHorizontalScrolling) {
+            this.horizontalThumb.hide();
+        }
+        if (!this.shouldAllowVerticalScrolling) {
+            this.verticalThumb.hide();
+        }
         this.layer.batchDraw();
         this.registerGroupEventSubscriptions();
     }

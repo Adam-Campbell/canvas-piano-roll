@@ -213,18 +213,27 @@ export default class ScrollbarLayer {
         this.redrawOnVerticalResize();
     }
 
-    syncHorizontalThumbToScrollPosition() : void {
-        //const scrollPositionAsDecimal = Math.abs((this.scrollManager.x - StaticMeasurements.pianoKeyWidth) / this.horizontalScrollRange);
-        const scrollPositionAsDecimal = Math.abs((this.scrollManager.x - StaticMeasurements.channelInfoColWidth) / this.horizontalScrollRange);
-        const newThumbX = this.horizontalThumbMovementRange * scrollPositionAsDecimal + StaticMeasurements.scrollbarGutter;
-        this.horizontalThumb.x(newThumbX);
+    syncHorizontalThumb() : void {
+        if (this.shouldAllowHorizontalScrolling) {
+            const scrollPositionAsDecimal = (this.scrollManager.x - StaticMeasurements.channelInfoColWidth) * -1 / this.horizontalScrollRange;
+            const newThumbPosition = (scrollPositionAsDecimal * this.horizontalThumbMovementRange) + StaticMeasurements.scrollbarGutter;
+            this.horizontalThumb.x(newThumbPosition);
+            this.horizontalThumb.show();
+        } else {
+            this.horizontalThumb.hide();
+        }
         this.layer.batchDraw();
     }
 
-    syncVerticalThumbToScrollPosition() : void {
-        const scrollPositionAsDecimal = Math.abs(this.scrollManager.y / this.verticalScrollRange);
-        const newThumbY = this.verticalThumbMovementRange * scrollPositionAsDecimal + StaticMeasurements.scrollbarGutter;
-        this.verticalThumb.y(newThumbY);
+    syncVerticalThumb() : void {
+        if (this.shouldAllowVerticalScrolling) {
+            const scrollPositionAsDecimal = (this.scrollManager.y - this.conversionManager.seekerAreaHeight) * -1 / this.verticalScrollRange;
+            const newThumbPosition = (scrollPositionAsDecimal * this.verticalThumbMovementRange) + StaticMeasurements.scrollbarGutter;
+            this.verticalThumb.y(newThumbPosition);
+            this.verticalThumb.show();
+        } else {
+            this.verticalThumb.hide();
+        }
         this.layer.batchDraw();
     }
     

@@ -63,15 +63,15 @@ export default class ConversionManager {
     }
 
     convertDurationToPx(duration: string) : number {
-        return noteDurationsMappedToTicks[duration] * this._tickToPxRatio;
+        return noteDurationsMappedToTicks[duration] * this.tickToPxRatio;
     }
 
     convertTicksToPx(ticks: number) : number {
-        return ticks * this._tickToPxRatio;
+        return ticks * this.tickToPxRatio;
     }
 
     convertPxToTicks(px: number) : number {
-        return px / this._tickToPxRatio;
+        return px / this.tickToPxRatio;
     }
 
     get tickToPxRatio() : number {
