@@ -28,7 +28,7 @@ export default class ConversionManager {
     private _noteDuration: string;
     private _tickToPxRatio: number;
     private _numBars: number;
-    private emitter: EventEmitter;
+    private eventEmitter: EventEmitter;
     
     constructor(
         stageWidth: number, 
@@ -45,11 +45,11 @@ export default class ConversionManager {
         this._noteDuration = initialNoteDuration;
         this._tickToPxRatio = 0.25;
         this._numBars = numBars;
-        this.emitter = eventEmitter;
-        this.emitter.subscribe(Events.quantizeValueUpdate, qVal => {
+        this.eventEmitter = eventEmitter;
+        this.eventEmitter.subscribe(Events.quantizeValueUpdate, qVal => {
             this._quantize = qVal;
         });
-        this.emitter.subscribe(Events.noteDurationUpdate, nVal => {
+        this.eventEmitter.subscribe(Events.noteDurationUpdate, nVal => {
             this._noteDuration = nVal;
         });
     }

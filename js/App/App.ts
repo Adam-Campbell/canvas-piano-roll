@@ -10,7 +10,6 @@ import {
     Events,
     WindowTypes 
 } from '../Constants';
-import CrazySquare from '../CrazySquare';
 import PianoRoll from '../PianoRoll';
 import AudioEngine from '../AudioEngine';
 import Arranger from '../Arranger';
