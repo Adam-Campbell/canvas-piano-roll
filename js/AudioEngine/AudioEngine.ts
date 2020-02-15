@@ -52,6 +52,8 @@ export default class AudioEngine implements AudioEngineComponent {
         this.addChannel('Channel 2', bassInstrumentSettings);
         this.addChannel('Channel 3', leadInstrumentSettings);
         this.addChannel('Channel 4');
+        this.addChannel('Channel 5');
+        this.addChannel('Channel 6');
         this.eventEmitter.subscribe(Events.historyTravelled, (state: SerializedAudioEngineState) => {
             this.forceToState(state);
         })
