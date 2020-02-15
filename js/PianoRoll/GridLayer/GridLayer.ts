@@ -24,7 +24,7 @@ export default class GridLayer {
     private scaleHighlightsSubContainer: Konva.Group;
     private gridLinesSubContainer: Konva.Group;
     private scaleType: string;
-    private emitter: EventEmitter;
+    private eventEmitter: EventEmitter;
     shouldDisplayScaleHighlighting: boolean;
 
     constructor(conversionManager: ConversionManager, layerRef: Konva.Layer, eventEmitter: EventEmitter) {
@@ -33,7 +33,7 @@ export default class GridLayer {
         this.gridContainer = new Konva.Group({ x: 120, y: 30 });
         this.scaleType = 'C major';
         this.shouldDisplayScaleHighlighting = false;
-        this.emitter = eventEmitter;
+        this.eventEmitter = eventEmitter;
     }
 
     init() : void {
@@ -44,15 +44,15 @@ export default class GridLayer {
     }
 
     private registerGlobalEventSubscriptions() : void {
-        this.emitter.subscribe(Events.quantizeValueUpdate, qVal => {
+        this.eventEmitter.subscribe(Events.quantizeValueUpdate, qVal => {
             this.drawGrid();
         });
-        this.emitter.subscribe(Events.scaleTypeUpdate, scaleType => {
+        this.eventEmitter.subscribe(Events.scaleTypeUpdate, scaleType => {
             this.scaleType = scaleType;
             console.log(scaleType);
             this.drawScaleHighlights();
         });
-        this.emitter.subscribe(Events.displayScaleUpdate, shouldDisplay => {
+        this.eventEmitter.subscribe(Events.displayScaleUpdate, shouldDisplay => {
             this.shouldDisplayScaleHighlighting = shouldDisplay;
             this.drawScaleHighlights();
         });

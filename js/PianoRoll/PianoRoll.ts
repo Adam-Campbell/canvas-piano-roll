@@ -7,7 +7,6 @@ import NoteSelection from './NoteSelection';
 import KeyboardStateManager from './KeyboardStateManager';
 import MouseStateManager from './MouseStateManager';
 import CanvasElementCache from './CanvasElementCache';
-import HistoryStack from './HistoryStack';
 import Clipboard from './Clipboard';
 import ScrollManager from './ScrollManager';
 
@@ -75,7 +74,6 @@ export default class PianoRoll {
     private conversionManager: ConversionManager;
     private audioReconciler: AudioReconciler;
     private noteSelection: NoteSelection;
-    private historyStack: HistoryStack;
     private clipboard: Clipboard;
     private primaryBackingLayer: Konva.Layer;
     private secondaryBackingLayer: Konva.Layer;
@@ -89,7 +87,7 @@ export default class PianoRoll {
     private scrollManager: ScrollManager;
     private scrollbarLayer: ScrollbarLayer;
     private backgroundLayer: BackgroundLayer;
-    private emitter: EventEmitter;
+    private eventEmitter: EventEmitter;
     private unsubscribeFns: Function[] = [];
     private section: Section;
     private interactionXDeltaMax: number;
@@ -105,8 +103,7 @@ export default class PianoRoll {
         this.previousBumpTimestamp = null;
         this.chordType = 'major';
         this.playbackFromTicks = 0;
-        this.emitter = eventEmitter;
-        this.historyStack = new HistoryStack({ notes: [], selectedNoteIds: [] });
+        this.eventEmitter = eventEmitter;
     }
 
     init(pianoRollOptions: PianoRollOptions) : void {
@@ -155,7 +152,7 @@ export default class PianoRoll {
         this.conversionManager = new ConversionManager(
             initialWidth, 
             initialHeight,
-            this.emitter,
+            this.eventEmitter,
             initialQuantize,
             initialNoteDuration,
             numBars
@@ -167,7 +164,7 @@ export default class PianoRoll {
         this.primaryBackingLayer = new Konva.Layer();
         this.secondaryBackingLayer = new Konva.Layer();
         this.backgroundLayer = new BackgroundLayer(this.conversionManager, this.primaryBackingLayer);
-        this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer, this.emitter);
+        this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer, this.eventEmitter);
         this.noteLayer = new NoteLayer(this.conversionManager, this.primaryBackingLayer);
         this.velocityLayer = new VelocityLayer(this.conversionManager, this.primaryBackingLayer);
         this.transportLayer = new TransportLayer(this.conversionManager, this.primaryBackingLayer);
@@ -208,17 +205,17 @@ export default class PianoRoll {
         this.keyboardStateManager.addKeyListener('Delete', () => this.deleteSelectedNotes());
         this.keyboardStateManager.addKeyListener('1', () => {
             if (this.keyboardStateManager.altKey) {
-                this.emitter.emit(Events.activeToolUpdate, 'cursor');
+                this.eventEmitter.emit(Events.activeToolUpdate, 'cursor');
             }
         });
         this.keyboardStateManager.addKeyListener('2', () => {
             if (this.keyboardStateManager.altKey) {
-                this.emitter.emit(Events.activeToolUpdate, 'pencil');
+                this.eventEmitter.emit(Events.activeToolUpdate, 'pencil');
             }
         });
         this.keyboardStateManager.addKeyListener('3', () => {
             if (this.keyboardStateManager.altKey) {
-                this.emitter.emit(Events.activeToolUpdate, 'marquee');
+                this.eventEmitter.emit(Events.activeToolUpdate, 'marquee');
             }
         });
         this.keyboardStateManager.addKeyListener('ArrowUp', () => {
@@ -259,14 +256,14 @@ export default class PianoRoll {
     }
 
     private registerGlobalEventSubscriptions() : void {
-        this.emitter.subscribe(Events.activeToolUpdate, tool => {
+        this.eventEmitter.subscribe(Events.activeToolUpdate, tool => {
             this.activeTool = tool;
             console.log(this.activeTool);
         });
-        this.emitter.subscribe(Events.chordTypeUpdate, chordType => {
+        this.eventEmitter.subscribe(Events.chordTypeUpdate, chordType => {
             this.chordType = chordType;
         });
-        this.emitter.subscribe(Events.historyTravelled, (state: SerializedAudioEngineState) => {
+        this.eventEmitter.subscribe(Events.historyTravelled, (state: SerializedAudioEngineState) => {
             let serializedSection;
             for (const channel of state.channels) {
                 if (channel.sections[this.section.id]) {
@@ -783,15 +780,15 @@ export default class PianoRoll {
     }
 
     private undo() : void {
-        this.emitter.emit(Events.undoAction);
+        this.eventEmitter.emit(Events.undoAction);
     }
 
     private redo() : void {
-        this.emitter.emit(Events.redoAction);
+        this.eventEmitter.emit(Events.redoAction);
     }
 
     private addToHistory() {
-        this.emitter.emit(Events.addStateToStack);
+        this.eventEmitter.emit(Events.addStateToStack);
     }
 
     /**

@@ -69,7 +69,7 @@ export default class Arranger {
     private mouseStateManager: MouseStateManager;
     private keyboardStateManager: KeyboardStateManager;
     private sectionSelection: SectionSelection;
-    private emitter: EventEmitter;
+    private eventEmitter: EventEmitter;
     private clipboard: Clipboard;
     private audioReconciler: AudioReconciler;
     private audioEngine: AudioEngine;
@@ -89,7 +89,7 @@ export default class Arranger {
     constructor(eventEmitter: EventEmitter) {
         this.dragMode = null;
         this.activeTool = Tools.cursor;
-        this.emitter = eventEmitter;
+        this.eventEmitter = eventEmitter;
         this.playbackFromTicks = 0;
         window.toneRef = Tone;
         window.arranger = this;
@@ -178,17 +178,17 @@ export default class Arranger {
     private registerKeyboardSubscriptions() : void {
         this.keyboardStateManager.addKeyListener('1', () => {
             if (this.keyboardStateManager.altKey) {
-                this.emitter.emit(Events.activeToolUpdate, 'cursor');
+                this.eventEmitter.emit(Events.activeToolUpdate, 'cursor');
             }
         });
         this.keyboardStateManager.addKeyListener('2', () => {
             if (this.keyboardStateManager.altKey) {
-                this.emitter.emit(Events.activeToolUpdate, 'pencil');
+                this.eventEmitter.emit(Events.activeToolUpdate, 'pencil');
             }
         });
         this.keyboardStateManager.addKeyListener('3', () => {
             if (this.keyboardStateManager.altKey) {
-                this.emitter.emit(Events.activeToolUpdate, 'marquee');
+                this.eventEmitter.emit(Events.activeToolUpdate, 'marquee');
             }
         });
         this.keyboardStateManager.addKeyListener('ArrowUp', () => this.shiftSelectionUp());
@@ -211,11 +211,11 @@ export default class Arranger {
     }
 
     private registerGlobalEventSubscriptions() : void {
-        this.emitter.subscribe(Events.activeToolUpdate, tool => {
+        this.eventEmitter.subscribe(Events.activeToolUpdate, tool => {
             this.activeTool = tool;
             console.log(this.activeTool);
         });
-        this.emitter.subscribe(Events.historyTravelled, state => {
+        this.eventEmitter.subscribe(Events.historyTravelled, state => {
             this.forceToState(state);
         });
     }
@@ -513,15 +513,15 @@ export default class Arranger {
     }
 
     private undo() {
-        this.emitter.emit(Events.undoAction);
+        this.eventEmitter.emit(Events.undoAction);
     }
 
     private redo() {
-        this.emitter.emit(Events.redoAction);
+        this.eventEmitter.emit(Events.redoAction);
     }
 
     private addToHistory() {
-        this.emitter.emit(Events.addStateToStack);
+        this.eventEmitter.emit(Events.addStateToStack);
     }
 
     /**
@@ -653,7 +653,7 @@ export default class Arranger {
             this.playbackFromTicks = positionAsTicks;
             this.transportLayer.repositionPlaybackMarker(positionAsTicks);
         } else if (isSectionInteraction && this.activeTool === Tools.cursor) {
-            this.emitter.emit(Events.openPianoRollWindow, target.id());
+            this.eventEmitter.emit(Events.openPianoRollWindow, target.id());
         }
     }
 
