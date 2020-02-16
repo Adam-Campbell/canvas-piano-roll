@@ -1,3 +1,4 @@
+import Konva from 'konva';
 import EventEmitter from '../EventEmitter';
 import Section from '../AudioEngine/Section';
 import AudioEngine from '../AudioEngine';
@@ -82,4 +83,10 @@ export interface ArrangerOptions {
     initialWidth: number,
     initialHeight: number,
     audioEngine: AudioEngine
+}
+
+export interface Clipboard<SerializedEntityType> {
+    //add(): void,
+    add(...args: any[]) : void,
+    produceCopy(...args: any[]) : SerializedEntityType[]
 }

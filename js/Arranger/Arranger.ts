@@ -7,7 +7,7 @@ import CanvasElementCache from '../common/CanvasElementCache';
 import MouseStateManager from '../common/MouseStateManager';
 import KeyboardStateManager from '../common/KeyboardStateManager';
 import SelectionManager from '../common/SelectionManager';
-import Clipboard from './Clipboard';
+import ArrangerClipboard from './ArrangerClipboard';
 import TransportLayer from './TransportLayer';
 import SeekerLineLayer from './SeekerLineLayer';
 import AudioReconciler from './AudioReconciler';
@@ -71,7 +71,7 @@ export default class Arranger {
     private keyboardStateManager: KeyboardStateManager;
     private sectionSelection: SelectionManager;
     private eventEmitter: EventEmitter;
-    private clipboard: Clipboard;
+    private clipboard: ArrangerClipboard;
     private audioReconciler: AudioReconciler;
     private audioEngine: AudioEngine;
     private transportLayer: TransportLayer;
@@ -140,7 +140,7 @@ export default class Arranger {
         this.keyboardStateManager = new KeyboardStateManager(container);
         this.sectionCache = new CanvasElementCache();
         this.sectionSelection = new SelectionManager();
-        this.clipboard = new Clipboard(this.conversionManager, this.audioEngine);
+        this.clipboard = new ArrangerClipboard(this.conversionManager, this.audioEngine);
         this.primaryBackingLayer = new Konva.Layer();
         this.secondaryBackingLayer = new Konva.Layer();
         this.backgroundLayer = new StageBackground(this.conversionManager, this.primaryBackingLayer);

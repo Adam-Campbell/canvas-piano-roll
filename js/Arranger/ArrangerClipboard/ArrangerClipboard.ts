@@ -4,13 +4,14 @@ import ConversionManager from '../ConversionManager';
 import AudioEngine from '../../AudioEngine';
 import { SerializedSectionState } from '../../AudioEngine/AudioEngineConstants';
 import { getBarNumFromBBSString } from '../arrangerUtils';
+import { Clipboard } from '../../Constants';
 
 
-export default class Clipboard {
+export default class ArrangerClipboard implements Clipboard<SerializedSectionState> {
 
     private conversionManager: ConversionManager;
     private audioEngine: AudioEngine;
-    private sectionsData: SerializedSectionState[] = [];
+    private serializedEntities: SerializedSectionState[] = [];
 
     constructor(conversionManager: ConversionManager, audioEngine: AudioEngine) {
         this.conversionManager = conversionManager;
@@ -22,7 +23,7 @@ export default class Clipboard {
         // for each, find the corresponding section in audioEngine, and grab its serialized state
         // store this serialized data in sectionsData along with the channelIdx for each section, 
         // derived from the y() value of sectionElement
-        this.sectionsData = sectionElements.map(sectionElement => {
+        this.serializedEntities = sectionElements.map(sectionElement => {
             const channelIdx = sectionElement.y() / this.conversionManager.rowHeight;
             const sectionId = sectionElement.id();
             const sectionData = this.audioEngine.channels[channelIdx].getDataForSection(sectionId);
@@ -38,7 +39,7 @@ export default class Clipboard {
         // between this earliest time value and the time value for a given section will be combined with the
         // currentBar to calculate the new time value for the copy being produced. 
         let earliestStartBar = null;
-        this.sectionsData.forEach(sectionObject => {
+        this.serializedEntities.forEach(sectionObject => {
             const startBar = getBarNumFromBBSString(sectionObject.start);
             if (earliestStartBar === null || startBar < earliestStartBar) {
                 earliestStartBar = startBar;
@@ -46,7 +47,7 @@ export default class Clipboard {
         });
         // Then map over the sections data and produce a copy with a new id and start value. 
 
-        return this.sectionsData.map(sectionObject => {
+        return this.serializedEntities.map(sectionObject => {
             let newNotes = {};
             Object.values(sectionObject.notes).forEach(noteObject => {
                 const newId = genId();

@@ -1,9 +1,9 @@
 import { genId } from '../../genId';
 import Konva from 'konva';
 import ConversionManager from '../ConversionManager';
-import { Note } from '../../Constants';
+import { Note, Clipboard } from '../../Constants';
 
-export default class Clipboard {
+export default class PianoRollClipboard implements Clipboard<Note> {
 
     private conversionManager: ConversionManager;
     private notesData: Note[] = [];

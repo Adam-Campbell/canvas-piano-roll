@@ -7,7 +7,7 @@ import SelectionManager from '../common/SelectionManager';
 import KeyboardStateManager from '../common/KeyboardStateManager';
 import MouseStateManager from '../common/MouseStateManager';
 import CanvasElementCache from '../common/CanvasElementCache';
-import Clipboard from './Clipboard';
+import PianoRollClipboard from './PianoRollClipboard';
 import ScrollManager from './ScrollManager';
 
 import GridLayer from './GridLayer';
@@ -74,7 +74,7 @@ export default class PianoRoll {
     private conversionManager: ConversionManager;
     private audioReconciler: AudioReconciler;
     private noteSelection: SelectionManager;
-    private clipboard: Clipboard;
+    private clipboard: PianoRollClipboard;
     private primaryBackingLayer: Konva.Layer;
     private secondaryBackingLayer: Konva.Layer;
     private gridLayer: GridLayer;
@@ -159,7 +159,7 @@ export default class PianoRoll {
         );
         this.audioReconciler = new AudioReconciler(this.conversionManager, this.section);
         this.noteSelection = new SelectionManager();
-        this.clipboard = new Clipboard(this.conversionManager);
+        this.clipboard = new PianoRollClipboard(this.conversionManager);
         // Instantiate canvas layer related classes
         this.primaryBackingLayer = new Konva.Layer();
         this.secondaryBackingLayer = new Konva.Layer();
