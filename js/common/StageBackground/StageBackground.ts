@@ -1,14 +1,13 @@
 import Konva from 'konva';
-import ConversionManager from '../ConversionManager';
 import { Colours } from '../../Constants';
 
-export default class BackgroundLayer {
+export default class StageBackground {
 
     private background: Konva.Rect;
-    private conversionManager: ConversionManager;
+    private conversionManager: any;
     private layer: Konva.Layer;
 
-    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
+    constructor(conversionManager: any, layerRef: Konva.Layer) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
     } 

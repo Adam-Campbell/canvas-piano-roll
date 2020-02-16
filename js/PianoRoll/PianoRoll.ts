@@ -16,9 +16,9 @@ import VelocityLayer from './VelocityLayer';
 import TransportLayer from './TransportLayer';
 import SeekerLineLayer from './SeekerLineLayer';
 import PianoKeyLayer from './PianoKeyLayer';
-import ScrollbarLayer from './ScrollbarLayer';
+import PianoRollScrollbars from './PianoRollScrollbars';
 import ContextMenuLayer from './ContextMenuLayer';
-import BackgroundLayer from './BackgroundLayer';
+import StageBackground from '../common/StageBackground';
 import { 
     DragModes,
     Tools,
@@ -85,8 +85,8 @@ export default class PianoRoll {
     private pianoKeyLayer: PianoKeyLayer;
     private contextMenuLayer: ContextMenuLayer;
     private scrollManager: ScrollManager;
-    private scrollbarLayer: ScrollbarLayer;
-    private backgroundLayer: BackgroundLayer;
+    private scrollbarLayer: PianoRollScrollbars;
+    private backgroundLayer: StageBackground;
     private eventEmitter: EventEmitter;
     private unsubscribeFns: Function[] = [];
     private section: Section;
@@ -163,7 +163,7 @@ export default class PianoRoll {
         // Instantiate canvas layer related classes
         this.primaryBackingLayer = new Konva.Layer();
         this.secondaryBackingLayer = new Konva.Layer();
-        this.backgroundLayer = new BackgroundLayer(this.conversionManager, this.primaryBackingLayer);
+        this.backgroundLayer = new StageBackground(this.conversionManager, this.primaryBackingLayer);
         this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer, this.eventEmitter);
         this.noteLayer = new NoteLayer(this.conversionManager, this.primaryBackingLayer);
         this.velocityLayer = new VelocityLayer(this.conversionManager, this.primaryBackingLayer);
@@ -183,10 +183,11 @@ export default class PianoRoll {
             this.transportLayer,
             this.seekerLineLayer
         );
-        this.scrollbarLayer = new ScrollbarLayer(
+        this.scrollbarLayer = new PianoRollScrollbars(
             this.scrollManager,
             this.conversionManager,
-            this.secondaryBackingLayer
+            this.secondaryBackingLayer,
+            StaticMeasurements.pianoKeyWidth
         );
     }
 

@@ -13,9 +13,10 @@ import SeekerLineLayer from './SeekerLineLayer';
 import AudioReconciler from './AudioReconciler';
 import AudioEngine from '../AudioEngine';
 import ScrollManager from './ScrollManager';
-import ScrollbarLayer from './ScrollbarLayer';
+//import ScrollbarLayer from './ScrollbarLayer';
+import StageScrollbars from '../common/StageScrollbars';
 import ChannelInfoLayer from './ChannelInfoLayer';
-import BackgroundLayer from './BackgroundLayer';
+import StageBackground from '../common/StageBackground';
 import {
     ArrangerDragModes,
     Tools,
@@ -76,9 +77,9 @@ export default class Arranger {
     private transportLayer: TransportLayer;
     private seekerLineLayer: SeekerLineLayer;
     private scrollManager: ScrollManager;
-    private scrollbarLayer: ScrollbarLayer;
+    private scrollbarLayer: StageScrollbars;
     private channelInfoLayer: ChannelInfoLayer;
-    private backgroundLayer: BackgroundLayer;
+    private backgroundLayer: StageBackground;
     private playbackFromTicks: number;
     private interactionXDeltaMax: number;
     private interactionXDeltaMin: number;
@@ -142,7 +143,7 @@ export default class Arranger {
         this.clipboard = new Clipboard(this.conversionManager, this.audioEngine);
         this.primaryBackingLayer = new Konva.Layer();
         this.secondaryBackingLayer = new Konva.Layer();
-        this.backgroundLayer = new BackgroundLayer(this.conversionManager, this.primaryBackingLayer);
+        this.backgroundLayer = new StageBackground(this.conversionManager, this.primaryBackingLayer);
         this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer);
         this.sectionLayer = new SectionLayer(this.conversionManager, this.primaryBackingLayer);
         this.transportLayer = new TransportLayer(this.conversionManager, this.primaryBackingLayer);
@@ -158,10 +159,11 @@ export default class Arranger {
             this.seekerLineLayer,
             this.channelInfoLayer
         );
-        this.scrollbarLayer = new ScrollbarLayer(
+        this.scrollbarLayer = new StageScrollbars(
             this.scrollManager,
             this.conversionManager,
-            this.secondaryBackingLayer
+            this.secondaryBackingLayer,
+            StaticMeasurements.channelInfoColWidth
         );
     }
 
