@@ -1,6 +1,6 @@
 import Konva from 'konva';
 
-export default class SectionSelection {
+export default class SelectionManager {
 
     private cache = new Set();
 

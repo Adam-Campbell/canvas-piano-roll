@@ -3,10 +3,10 @@ import Konva from 'konva';
 import EventEmitter from '../EventEmitter';
 import ConversionManager from './ConversionManager';
 import AudioReconciler from './AudioReconciler';
-import NoteSelection from './NoteSelection';
-import KeyboardStateManager from './KeyboardStateManager';
-import MouseStateManager from './MouseStateManager';
-import CanvasElementCache from './CanvasElementCache';
+import SelectionManager from '../common/SelectionManager';
+import KeyboardStateManager from '../common/KeyboardStateManager';
+import MouseStateManager from '../common/MouseStateManager';
+import CanvasElementCache from '../common/CanvasElementCache';
 import Clipboard from './Clipboard';
 import ScrollManager from './ScrollManager';
 
@@ -73,7 +73,7 @@ export default class PianoRoll {
     private mouseStateManager: MouseStateManager;
     private conversionManager: ConversionManager;
     private audioReconciler: AudioReconciler;
-    private noteSelection: NoteSelection;
+    private noteSelection: SelectionManager;
     private clipboard: Clipboard;
     private primaryBackingLayer: Konva.Layer;
     private secondaryBackingLayer: Konva.Layer;
@@ -158,7 +158,7 @@ export default class PianoRoll {
             numBars
         );
         this.audioReconciler = new AudioReconciler(this.conversionManager, this.section);
-        this.noteSelection = new NoteSelection();
+        this.noteSelection = new SelectionManager();
         this.clipboard = new Clipboard(this.conversionManager);
         // Instantiate canvas layer related classes
         this.primaryBackingLayer = new Konva.Layer();
