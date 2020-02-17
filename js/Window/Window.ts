@@ -15,7 +15,6 @@ export default class Window {
     title: string;
 
     private eventEmitter: EventEmitter;
-    resizeEmitter = new EventEmitter();
 
     private containerNode: HTMLElement;
     private contentNode: HTMLElement;
@@ -63,13 +62,19 @@ export default class Window {
         this.childContext = childContext;
     }
 
-    private handleClose = (e: MouseEvent) => {
-        console.log('Close button clicked!');
+    /**
+     * Performs cleanup on the window and emits a closeWindow event to let the app know it
+     * has closed.
+     */
+    private handleClose = (e: MouseEvent) : void => {
         this.cleanup();
         this.eventEmitter.emit(Events.closeWindow, this.id);
     }
 
-    toggleMinimize = () => {
+    /**
+     * Toggles between the minimized and normal window states.
+     */
+    toggleMinimize = () : void => {
         if (this.displayMode === WindowDisplayModes.minimized) {
             this.displayMode = WindowDisplayModes.normal;
             this.eventEmitter.emit(Events.focusWindow, this.id);
@@ -81,7 +86,10 @@ export default class Window {
         }
     }
 
-    private toggleMaximize = () => {
+    /**
+     * Toggles between the maximized and regular window states.
+     */
+    private toggleMaximize = () : void => {
         if (this.displayMode === WindowDisplayModes.maximized) {
             this.restoreWindow();
         } else {
@@ -89,7 +97,10 @@ export default class Window {
         }
     }
 
-    private maximizeWindow = () => {
+    /**
+     * Caches the windows current size and position and then maximizes it. 
+     */
+    private maximizeWindow = () : void => {
         this.displayMode = WindowDisplayModes.maximized;
         this.cachedWidth = this.currentWidth;
         this.cachedHeight = this.currentHeight;
@@ -102,11 +113,13 @@ export default class Window {
         this.currentHeight = clientHeight;
         this.eventEmitter.emit(Events.renderApp);
         const { innerWidth, innerHeight } = this.getInnerDimensions();
-        //this.resizeEmitter.emit(Events.resizeWindow, innerWidth, innerHeight);
         this.child.handleResize(innerWidth, innerHeight);
     }
 
-    private restoreWindow = () => {
+    /**
+     * Restores the window to its previously cached size and position.
+     */
+    private restoreWindow = () : void => {
         this.displayMode = WindowDisplayModes.normal;
         this.currentWidth = this.cachedWidth;
         this.currentHeight = this.cachedHeight;
@@ -118,11 +131,14 @@ export default class Window {
         this.cachedY = null;
         this.eventEmitter.emit(Events.renderApp);
         const { innerWidth, innerHeight } = this.getInnerDimensions();
-        //this.resizeEmitter.emit(Events.resizeWindow, innerWidth, innerHeight);
         this.child.handleResize(innerWidth, innerHeight);
     }
 
-    private handleTopBarInteraction = (e: MouseEvent) => {
+    /**
+     * Enters the reposition interaction mode, caches the event object and the outer containers
+     * clientRect at the time of the event.
+     */
+    private handleTopBarInteraction = (e: MouseEvent) : void => {
         this.eventEmitter.emit(Events.focusWindow, this.id);
         const isTopBarClick = e.target.classList.contains('window__top-bar');
         if (isTopBarClick) {
@@ -132,14 +148,18 @@ export default class Window {
         }
     }
 
-    private handleResizeContainerInteraction = (e: MouseEvent) => {
+    /**
+     * Enters the resize  interaction mode, caches the event object and the outer containers 
+     * clientRect at the time of the event.
+     */
+    private handleResizeContainerInteraction = (e: MouseEvent) : void => {
         e.preventDefault();
         this.cachedClientRect = this.containerNode.getBoundingClientRect();
         this.cachedEvt = e;
         this.interactionMode = WindowInteractionModes.resize;
     }
 
-    private handleInteractionUpdate = (e: MouseEvent) => {
+    private handleInteractionUpdate = (e: MouseEvent) : void => {
         switch (this.interactionMode) {
             case WindowInteractionModes.reposition:
                 this.handleRepositionInteractionUpdate(e);
@@ -150,19 +170,19 @@ export default class Window {
         }
     }
 
-    private updateEvtDeltas = (clientX: number, clientY: number) => {
+    private updateEvtDeltas = (clientX: number, clientY: number) : void => {
         this.evtXDelta = clientX - this.cachedEvt.clientX;
         this.evtYDelta = clientY - this.cachedEvt.clientY;
     }
 
-    private handleRepositionInteractionUpdate = (e: MouseEvent) => {
+    private handleRepositionInteractionUpdate = (e: MouseEvent) : void => {
         e.preventDefault();
         this.updateEvtDeltas(e.clientX, e.clientY);
         if (this.rafStamp) window.cancelAnimationFrame(this.rafStamp);
         this.rafStamp = window.requestAnimationFrame(this.updatePosition);
     }
 
-    private updatePosition = () => {
+    private updatePosition = () : void => {
         if (!this.interactionMode) return;
         const newX = this.cachedClientRect.left + this.evtXDelta;
         const newY = this.cachedClientRect.top + this.evtYDelta;
@@ -172,14 +192,18 @@ export default class Window {
         this.containerNode.style.top = `${newY}px`;
     }
 
-    private handleResizeInteractionUpdate = (e: MouseEvent) => {
+    private handleResizeInteractionUpdate = (e: MouseEvent) : void => {
         e.preventDefault();
         this.updateEvtDeltas(e.clientX, e.clientY);
         if (this.rafStamp) window.cancelAnimationFrame(this.rafStamp);
         this.rafStamp = window.requestAnimationFrame(this.updateSize);
     }
 
-    private updateSize = () => {
+    /**
+     * Updates size of the window, and calls the handleResize method on the windows child class
+     * to ensure that it resizes to match the window.
+     */
+    private updateSize = () : void => {
         if (!this.interactionMode) return;
         const newWidth = Math.max(this.cachedClientRect.width + this.evtXDelta, 250);
         const newHeight = Math.max(this.cachedClientRect.height + this.evtYDelta, 200);
@@ -188,11 +212,17 @@ export default class Window {
         this.containerNode.style.width = `${newWidth}px`;
         this.containerNode.style.height = `${newHeight}px`;
         const { innerWidth, innerHeight } = this.getInnerDimensions();
-        //this.resizeEmitter.emit(Events.resizeWindow, innerWidth, innerHeight);
         this.child.handleResize(innerWidth, innerHeight);
     }
 
-    getInnerDimensions = () => {
+    /**
+     * Returns the current width and height of the inner container that holds this windows
+     * contents.
+     */
+    getInnerDimensions = () : { 
+        innerWidth: number, 
+        innerHeight: number 
+    } => {
         const { width, height } = this.contentNode.getBoundingClientRect();
         return { 
             innerWidth: width, 
@@ -200,15 +230,16 @@ export default class Window {
         };
     }
 
-    
-
-    private handleInteractionEnd = (e: MouseEvent) => {
+    private handleInteractionEnd = (e: MouseEvent) : void => {
         e.preventDefault();
         this.cachedClientRect = null;
         this.cachedEvt = null;
         this.interactionMode = null;
     }
 
+    /**
+     * Returns a lit-html TemplateResult to be used when rendering the view.
+     */
     generateMarkup = () => {
         return html`
             <div 
@@ -251,25 +282,28 @@ export default class Window {
         `;
     }
 
-    init = () => {
+    /**
+     * Caches references to specific DOM nodes that will need to be referenced and then intializes
+     * the child class.
+     */
+    init = () : void => {
         this.containerNode = document.getElementById(this.id);
         this.contentNode = this.containerNode.querySelector('.window__content-container');
         document.body.addEventListener('mousemove', this.handleInteractionUpdate);
         document.body.addEventListener('mouseup', this.handleInteractionEnd);
         const { innerWidth, innerHeight } = this.getInnerDimensions();
-        //this.child.init(this.contentNode, innerWidth, innerHeight);
         this.child.init({
             container: this.contentNode,
             initialWidth: innerWidth,
             initialHeight: innerHeight,
             ...this.childContext
-            //initialQuantize: '16n',
-            //initialNoteDuration: '16n',
-            //numBars: 8
         });
     }
 
-    cleanup = () => {
+    /**
+     * Performs cleanup on the window and its child class.
+     */
+    cleanup = () : void => {
         this.containerNode = null;
         this.contentNode = null;
         document.body.removeEventListener('mousemove', this.handleInteractionUpdate);
