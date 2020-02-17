@@ -8,7 +8,7 @@ import MouseStateManager from '../common/MouseStateManager';
 import KeyboardStateManager from '../common/KeyboardStateManager';
 import SelectionManager from '../common/SelectionManager';
 import ArrangerClipboard from './ArrangerClipboard';
-import TransportLayer from './TransportLayer';
+import ArrangerTransport from './ArrangerTransport';
 import ArrangerSeekerLine from './ArrangerSeekerLine';
 import AudioReconciler from './AudioReconciler';
 import AudioEngine from '../AudioEngine';
@@ -74,7 +74,7 @@ export default class Arranger implements WindowChild {
     private clipboard: ArrangerClipboard;
     private audioReconciler: AudioReconciler;
     private audioEngine: AudioEngine;
-    private transportLayer: TransportLayer;
+    private transportLayer: ArrangerTransport;
     private seekerLineLayer: ArrangerSeekerLine;
     private scrollManager: StageScrollManager;
     private scrollbarLayer: StageScrollbars;
@@ -146,7 +146,7 @@ export default class Arranger implements WindowChild {
         this.backgroundLayer = new StageBackground(this.conversionManager, this.primaryBackingLayer);
         this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer);
         this.sectionLayer = new SectionLayer(this.conversionManager, this.primaryBackingLayer);
-        this.transportLayer = new TransportLayer(this.conversionManager, this.primaryBackingLayer);
+        this.transportLayer = new ArrangerTransport(this.conversionManager, this.primaryBackingLayer);
         this.seekerLineLayer = new ArrangerSeekerLine(
             this.conversionManager, 
             StaticMeasurements.channelInfoColWidth

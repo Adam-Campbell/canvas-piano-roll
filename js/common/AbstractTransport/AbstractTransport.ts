@@ -1,21 +1,25 @@
 import Konva from 'konva';
-import { Colours } from '../../Constants';
-import ConversionManager from '../ConversionManager';
+import { 
+    Colours
+} from '../../Constants';
 
-export default class TransportLayer {
 
-    private conversionManager: ConversionManager;
-    private layer: Konva.Layer;
-    private layerGroup: Konva.Group;
-    private background: Konva.Rect;
-    private border: Konva.Rect;
-    private numberMarkersArray: Konva.Text[];
-    private playbackMarker: Konva.RegularPolygon;
+export default abstract class AbstractTransport {
 
-    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
+    protected conversionManager: any;
+    protected layer: Konva.Layer;
+    protected layerGroup: Konva.Group;
+    protected background: Konva.Rect;
+    protected border: Konva.Rect;
+    protected numberMarkersArray: Konva.Text[];
+    protected playbackMarker: Konva.RegularPolygon;
+
+    constructor(conversionManager: any, layerRef: Konva.Layer, leftPanelOffset: number) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
-        this.layerGroup = new Konva.Group({ x: 120, y: 0 });
+        this.layerGroup = new Konva.Group({
+            x: leftPanelOffset
+        });
         this.background = this.constructBackground();
         this.border = this.constructBorder();
         this.numberMarkersArray = this.constructNumberMarkersArray();
@@ -36,12 +40,13 @@ export default class TransportLayer {
         this.layer.batchDraw();
     }
 
+    abstract get numberMarkerSpacing() : number;
+
     private constructBackground() : Konva.Rect {
         const background = new Konva.Rect({
             x: 0,
             y: 0,
             height: 30,
-            //width: Math.max(this.conversionManager.gridWidth, this.conversionManager.stageWidth),
             width: this.conversionManager.gridWidth,
             fill: Colours.grayscale[2]
         });
@@ -52,7 +57,6 @@ export default class TransportLayer {
         const border = new Konva.Rect({
             x: 0,
             y: 27,
-            //width: Math.max(this.conversionManager.gridWidth, this.conversionManager.stageWidth),
             width: this.conversionManager.gridWidth,
             height: 3,
             fill: Colours.grayscale[7]
@@ -66,7 +70,7 @@ export default class TransportLayer {
             const numberMarker = new Konva.Text({
                 text: `${i+1}`,
                 fill: Colours.grayscale[7],
-                x: i * this.conversionManager.barWidth,
+                x: i * this.numberMarkerSpacing,
                 y: 12
             });
             if (i < 0) {
@@ -95,7 +99,7 @@ export default class TransportLayer {
         this.background.width(this.conversionManager.gridWidth);
         this.border.width(this.conversionManager.gridWidth);
         this.numberMarkersArray.forEach((numberMarker, idx) => {
-            numberMarker.x(idx * this.conversionManager.barWidth);
+            numberMarker.x(idx * this.numberMarkerSpacing);
         });
         const multiplier = isZoomingIn ? 2 : 0.5;
         this.playbackMarker.x(

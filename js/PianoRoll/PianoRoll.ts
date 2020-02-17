@@ -12,7 +12,7 @@ import StageScrollManager from '../common/StageScrollManager';
 import GridLayer from './GridLayer';
 import NoteLayer from './NoteLayer';
 import VelocityLayer from './VelocityLayer';
-import TransportLayer from './TransportLayer';
+import PianoRollTransport from './PianoRollTransport';
 import PianoRollSeekerLine from './PianoRollSeekerLine';
 import PianoKeyLayer from './PianoKeyLayer';
 import PianoRollScrollbars from './PianoRollScrollbars';
@@ -80,7 +80,7 @@ export default class PianoRoll implements WindowChild {
     private gridLayer: GridLayer;
     private noteLayer: NoteLayer;
     private velocityLayer: VelocityLayer;
-    private transportLayer: TransportLayer;
+    private transportLayer: PianoRollTransport;
     private seekerLineLayer: PianoRollSeekerLine;
     private pianoKeyLayer: PianoKeyLayer;
     private contextMenuLayer: ContextMenuLayer;
@@ -167,7 +167,7 @@ export default class PianoRoll implements WindowChild {
         this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer, this.eventEmitter);
         this.noteLayer = new NoteLayer(this.conversionManager, this.primaryBackingLayer);
         this.velocityLayer = new VelocityLayer(this.conversionManager, this.primaryBackingLayer);
-        this.transportLayer = new TransportLayer(this.conversionManager, this.primaryBackingLayer);
+        this.transportLayer = new PianoRollTransport(this.conversionManager, this.primaryBackingLayer);
         this.seekerLineLayer = new PianoRollSeekerLine(
             this.conversionManager,
             StaticMeasurements.pianoKeyWidth, 
