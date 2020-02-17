@@ -19,7 +19,6 @@ export default class GridLayer {
     
     private conversionManager: ConversionManager;
     private layer: Konva.Layer;
-    private background: Konva.Rect;
     private gridContainer: Konva.Group;
     private scaleHighlightsSubContainer: Konva.Group;
     private gridLinesSubContainer: Konva.Group;

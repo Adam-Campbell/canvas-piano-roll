@@ -2,7 +2,7 @@ import Tone from 'tone';
 import Konva from 'konva';
 import GridLayer from './GridLayer';
 import ConversionManager from './ConversionManager';
-import SectionLayer from './SectionLayer';
+import ArrangerSections from './ArrangerSections';
 import CanvasElementCache from '../common/CanvasElementCache';
 import MouseStateManager from '../common/MouseStateManager';
 import KeyboardStateManager from '../common/KeyboardStateManager';
@@ -65,7 +65,7 @@ export default class Arranger implements WindowChild {
     private primaryBackingLayer: Konva.Layer;
     private secondaryBackingLayer: Konva.Layer;
     private gridLayer: GridLayer;
-    private sectionLayer: SectionLayer;
+    private sectionLayer: ArrangerSections;
     private sectionCache: CanvasElementCache;
     private mouseStateManager: MouseStateManager;
     private keyboardStateManager: KeyboardStateManager;
@@ -104,7 +104,7 @@ export default class Arranger implements WindowChild {
         const initialState = this.audioEngine.serializeState();
         this.backgroundLayer.init();
         this.gridLayer.init();
-        this.sectionLayer.init(initialState);
+        this.sectionLayer.init();
         this.transportLayer.init();
         this.seekerLineLayer.init();
         this.channelInfoLayer.init(initialState);
@@ -112,6 +112,7 @@ export default class Arranger implements WindowChild {
         this.registerStageSubscriptions();
         this.registerKeyboardSubscriptions();
         this.registerGlobalEventSubscriptions();
+        this.forceToState(initialState);
     }
 
     instantiateChildClasses({
@@ -145,7 +146,7 @@ export default class Arranger implements WindowChild {
         this.secondaryBackingLayer = new Konva.Layer();
         this.backgroundLayer = new StageBackground(this.conversionManager, this.primaryBackingLayer);
         this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer);
-        this.sectionLayer = new SectionLayer(this.conversionManager, this.primaryBackingLayer);
+        this.sectionLayer = new ArrangerSections(this.conversionManager, this.primaryBackingLayer);
         this.transportLayer = new ArrangerTransport(this.conversionManager, this.primaryBackingLayer);
         this.seekerLineLayer = new ArrangerSeekerLine(
             this.conversionManager, 
@@ -345,7 +346,7 @@ export default class Arranger implements WindowChild {
      * to the audio engine.
      */
     private addNewSection(x: number, y: number, id: string, width?: number) : Konva.Rect {
-        const newSection = this.sectionLayer.addNewSection(x, y, id, width);
+        const newSection = this.sectionLayer.addNew(x, y, id, width);
         this.sectionCache.add(newSection);
         this.sectionSelection.add(newSection);
         return newSection;
@@ -381,7 +382,7 @@ export default class Arranger implements WindowChild {
         }
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         if (canShiftUp(selectedSectionElements, this.conversionManager.rowHeight)) {
-            this.sectionLayer.shiftSectionsVertically(
+            this.sectionLayer.shiftVertically(
                 selectedSectionElements, 
                 true
             );
@@ -407,7 +408,7 @@ export default class Arranger implements WindowChild {
             this.conversionManager.gridHeight, 
             this.conversionManager.rowHeight
         )) {
-            this.sectionLayer.shiftSectionsVertically(selectedSectionElements, false);
+            this.sectionLayer.shiftVertically(selectedSectionElements, false);
             selectedSectionElements.forEach(section => this.audioReconciler.addSection(section));
             this.addToHistory();
         }
@@ -426,7 +427,7 @@ export default class Arranger implements WindowChild {
         }
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         if (canShiftLeft(selectedSectionElements)) {
-            this.sectionLayer.shiftSectionsHorizontally(selectedSectionElements, true);
+            this.sectionLayer.shiftHorizontally(selectedSectionElements, true);
             selectedSectionElements.forEach(section => this.audioReconciler.addSection(section));
             this.addToHistory();
         }
@@ -449,7 +450,7 @@ export default class Arranger implements WindowChild {
             this.conversionManager.gridWidth,
             this.conversionManager.colWidth
         )) {
-            this.sectionLayer.shiftSectionsHorizontally(selectedSectionElements, false);
+            this.sectionLayer.shiftHorizontally(selectedSectionElements, false);
             selectedSectionElements.forEach(section => this.audioReconciler.addSection(section));
             this.addToHistory();
         }
@@ -466,7 +467,7 @@ export default class Arranger implements WindowChild {
             return;
         }
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
-        this.sectionLayer.deleteSections(selectedSectionElements);
+        this.sectionLayer.delete(selectedSectionElements);
         this.sectionSelection.clear();
         selectedSectionElements.forEach(section => {
             this.sectionCache.remove(section);
@@ -648,7 +649,7 @@ export default class Arranger implements WindowChild {
     handleDoubleClick(e: KonvaEvent) : void {
         const { rawX, rawY, target } = this.extractInfoFromEventObject(e);
         const isTransportAreaInteraction = rawY <= 30;
-        const isSectionInteraction = target.name() === 'SECTION';
+        const isSectionInteraction = target.name() === 'STAGE_ENTITY';
         const xWithScroll = rawX - this.scrollManager.x;
         const isOutOfBounds = xWithScroll > this.conversionManager.gridWidth;
         if (isTransportAreaInteraction && !isOutOfBounds) {
@@ -700,7 +701,7 @@ export default class Arranger implements WindowChild {
             this.calculateDeltaBoundaries();
 
         } else if (this.activeTool === Tools.cursor) {
-            const targetIsSection = target.name() === 'SECTION';
+            const targetIsSection = target.name() === 'STAGE_ENTITY';
             if (targetIsSection) {
                 this.handleSectionInteractionStart(target, xWithScroll); 
             }
@@ -753,7 +754,7 @@ export default class Arranger implements WindowChild {
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         const xDelta = xWithScroll - this.mouseStateManager.x;
         if (xDelta < this.interactionXDeltaMax) {
-            this.sectionLayer.updateSectionDurations(
+            this.sectionLayer.updateLengths(
                 this.mouseStateManager.x, 
                 xWithScroll, 
                 selectedSectionElements
@@ -785,7 +786,7 @@ export default class Arranger implements WindowChild {
         );
         const selectedSectionIds = this.sectionSelection.retrieveAll();
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
-        this.sectionLayer.repositionSections(safeXDelta, safeYDelta, selectedSectionElements);
+        this.sectionLayer.updatePositions(safeXDelta, safeYDelta, selectedSectionElements);
     }
 
     handleAdjustSelectionInteractionUpdate(e: KonvaEvent) : void {
@@ -822,7 +823,7 @@ export default class Arranger implements WindowChild {
         this.resetDeltaBoundaries();
         const selectedSectionIds = this.sectionSelection.retrieveAll();
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
-        this.sectionLayer.updateSectionsAttributeCaches(selectedSectionElements);
+        this.sectionLayer.updateAttributeCaches(selectedSectionElements);
         // trigger update in audio engine and serialize state to update history stack.
         selectedSectionElements.forEach(el => this.audioReconciler.addSection(el));
         this.addToHistory();
@@ -849,7 +850,7 @@ export default class Arranger implements WindowChild {
         }
         const selectedSectionIds = this.sectionSelection.retrieveAll();
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
-        this.sectionLayer.updateSectionsAttributeCaches(selectedSectionElements);
+        this.sectionLayer.updateAttributeCaches(selectedSectionElements);
         // then update the audio engine and history stack.
         selectedSectionElements.forEach(sectionElement => this.audioReconciler.addSection(sectionElement));
         if (this.mouseStateManager.hasTravelled) {
