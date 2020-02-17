@@ -13,7 +13,7 @@ import GridLayer from './GridLayer';
 import NoteLayer from './NoteLayer';
 import VelocityLayer from './VelocityLayer';
 import TransportLayer from './TransportLayer';
-import SeekerLineLayer from './SeekerLineLayer';
+import PianoRollSeekerLine from './PianoRollSeekerLine';
 import PianoKeyLayer from './PianoKeyLayer';
 import PianoRollScrollbars from './PianoRollScrollbars';
 import ContextMenuLayer from './ContextMenuLayer';
@@ -25,7 +25,8 @@ import {
     StaticMeasurements,
     SerializedState,
     KonvaEvent,
-    PianoRollOptions
+    PianoRollOptions,
+    WindowChild
 } from '../Constants';
 import {
     easingFns
@@ -58,7 +59,7 @@ enum EasingModes {
     easeInOut = 'easeInOut'
 }
 
-export default class PianoRoll {
+export default class PianoRoll implements WindowChild {
 
     private dragMode: DragModes;
     private activeTool: Tools;
@@ -80,10 +81,10 @@ export default class PianoRoll {
     private noteLayer: NoteLayer;
     private velocityLayer: VelocityLayer;
     private transportLayer: TransportLayer;
-    private seekerLineLayer: SeekerLineLayer;
+    private seekerLineLayer: PianoRollSeekerLine;
     private pianoKeyLayer: PianoKeyLayer;
     private contextMenuLayer: ContextMenuLayer;
-    private scrollManager: ScrollManager;
+    private scrollManager: StageScrollManager;
     private scrollbarLayer: PianoRollScrollbars;
     private backgroundLayer: StageBackground;
     private eventEmitter: EventEmitter;
@@ -167,7 +168,11 @@ export default class PianoRoll {
         this.noteLayer = new NoteLayer(this.conversionManager, this.primaryBackingLayer);
         this.velocityLayer = new VelocityLayer(this.conversionManager, this.primaryBackingLayer);
         this.transportLayer = new TransportLayer(this.conversionManager, this.primaryBackingLayer);
-        this.seekerLineLayer = new SeekerLineLayer(this.conversionManager, this.section);
+        this.seekerLineLayer = new PianoRollSeekerLine(
+            this.conversionManager,
+            StaticMeasurements.pianoKeyWidth, 
+            this.section
+        );
         this.pianoKeyLayer = new PianoKeyLayer(
             this.conversionManager, 
             this.secondaryBackingLayer,

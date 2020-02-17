@@ -8,7 +8,8 @@ import {
 } from './templateFns';
 import { 
     Events,
-    WindowTypes 
+    WindowTypes,
+    WindowChild
 } from '../Constants';
 import PianoRoll from '../PianoRoll';
 import AudioEngine from '../AudioEngine';

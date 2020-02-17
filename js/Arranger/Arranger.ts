@@ -9,11 +9,10 @@ import KeyboardStateManager from '../common/KeyboardStateManager';
 import SelectionManager from '../common/SelectionManager';
 import ArrangerClipboard from './ArrangerClipboard';
 import TransportLayer from './TransportLayer';
-import SeekerLineLayer from './SeekerLineLayer';
+import ArrangerSeekerLine from './ArrangerSeekerLine';
 import AudioReconciler from './AudioReconciler';
 import AudioEngine from '../AudioEngine';
 import StageScrollManager from '../common/StageScrollManager';
-//import ScrollbarLayer from './ScrollbarLayer';
 import StageScrollbars from '../common/StageScrollbars';
 import ChannelInfoLayer from './ChannelInfoLayer';
 import StageBackground from '../common/StageBackground';
@@ -23,7 +22,8 @@ import {
     KonvaEvent,
     Events,
     ArrangerOptions,
-    StaticMeasurements
+    StaticMeasurements,
+    WindowChild
 } from '../Constants';
 import { genId } from '../genId';
 import { 
@@ -56,7 +56,7 @@ need to make sure the naming is more generic ie use the term rect instead of the
 
 
 
-export default class Arranger {
+export default class Arranger implements WindowChild {
 
     private dragMode: ArrangerDragModes;
     private activeTool: Tools;
@@ -75,7 +75,7 @@ export default class Arranger {
     private audioReconciler: AudioReconciler;
     private audioEngine: AudioEngine;
     private transportLayer: TransportLayer;
-    private seekerLineLayer: SeekerLineLayer;
+    private seekerLineLayer: ArrangerSeekerLine;
     private scrollManager: StageScrollManager;
     private scrollbarLayer: StageScrollbars;
     private channelInfoLayer: ChannelInfoLayer;
@@ -147,7 +147,10 @@ export default class Arranger {
         this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer);
         this.sectionLayer = new SectionLayer(this.conversionManager, this.primaryBackingLayer);
         this.transportLayer = new TransportLayer(this.conversionManager, this.primaryBackingLayer);
-        this.seekerLineLayer = new SeekerLineLayer(this.conversionManager);
+        this.seekerLineLayer = new ArrangerSeekerLine(
+            this.conversionManager, 
+            StaticMeasurements.channelInfoColWidth
+        );
         this.channelInfoLayer = new ChannelInfoLayer(
             this.conversionManager,
             this.secondaryBackingLayer

@@ -98,3 +98,9 @@ export interface HorizontallyScrollableComponent {
 export interface VerticallyScrollableComponent {
     updateY(y: number) : void
 }
+
+export interface WindowChild {
+    init(options: Object) : void,
+    cleanup() : void,
+    handleResize(width: number, height: number) : void
+}

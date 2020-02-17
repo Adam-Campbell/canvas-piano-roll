@@ -1,28 +1,29 @@
 import Konva from 'konva';
 import Tone from 'tone';
-import { Colours } from '../../Constants';
-import ConversionManager from '../ConversionManager';
-import Section from '../../AudioEngine/Section';
+import { 
+    Colours,
+    StaticMeasurements 
+} from '../../Constants';
 
-export default class SeekerLineLayer {
-
-    private conversionManager: ConversionManager;
+export default abstract class AbstractSeekerLine {
+    
+    protected conversionManager: any;
     layer: Konva.Layer;
-    private section: Section;
-    private seekerLine: Konva.Line;
-    private isPlaying: boolean;
-    private animationFrameId: number;
+    protected seekerLine: Konva.Line;
+    protected isPlaying: boolean;
+    protected animationFrameId: number;
 
-    constructor(conversionManager: ConversionManager, sectionRef: Section) {
+    constructor(conversionManager: any, leftPanelWidth: number) {
         this.conversionManager = conversionManager;
-        this.layer = new Konva.Layer({ x: 120 });
-        this.section = sectionRef;
-        this.seekerLine = this.constructSeekerLine();
+        this.layer = new Konva.Layer({
+            x: leftPanelWidth
+        });
         this.isPlaying = Tone.Transport.state === 'started';
         this.animationFrameId = null;
     }
 
     init() {
+        this.seekerLine = this.constructSeekerLine();
         this.layer.add(this.seekerLine);
         this.layer.batchDraw();
         if (this.isPlaying) {
@@ -31,7 +32,7 @@ export default class SeekerLineLayer {
         this.registerGlobalEventSubscriptions();
     }
 
-    private registerGlobalEventSubscriptions() : void {
+    protected registerGlobalEventSubscriptions() : void {
         Tone.Transport.on('start', () => {
             console.log('transport was started');
             this.beginSyncing();
@@ -57,13 +58,12 @@ export default class SeekerLineLayer {
         this.layer.batchDraw();
     }
 
-    private constructSeekerLine() : Konva.Line {
-        const sectionStartAsTicks = Tone.Ticks(this.section.start).toTicks();
-        const relativePositionAsPx = this.conversionManager.convertTicksToPx(
-            Tone.Transport.ticks - sectionStartAsTicks
-        );
+    abstract calculateSeekerLineXPos() : number;
+
+    protected constructSeekerLine() : Konva.Line {
+        const currentPositionPx = this.calculateSeekerLineXPos();
         const seekerLine = new Konva.Line({
-            points: [ relativePositionAsPx, 0, relativePositionAsPx, this.conversionManager.gridHeight ],
+            points: [currentPositionPx, 0, currentPositionPx, this.conversionManager.stageHeight],
             stroke: Colours.grayscale[7],
             strokeWidth: 2
         });
@@ -71,34 +71,35 @@ export default class SeekerLineLayer {
     }
 
     updateSeekerLinePosition() : void {
-        const sectionStartAsTicks = Tone.Ticks(this.section.start).toTicks();
-        const relativePositionAsPx = this.conversionManager.convertTicksToPx(
-            Tone.Transport.ticks - sectionStartAsTicks
-        );
+        const currentPositionPx = this.calculateSeekerLineXPos();
         this.seekerLine.points([
-            relativePositionAsPx, 
+            currentPositionPx, 
             0, 
-            relativePositionAsPx, 
-            this.conversionManager.gridHeight
+            currentPositionPx, 
+            this.conversionManager.stageHeight
         ]);
         this.layer.batchDraw();
     }
 
-    private syncSeekerLineWithTransport = () => {
+    protected syncSeekerLineWithTransport = () => {
         this.updateSeekerLinePosition();
         this.animationFrameId = window.requestAnimationFrame(this.syncSeekerLineWithTransport);
     }
 
-    private beginSyncing() {
+    protected beginSyncing() {
         this.isPlaying = true;
         this.syncSeekerLineWithTransport();
     }
 
-    private stopSyncing() {
+    protected stopSyncing() {
         this.isPlaying = false;
         if (this.animationFrameId) {
             window.cancelAnimationFrame(this.animationFrameId);
         }
+    }
+
+    redrawOnResize() {
+        this.updateSeekerLinePosition();
     }
 
 }

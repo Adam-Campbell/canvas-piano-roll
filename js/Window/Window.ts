@@ -5,7 +5,8 @@ import {
     WindowInteractionModes,
     WindowDisplayModes,
     Events,
-    WindowOptions
+    WindowOptions,
+    WindowChild
 } from '../Constants';
 
 export default class Window {
