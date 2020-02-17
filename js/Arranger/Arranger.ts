@@ -12,7 +12,7 @@ import TransportLayer from './TransportLayer';
 import SeekerLineLayer from './SeekerLineLayer';
 import AudioReconciler from './AudioReconciler';
 import AudioEngine from '../AudioEngine';
-import ScrollManager from './ScrollManager';
+import StageScrollManager from '../common/StageScrollManager';
 //import ScrollbarLayer from './ScrollbarLayer';
 import StageScrollbars from '../common/StageScrollbars';
 import ChannelInfoLayer from './ChannelInfoLayer';
@@ -76,7 +76,7 @@ export default class Arranger {
     private audioEngine: AudioEngine;
     private transportLayer: TransportLayer;
     private seekerLineLayer: SeekerLineLayer;
-    private scrollManager: ScrollManager;
+    private scrollManager: StageScrollManager;
     private scrollbarLayer: StageScrollbars;
     private channelInfoLayer: ChannelInfoLayer;
     private backgroundLayer: StageBackground;
@@ -152,12 +152,11 @@ export default class Arranger {
             this.conversionManager,
             this.secondaryBackingLayer
         );
-        this.scrollManager = new ScrollManager(
-            this.gridLayer,
-            this.sectionLayer,
-            this.transportLayer,
-            this.seekerLineLayer,
-            this.channelInfoLayer
+        this.scrollManager = new StageScrollManager(
+            [ this.gridLayer, this.sectionLayer, this.transportLayer, this.seekerLineLayer ],
+            [ this.gridLayer, this.sectionLayer, this.channelInfoLayer ],
+            StaticMeasurements.channelInfoColWidth,
+            this.conversionManager.seekerAreaHeight
         );
         this.scrollbarLayer = new StageScrollbars(
             this.scrollManager,

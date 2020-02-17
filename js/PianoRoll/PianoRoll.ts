@@ -8,8 +8,7 @@ import KeyboardStateManager from '../common/KeyboardStateManager';
 import MouseStateManager from '../common/MouseStateManager';
 import CanvasElementCache from '../common/CanvasElementCache';
 import PianoRollClipboard from './PianoRollClipboard';
-import ScrollManager from './ScrollManager';
-
+import StageScrollManager from '../common/StageScrollManager';
 import GridLayer from './GridLayer';
 import NoteLayer from './NoteLayer';
 import VelocityLayer from './VelocityLayer';
@@ -175,13 +174,11 @@ export default class PianoRoll {
             livePlayInstrument
         );
         this.contextMenuLayer = new ContextMenuLayer(this.conversionManager, this.secondaryBackingLayer);
-        this.scrollManager = new ScrollManager(
-            this.gridLayer,
-            this.noteLayer,
-            this.velocityLayer,
-            this.pianoKeyLayer,
-            this.transportLayer,
-            this.seekerLineLayer
+        this.scrollManager = new StageScrollManager(
+            [ this.gridLayer, this.noteLayer, this.velocityLayer, this.transportLayer, this.seekerLineLayer ],
+            [ this.gridLayer, this.noteLayer, this.pianoKeyLayer ],
+            StaticMeasurements.pianoKeyWidth,
+            this.conversionManager.seekerAreaHeight
         );
         this.scrollbarLayer = new PianoRollScrollbars(
             this.scrollManager,

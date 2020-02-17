@@ -90,3 +90,11 @@ export interface Clipboard<SerializedEntityType> {
     add(...args: any[]) : void,
     produceCopy(...args: any[]) : SerializedEntityType[]
 }
+
+export interface HorizontallyScrollableComponent {
+    updateX(x: number) : void
+}
+
+export interface VerticallyScrollableComponent {
+    updateY(y: number) : void
+}

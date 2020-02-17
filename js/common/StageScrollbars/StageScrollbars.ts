@@ -4,11 +4,12 @@ import {
     StaticMeasurements
 } from '../../Constants';
 import { clamp } from '../../utils';
+import StageScrollManager from '../StageScrollManager';
 
 export default class StageScrollbars {
 
     protected conversionManager: any;
-    private scrollManager: any;
+    private scrollManager: StageScrollManager;
     private leftPanelWidth: number;
     private layer: Konva.Layer;
     private layerGroup: Konva.Group;
@@ -18,7 +19,7 @@ export default class StageScrollbars {
     private horizontalThumb: Konva.Rect;
 
     constructor(
-        scrollManager: any,
+        scrollManager: StageScrollManager,
         conversionManager: any,
         layerRef: Konva.Layer,
         leftPanelWidth: number
