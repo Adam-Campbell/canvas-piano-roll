@@ -754,7 +754,7 @@ export default class Arranger implements WindowChild {
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         const xDelta = xWithScroll - this.mouseStateManager.x;
         if (xDelta < this.interactionXDeltaMax) {
-            this.sectionLayer.updateLengths(
+            this.sectionLayer.updateWidths(
                 this.mouseStateManager.x, 
                 xWithScroll, 
                 selectedSectionElements

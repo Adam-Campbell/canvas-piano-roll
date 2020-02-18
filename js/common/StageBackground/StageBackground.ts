@@ -12,12 +12,18 @@ export default class StageBackground {
         this.layer = layerRef;
     } 
 
-    init() {
+    /**
+     * Adds the background to the layer and redraws the layer.
+     */
+    init() : void {
         this.background = this.constructBackground();
         this.layer.add(this.background);
         this.layer.batchDraw();
     }
 
+    /**
+     * Constructs and returns the background
+     */
     private constructBackground() : Konva.Rect {
         return new Konva.Rect({
             x: 0,
@@ -28,7 +34,11 @@ export default class StageBackground {
         });
     }
 
-    redrawOnResize() {
+    /**
+     * Redraws the layer. Used by the parent stage whenever its size updates in order to redraw this
+     * layer. 
+     */
+    redrawOnResize() : void {
         this.background.width(this.conversionManager.stageWidth);
         this.background.height(this.conversionManager.stageHeight);
         this.layer.batchDraw();

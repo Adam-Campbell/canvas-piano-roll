@@ -1299,7 +1299,7 @@ export default class PianoRoll implements WindowChild {
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
         const xDelta = xWithScroll - this.mouseStateManager.x;
         if (xDelta <= this.interactionXDeltaMax) {
-            this.noteLayer.updateLengths(
+            this.noteLayer.updateWidths(
                 this.mouseStateManager.x, 
                 xWithScroll, 
                 selectedNoteElements

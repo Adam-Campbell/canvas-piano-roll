@@ -7,10 +7,8 @@ export default class KeyboardStateManager {
     private keyListeners = {};
 
     constructor(stageContainer: HTMLElement) {
-        console.log(stageContainer)
         this.stageContainer = stageContainer;
         this.stageContainer.addEventListener('keydown', e => {
-            console.log('keydown fired')
             const { key, code, repeat, keyCode } = e;
             if (repeat) return;
 
@@ -24,6 +22,10 @@ export default class KeyboardStateManager {
         });
     }
 
+    /**
+     * If the key is one of the keys that this class is responsible for tracking the state of,
+     * then it updates its internal state for that key according to isPressed.
+     */
     private updateKeyState(key: string, isPressed: boolean) : void {
         switch (key) {
             case 'Shift':
@@ -44,18 +46,31 @@ export default class KeyboardStateManager {
         }
     }
 
+    /**
+     * Returns true if the shift key is currently pressed, else false.
+     */
     get shiftKey() : boolean {
         return this._shiftKey;
     }
 
+    /**
+     * Returns true if the contol key is currently pressed, else false. 
+     */
     get ctrlKey() : boolean {
         return this._ctrlKey;
     }
 
+    /**
+     * Returns true if the alt key is currently pressed, else false.
+     */
     get altKey() : boolean {
         return this._altKey;
     }
 
+    /**
+     * Registers a key listener that will call the given callback whenever the given key is pressed. 
+     * Returns a function that when called will terminate the key listener. 
+     */
     addKeyListener(key: string, cb: Function) : Function {
         if (!this.keyListeners[key]) {
             this.keyListeners[key] = [];
@@ -68,6 +83,10 @@ export default class KeyboardStateManager {
         }
     }
 
+    /**
+     * Given a key, triggers all key listeners currently listening for that key, if any such
+     * key listeners exist. 
+     */
     private triggerKeyListeners(key: string) : void {
         if (this.keyListeners[key]) {
             this.keyListeners[key].forEach(cb => cb());

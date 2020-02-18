@@ -27,6 +27,9 @@ export default abstract class AbstractTransport {
         this.playbackMarker = this.constructPlaybackMarker();
     }
 
+    /**
+     * Adds the necessary elements to the layer and then redraws it. 
+     */
     init() : void {
         this.background.moveTo(this.layerGroup);
         this.border.moveTo(this.layerGroup);
@@ -36,13 +39,23 @@ export default abstract class AbstractTransport {
         this.layer.batchDraw();
     }
 
+    /**
+     * Updates the position of the transport area along the x axis. 
+     */
     updateX(x) : void {
         this.layerGroup.x(x);
         this.layer.batchDraw();
     }
 
+    /**
+     * The implementation of this method should calculate and return the distance, in px, that should
+     * separate each of the numeric labels in the transport area.
+     */
     abstract get numberMarkerSpacing() : number;
 
+    /**
+     * Constructs and returns the background for the transport area.
+     */
     private constructBackground() : Konva.Rect {
         const background = new Konva.Rect({
             x: 0,
@@ -54,6 +67,9 @@ export default abstract class AbstractTransport {
         return background;
     }
 
+    /**
+     * Constructs and returns the border for the transport area.
+     */
     private constructBorder() : Konva.Rect {
         const border = new Konva.Rect({
             x: 0,
@@ -65,6 +81,9 @@ export default abstract class AbstractTransport {
         return border;
     }
 
+    /**
+     * Constructs and returns an array containing the numeric labels for the transport area.
+     */
     private constructNumberMarkersArray() : Konva.Text[] {
         let numberMarkersArray = [];
         for (let i = 0; i < this.conversionManager.numBars; i++) {
@@ -84,6 +103,9 @@ export default abstract class AbstractTransport {
         return numberMarkersArray;
     }
 
+    /**
+     * Constructs and returns the playback marker for the transport area. 
+     */
     private constructPlaybackMarker() : Konva.RegularPolygon {
         const marker = new Konva.RegularPolygon({
             sides: 3,
@@ -96,6 +118,10 @@ export default abstract class AbstractTransport {
         return marker;
     }
 
+    /**
+     * Performs the necessary recalculations when the zoom level of the parent stage updates, and then
+     * redraws the layer. 
+     */
     redrawOnZoomAdjustment(isZoomingIn: boolean) : void {
         this.background.width(this.conversionManager.gridWidth);
         this.border.width(this.conversionManager.gridWidth);
@@ -109,6 +135,9 @@ export default abstract class AbstractTransport {
         this.layer.batchDraw();
     }
 
+    /**
+     * Repositions the playback marker along the x axis according to the tick value supplied.  
+     */
     repositionPlaybackMarker(ticks: number) : void {
         this.playbackMarker.x(
             this.conversionManager.convertTicksToPx(ticks)
