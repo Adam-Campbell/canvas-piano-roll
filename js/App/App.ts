@@ -8,32 +8,13 @@ import {
 } from './templateFns';
 import { 
     Events,
-    WindowTypes 
+    WindowTypes,
+    WindowChild
 } from '../Constants';
 import PianoRoll from '../PianoRoll';
 import AudioEngine from '../AudioEngine';
 import Arranger from '../Arranger';
 import HistoryStack from '../HistoryStack';
-
-const windowsData = [
-    { id: '0', title: 'Lead Synth' },
-    { id: '1', title: 'Wubby Bass' },
-    { id: '2', title: 'Ethereal Pads' },
-    { id: '3', title: 'Electro Drums' },
-    { id: '4', title: 'Arps' },
-    { id: '5', title: 'Lead Synth' },
-    { id: '6', title: 'Wubby Bass' },
-    { id: '7', title: 'Ethereal Pads' },
-    { id: '8', title: 'Electro Drums' },
-    { id: '9', title: 'Arps' },
-    { id: '10', title: 'Lead Synth' },
-    { id: '11', title: 'Wubby Bass' },
-    { id: '12', title: 'Ethereal Pads' },
-    { id: '13', title: 'Electro Drums' },
-    { id: '14', title: 'Arps' }
-];
-
-let idx = 0;
 
 export default class App {
     
@@ -47,7 +28,6 @@ export default class App {
         this.audioEngine = new AudioEngine(this.eventEmitter);
         this.audioEngine.init();
         const initialHistoryStackEntry = this.audioEngine.serializeState();
-        console.log('initialState: ', initialHistoryStackEntry)
         this.historyStack = new HistoryStack(initialHistoryStackEntry);
         this.eventEmitter.subscribe(Events.closeWindow, this.removeWindow);
         this.eventEmitter.subscribe(Events.renderApp, this.renderApp);
@@ -56,48 +36,50 @@ export default class App {
         this.eventEmitter.subscribe(Events.addStateToStack, this.serializeStateAndAddToStack);
         this.eventEmitter.subscribe(Events.undoAction, this.undoActionAndPushState);
         this.eventEmitter.subscribe(Events.redoAction, this.redoActionAndPushState);
-
         window.audioEngine = this.audioEngine;
         window.historyStack = this.historyStack;
-        
     }
 
-    init() {
+    init() : void {
         this.renderApp();
         this.addArrangerWindow();
     }
 
-    private serializeStateAndAddToStack = () =>  {
-        // use the audio engine to get the new serialized state, then add it to the stack
+    /**
+     * Serializes the current state of the program and adds it to the history stack.
+     */
+    private serializeStateAndAddToStack = () : void =>  {
         const newState = this.audioEngine.serializeState();
-        console.log('HAS SERIALIZED STATE, NEW STATE IS: ', newState);
         this.historyStack.addEntry(newState);
-        // this.historyStack.addEntry(
-        //     this.audioEngine.serializeState()
-        // );
     }
 
-    private undoActionAndPushState = () => {
-        //go back to previous history stack entry and emit historyTravelled event with that
-        // state
+    /**
+     * Moves back to the previous entry in the history stack and pushes that state to the rest
+     * of the app via the event emitter.
+     */
+    private undoActionAndPushState = () : void => {
         if (!this.historyStack.isAtStart) {
             const nextState = this.historyStack.goBackwards();
-            console.log('TRAVELLED BACK THROUGH HISTORY, NEXT STATE IS: ', nextState)
             this.eventEmitter.emit(Events.historyTravelled, nextState);
         }
     }
 
-    private redoActionAndPushState = () => {
-        // go forwards to next history stack entry and emit historyTravelled event with that
-        // state
+    /**
+     * Moves forward to the next entry in the history stack and pushes that state to the rest
+     * of the app via the event emitter.
+     */
+    private redoActionAndPushState = () : void => {
         if (!this.historyStack.isAtEnd) {
             const nextState = this.historyStack.goForwards();
             this.eventEmitter.emit(Events.historyTravelled, nextState);
         }
     }
 
-    addWindow = (title: string, id: string, childClass: any, childContext: any) => {
-        //const data = windowsData[idx++];
+    /**
+     * Adds a new window to the application, triggers a rerender to add it to the DOM and then
+     * initializes the window and its child class.
+     */
+    addWindow = (title: string, id: string, childClass: any, childContext: any) : void => {
         const newWindow = new Window({
             id,
             title,
@@ -113,14 +95,21 @@ export default class App {
         newWindow.init();
     }
 
-    addArrangerWindow = () => {
+    /**
+     * Add a window containing the Arranger into the application by using the addWindow method
+     * configured with specific arguments.
+     */
+    addArrangerWindow = () : void => {
         this.addWindow('Arranger', '-1', Arranger, {
             audioEngine: this.audioEngine
         });
     }
 
-    addPianoRollWindow = (sectionId: string) => {
-        console.log(sectionId)
+    /**
+     * Add a window containing a PianoRoll into the application by using the addWindow method
+     * configured with specific arguments.
+     */
+    addPianoRollWindow = (sectionId: string) : void => {
         const { 
             section, 
             sectionTitle, 
@@ -135,12 +124,21 @@ export default class App {
         });
     }
 
-    removeWindow = (id: string) => {
+    /**
+     * Remove a window with a specific id from the app and trigger a rerender.
+     */
+    removeWindow = (id: string) : void => {
         this.activeWindows = this.activeWindows.filter(window => window.id !== id);
         this.renderApp();
     }
 
-    reorderZIndexes = (id: string) => {
+    /**
+     * Reorders the zIndex properties of all current windows such that the window with the specified
+     * id will be brought to the front, but all other windows will maintain the same visual order in
+     * relation to each other. Note - this method merely updates the zIndex properties on the Window
+     * class instances, it does not actually trigger any visual updates.
+     */
+    reorderZIndexes = (id: string) : void => {
         const windowToFocus = this.activeWindows.find(el => el.id === id);
         if (!windowToFocus) return;
         const oldZIndex = windowToFocus.zIndex;
@@ -154,13 +152,19 @@ export default class App {
         windowToFocus.zIndex = newZIndex; 
     }
 
-    focusWindow = (id: string) => {
+    /**
+     * Uses the reorderZIndexes method to put the zIndex properties in the correct order and then 
+     * triggers a rerender of the app. 
+     */
+    focusWindow = (id: string) : void => {
         this.reorderZIndexes(id);
         this.renderApp();
     }
 
-
-    renderApp = () => {
+    /**
+     * Renders the entire application.
+     */
+    renderApp = () : void => {
         render(
             html`
                 ${generateMenubarMarkup(this.addWindow)}

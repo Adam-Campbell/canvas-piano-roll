@@ -1,28 +1,29 @@
 import Tone from 'tone';
 import Konva from 'konva';
-import GridLayer from './GridLayer';
-import ConversionManager from './ConversionManager';
-import SectionLayer from './SectionLayer';
-import CanvasElementCache from './CanvasElementCache';
-import MouseStateManager from './MouseStateManager';
-import KeyboardStateManager from './KeyboardStateManager';
-import SectionSelection from './SectionSelection';
-import Clipboard from './Clipboard';
-import TransportLayer from './TransportLayer';
-import SeekerLineLayer from './SeekerLineLayer';
+import ArrangerGrid from './ArrangerGrid';
+import ArrangerConversionManager from './ArrangerConversionManager';
+import ArrangerSections from './ArrangerSections';
+import CanvasElementCache from '../common/CanvasElementCache';
+import MouseStateManager from '../common/MouseStateManager';
+import KeyboardStateManager from '../common/KeyboardStateManager';
+import SelectionManager from '../common/SelectionManager';
+import ArrangerClipboard from './ArrangerClipboard';
+import ArrangerTransport from './ArrangerTransport';
+import ArrangerSeekerLine from './ArrangerSeekerLine';
 import AudioReconciler from './AudioReconciler';
 import AudioEngine from '../AudioEngine';
-import ScrollManager from './ScrollManager';
-import ScrollbarLayer from './ScrollbarLayer';
-import ChannelInfoLayer from './ChannelInfoLayer';
-import BackgroundLayer from './BackgroundLayer';
+import StageScrollManager from '../common/StageScrollManager';
+import StageScrollbars from '../common/StageScrollbars';
+import ChannelInfoColumn from './ChannelInfoColumn';
+import StageBackground from '../common/StageBackground';
 import {
     ArrangerDragModes,
     Tools,
     KonvaEvent,
     Events,
     ArrangerOptions,
-    StaticMeasurements
+    StaticMeasurements,
+    WindowChild
 } from '../Constants';
 import { genId } from '../genId';
 import { 
@@ -38,47 +39,30 @@ import EventEmitter from '../EventEmitter';
 import { getBarNumFromBBSString } from './arrangerUtils';
 import { SerializedAudioEngineState } from '../AudioEngine/AudioEngineConstants';
 
-
-/*
-
-Should be able to reuse these amongs between PianoRoll and Arranger:
-
-CanvasElementCache
-KeyboardStateManager
-MouseStateManager
-NoteSelection (but give it a more general name such as SelectionManager)
-
-Additionally I think NoteLayer and its equivalent, SectionLayer, can be built using the same class, I just
-need to make sure the naming is more generic ie use the term rect instead of the terms note or section. 
-
-*/
-
-
-
-export default class Arranger {
+export default class Arranger implements WindowChild {
 
     private dragMode: ArrangerDragModes;
     private activeTool: Tools;
     private stage: Konva.Stage;
-    private conversionManager: ConversionManager;
+    private conversionManager: ArrangerConversionManager;
     private primaryBackingLayer: Konva.Layer;
     private secondaryBackingLayer: Konva.Layer;
-    private gridLayer: GridLayer;
-    private sectionLayer: SectionLayer;
+    private gridLayer: ArrangerGrid;
+    private sectionLayer: ArrangerSections;
     private sectionCache: CanvasElementCache;
     private mouseStateManager: MouseStateManager;
     private keyboardStateManager: KeyboardStateManager;
-    private sectionSelection: SectionSelection;
+    private sectionSelection: SelectionManager;
     private eventEmitter: EventEmitter;
-    private clipboard: Clipboard;
+    private clipboard: ArrangerClipboard;
     private audioReconciler: AudioReconciler;
     private audioEngine: AudioEngine;
-    private transportLayer: TransportLayer;
-    private seekerLineLayer: SeekerLineLayer;
-    private scrollManager: ScrollManager;
-    private scrollbarLayer: ScrollbarLayer;
-    private channelInfoLayer: ChannelInfoLayer;
-    private backgroundLayer: BackgroundLayer;
+    private transportLayer: ArrangerTransport;
+    private seekerLineLayer: ArrangerSeekerLine;
+    private scrollManager: StageScrollManager;
+    private scrollbarLayer: StageScrollbars;
+    private channelInfoLayer: ChannelInfoColumn;
+    private backgroundLayer: StageBackground;
     private playbackFromTicks: number;
     private interactionXDeltaMax: number;
     private interactionXDeltaMin: number;
@@ -91,10 +75,12 @@ export default class Arranger {
         this.activeTool = Tools.cursor;
         this.eventEmitter = eventEmitter;
         this.playbackFromTicks = 0;
-        window.toneRef = Tone;
-        window.arranger = this;
     }
 
+    /**
+     * Initializes the Arranger including all child classes and sets up all of the necessary 
+     * subscriptions.
+     */
     init(arrangerOptions: ArrangerOptions) {
         this.instantiateChildClasses(arrangerOptions);
         this.stage.add(this.primaryBackingLayer);
@@ -103,7 +89,7 @@ export default class Arranger {
         const initialState = this.audioEngine.serializeState();
         this.backgroundLayer.init();
         this.gridLayer.init();
-        this.sectionLayer.init(initialState);
+        this.sectionLayer.init();
         this.transportLayer.init();
         this.seekerLineLayer.init();
         this.channelInfoLayer.init(initialState);
@@ -111,8 +97,12 @@ export default class Arranger {
         this.registerStageSubscriptions();
         this.registerKeyboardSubscriptions();
         this.registerGlobalEventSubscriptions();
+        this.forceToState(initialState);
     }
 
+    /**
+     * Instantiates all of the child classes owned by the Arranger.
+     */
     instantiateChildClasses({
         container, 
         initialWidth,
@@ -125,7 +115,7 @@ export default class Arranger {
             height: initialHeight
         });
         this.audioEngine = audioEngine;
-        this.conversionManager = new ConversionManager({
+        this.conversionManager = new ArrangerConversionManager({
             stageWidth: initialWidth,
             stageHeight: initialHeight,
             barWidth: 48,
@@ -138,33 +128,39 @@ export default class Arranger {
         this.mouseStateManager = new MouseStateManager();
         this.keyboardStateManager = new KeyboardStateManager(container);
         this.sectionCache = new CanvasElementCache();
-        this.sectionSelection = new SectionSelection();
-        this.clipboard = new Clipboard(this.conversionManager, this.audioEngine);
+        this.sectionSelection = new SelectionManager();
+        this.clipboard = new ArrangerClipboard(this.conversionManager, this.audioEngine);
         this.primaryBackingLayer = new Konva.Layer();
         this.secondaryBackingLayer = new Konva.Layer();
-        this.backgroundLayer = new BackgroundLayer(this.conversionManager, this.primaryBackingLayer);
-        this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer);
-        this.sectionLayer = new SectionLayer(this.conversionManager, this.primaryBackingLayer);
-        this.transportLayer = new TransportLayer(this.conversionManager, this.primaryBackingLayer);
-        this.seekerLineLayer = new SeekerLineLayer(this.conversionManager);
-        this.channelInfoLayer = new ChannelInfoLayer(
+        this.backgroundLayer = new StageBackground(this.conversionManager, this.primaryBackingLayer);
+        this.gridLayer = new ArrangerGrid(this.conversionManager, this.primaryBackingLayer);
+        this.sectionLayer = new ArrangerSections(this.conversionManager, this.primaryBackingLayer);
+        this.transportLayer = new ArrangerTransport(this.conversionManager, this.primaryBackingLayer);
+        this.seekerLineLayer = new ArrangerSeekerLine(
+            this.conversionManager, 
+            StaticMeasurements.channelInfoColWidth
+        );
+        this.channelInfoLayer = new ChannelInfoColumn(
             this.conversionManager,
             this.secondaryBackingLayer
         );
-        this.scrollManager = new ScrollManager(
-            this.gridLayer,
-            this.sectionLayer,
-            this.transportLayer,
-            this.seekerLineLayer,
-            this.channelInfoLayer
+        this.scrollManager = new StageScrollManager(
+            [ this.gridLayer, this.sectionLayer, this.transportLayer, this.seekerLineLayer ],
+            [ this.gridLayer, this.sectionLayer, this.channelInfoLayer ],
+            StaticMeasurements.channelInfoColWidth,
+            this.conversionManager.seekerAreaHeight
         );
-        this.scrollbarLayer = new ScrollbarLayer(
+        this.scrollbarLayer = new StageScrollbars(
             this.scrollManager,
             this.conversionManager,
-            this.secondaryBackingLayer
+            this.secondaryBackingLayer,
+            StaticMeasurements.channelInfoColWidth
         );
     }
 
+    /**
+     * Sets up subscriptions to events fired by the stage that Arranger owns.
+     */
     private registerStageSubscriptions() {
         this.stage.on('mousedown', (e: KonvaEvent) => this.handleInteractionStart(e));
         this.stage.on('touchstart', (e: KonvaEvent) => this.handleInteractionStart(e));
@@ -175,6 +171,10 @@ export default class Arranger {
         this.stage.on('dblclick', (e: KonvaEvent) => this.handleDoubleClick(e));
     }
 
+    /**
+     * Sets up the necessary keyboard subscriptions - the keyboard events are captured by
+     * the stages container and so these subscriptions will only fire when the stage is focused.
+     */
     private registerKeyboardSubscriptions() : void {
         this.keyboardStateManager.addKeyListener('1', () => {
             if (this.keyboardStateManager.altKey) {
@@ -210,6 +210,9 @@ export default class Arranger {
         this.keyboardStateManager.addKeyListener(' ', () => this.handleTogglePlayback());
     }
 
+    /**
+     * Sets up the necessary subscriptions with the global event emitter.
+     */
     private registerGlobalEventSubscriptions() : void {
         this.eventEmitter.subscribe(Events.activeToolUpdate, tool => {
             this.activeTool = tool;
@@ -220,7 +223,10 @@ export default class Arranger {
         });
     }
 
-    cleanup() {
+    /**
+     * Performs the necessary cleanup for the Arranger to be safely removed/deleted.
+     */
+    cleanup() : void {
         this.stage.destroy();
     }
 
@@ -341,7 +347,7 @@ export default class Arranger {
      * to the audio engine.
      */
     private addNewSection(x: number, y: number, id: string, width?: number) : Konva.Rect {
-        const newSection = this.sectionLayer.addNewSection(x, y, id, width);
+        const newSection = this.sectionLayer.addNew(x, y, id, width);
         this.sectionCache.add(newSection);
         this.sectionSelection.add(newSection);
         return newSection;
@@ -377,7 +383,7 @@ export default class Arranger {
         }
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         if (canShiftUp(selectedSectionElements, this.conversionManager.rowHeight)) {
-            this.sectionLayer.shiftSectionsVertically(
+            this.sectionLayer.shiftVertically(
                 selectedSectionElements, 
                 true
             );
@@ -403,7 +409,7 @@ export default class Arranger {
             this.conversionManager.gridHeight, 
             this.conversionManager.rowHeight
         )) {
-            this.sectionLayer.shiftSectionsVertically(selectedSectionElements, false);
+            this.sectionLayer.shiftVertically(selectedSectionElements, false);
             selectedSectionElements.forEach(section => this.audioReconciler.addSection(section));
             this.addToHistory();
         }
@@ -422,7 +428,7 @@ export default class Arranger {
         }
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         if (canShiftLeft(selectedSectionElements)) {
-            this.sectionLayer.shiftSectionsHorizontally(selectedSectionElements, true);
+            this.sectionLayer.shiftHorizontally(selectedSectionElements, true);
             selectedSectionElements.forEach(section => this.audioReconciler.addSection(section));
             this.addToHistory();
         }
@@ -445,7 +451,7 @@ export default class Arranger {
             this.conversionManager.gridWidth,
             this.conversionManager.colWidth
         )) {
-            this.sectionLayer.shiftSectionsHorizontally(selectedSectionElements, false);
+            this.sectionLayer.shiftHorizontally(selectedSectionElements, false);
             selectedSectionElements.forEach(section => this.audioReconciler.addSection(section));
             this.addToHistory();
         }
@@ -462,7 +468,7 @@ export default class Arranger {
             return;
         }
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
-        this.sectionLayer.deleteSections(selectedSectionElements);
+        this.sectionLayer.delete(selectedSectionElements);
         this.sectionSelection.clear();
         selectedSectionElements.forEach(section => {
             this.sectionCache.remove(section);
@@ -644,7 +650,7 @@ export default class Arranger {
     handleDoubleClick(e: KonvaEvent) : void {
         const { rawX, rawY, target } = this.extractInfoFromEventObject(e);
         const isTransportAreaInteraction = rawY <= 30;
-        const isSectionInteraction = target.name() === 'SECTION';
+        const isSectionInteraction = target.name() === 'STAGE_ENTITY';
         const xWithScroll = rawX - this.scrollManager.x;
         const isOutOfBounds = xWithScroll > this.conversionManager.gridWidth;
         if (isTransportAreaInteraction && !isOutOfBounds) {
@@ -696,7 +702,7 @@ export default class Arranger {
             this.calculateDeltaBoundaries();
 
         } else if (this.activeTool === Tools.cursor) {
-            const targetIsSection = target.name() === 'SECTION';
+            const targetIsSection = target.name() === 'STAGE_ENTITY';
             if (targetIsSection) {
                 this.handleSectionInteractionStart(target, xWithScroll); 
             }
@@ -749,7 +755,7 @@ export default class Arranger {
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
         const xDelta = xWithScroll - this.mouseStateManager.x;
         if (xDelta < this.interactionXDeltaMax) {
-            this.sectionLayer.updateSectionDurations(
+            this.sectionLayer.updateWidths(
                 this.mouseStateManager.x, 
                 xWithScroll, 
                 selectedSectionElements
@@ -781,7 +787,7 @@ export default class Arranger {
         );
         const selectedSectionIds = this.sectionSelection.retrieveAll();
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
-        this.sectionLayer.repositionSections(safeXDelta, safeYDelta, selectedSectionElements);
+        this.sectionLayer.updatePositions(safeXDelta, safeYDelta, selectedSectionElements);
     }
 
     handleAdjustSelectionInteractionUpdate(e: KonvaEvent) : void {
@@ -818,7 +824,7 @@ export default class Arranger {
         this.resetDeltaBoundaries();
         const selectedSectionIds = this.sectionSelection.retrieveAll();
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
-        this.sectionLayer.updateSectionsAttributeCaches(selectedSectionElements);
+        this.sectionLayer.updateAttributeCaches(selectedSectionElements);
         // trigger update in audio engine and serialize state to update history stack.
         selectedSectionElements.forEach(el => this.audioReconciler.addSection(el));
         this.addToHistory();
@@ -845,7 +851,7 @@ export default class Arranger {
         }
         const selectedSectionIds = this.sectionSelection.retrieveAll();
         const selectedSectionElements = this.sectionCache.retrieve(selectedSectionIds);
-        this.sectionLayer.updateSectionsAttributeCaches(selectedSectionElements);
+        this.sectionLayer.updateAttributeCaches(selectedSectionElements);
         // then update the audio engine and history stack.
         selectedSectionElements.forEach(sectionElement => this.audioReconciler.addSection(sectionElement));
         if (this.mouseStateManager.hasTravelled) {
@@ -858,6 +864,9 @@ export default class Arranger {
         this.sectionLayer.clearSelectionMarquee();
     }
 
+    /**
+     * Updates the Arranger and its child classes to match a given state. 
+     */
     forceToState(state: SerializedAudioEngineState) : void {
         // renders the section rects to match the state given
         const sectionElements = this.sectionLayer.forceToState(state);

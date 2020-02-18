@@ -1,19 +1,24 @@
 import Konva from 'konva';
-import ConversionManager from '../ConversionManager';
+import ArrangerConversionManager from '../ArrangerConversionManager';
 import AudioEngine from '../../AudioEngine';
 import { SerializedSectionState, NoteCache } from '../../AudioEngine/AudioEngineConstants';
 
 
 export default class AudioReconciler {
 
-    private conversionManager: ConversionManager;
+    private conversionManager: ArrangerConversionManager;
     private audioEngine: AudioEngine;
 
-    constructor(conversionManager: ConversionManager, audioEngine: AudioEngine) {
+    constructor(conversionManager: ArrangerConversionManager, audioEngine: AudioEngine) {
         this.conversionManager = conversionManager;
         this.audioEngine = audioEngine; 
     }
 
+    /**
+     * Adds a section to the audio engine derived from the supplied section element. Checks the audio
+     * engine to determine if a section with a matching id already exists and if so, it copies that
+     * sections notes before deleting the older section.
+     */
     addSection(sectionElement: Konva.Rect) : void {
         // From the sectionElement, derive the start, numBars, channelIdx and id for the new
         // section. 
@@ -27,6 +32,10 @@ export default class AudioReconciler {
         this.audioEngine.channels[channelIdx].addSection(start, numBars, id, existingNotesData);
     }
 
+    /**
+     * If a section matching the given id exists in the audio engine this method will copy its notes
+     * data and then delete it. 
+     */
     private getNotesDataAndCleanup(id: string) : NoteCache {
         for (const channel of this.audioEngine.channels) {
             const sectionData = channel.getDataForSection(id);
@@ -38,6 +47,10 @@ export default class AudioReconciler {
         return {};
     }
 
+    /**
+     * Adds a section to the audio engine based on serialized section state rather than deriving
+     * it from a section element. 
+     */
     addSectionFromSerializedState(serializedState: SerializedSectionState) {
         this.audioEngine.channels[serializedState.channelIdx].addSection(
             serializedState.start,
@@ -47,6 +60,10 @@ export default class AudioReconciler {
         );
     }
 
+    /**
+     * Takes the id from the supplied section element and removes the section with the same id from
+     * the audio engine, if it exists. 
+     */
     removeSection(sectionElement: Konva.Rect) : void {
         const id = sectionElement.id();
         const channel = this.audioEngine.channels.find(c => Boolean(c.sectionCache[id]));

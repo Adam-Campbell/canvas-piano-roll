@@ -2,41 +2,14 @@ import Channel from './Channel';
 import Section from './Section';
 import EventEmitter from '../EventEmitter';
 import { genId } from '../genId';
-import { SerializedAudioEngineState, AudioEngineComponent } from './AudioEngineConstants';
 import { Events } from '../Constants';
-
-const padInstrumentSettings = {
-    envelope: {
-        sustain: 0.9,
-        release: 0.1
-    },
-    oscillator: {
-        volume: -22,
-        type: 'amsawtooth'
-    }
-};
-
-const bassInstrumentSettings = {
-    envelope: {
-        sustain: 0.9,
-        release: 0.1
-    },
-    oscillator: {
-        volume: -22,
-        type: 'fatsquare'
-    }
-}
-
-const leadInstrumentSettings = {
-    envelope: {
-        sustain: 0.9,
-        release: 0.1
-    },
-    oscillator: {
-        volume: -22,
-        type: 'triangle'
-    }
-}
+import { 
+    SerializedAudioEngineState, 
+    AudioEngineComponent,
+    padInstrumentSettings,
+    bassInstrumentSettings,
+    leadInstrumentSettings
+} from './AudioEngineConstants';
 
 export default class AudioEngine implements AudioEngineComponent {
 
@@ -47,7 +20,7 @@ export default class AudioEngine implements AudioEngineComponent {
         this.eventEmitter = eventEmitter;
     }
 
-    init() {
+    init() : void {
         this.addChannel('Channel 1', padInstrumentSettings);
         this.addChannel('Channel 2', bassInstrumentSettings);
         this.addChannel('Channel 3', leadInstrumentSettings);
@@ -66,6 +39,12 @@ export default class AudioEngine implements AudioEngineComponent {
         );
     }
 
+    /**
+     * This method is used to provide context for a PianoRoll instance. If a section with the given id
+     * exists it returns a reference to the section, its title, and the livePlayInstrument associated with
+     * its channel (this is the instrument that will be hooked up to the PianoRolls piano). If there is
+     * no section matching the id it just returns null.
+     */
     getSectionContext(sectionId: string) : {
         section: Section,
         sectionTitle: string,
@@ -83,22 +62,18 @@ export default class AudioEngine implements AudioEngineComponent {
         }
     }
 
-    getSectionById(sectionId: string) {
-
-    }
-
-    deleteSection(sectionId: string) {
-
-    }
-
-    // serializes the state of the entire audio engine. 
+    /**
+     * Serializes the state of the entire audio engine.
+     */
     serializeState() : SerializedAudioEngineState {
         return {
             channels: this.channels.map(channel => channel.serializeState())
         };
     }
 
-    // forces the entire audio engine to a given state
+    /**
+     * Updates the entire audio engine to match a given state.
+     */
     forceToState(state: SerializedAudioEngineState) : void {
         // This is not the proper algorithm. At the moment the program does not have the ability
         // to add/remove tracks/ alter track names etc, so this algorithm can assume that the channels

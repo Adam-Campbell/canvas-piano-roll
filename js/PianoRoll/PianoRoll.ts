@@ -1,24 +1,23 @@
 import Tone from 'tone';
 import Konva from 'konva';
 import EventEmitter from '../EventEmitter';
-import ConversionManager from './ConversionManager';
+import PianoRollConversionManager from './PianoRollConversionManager';
 import AudioReconciler from './AudioReconciler';
-import NoteSelection from './NoteSelection';
-import KeyboardStateManager from './KeyboardStateManager';
-import MouseStateManager from './MouseStateManager';
-import CanvasElementCache from './CanvasElementCache';
-import Clipboard from './Clipboard';
-import ScrollManager from './ScrollManager';
-
-import GridLayer from './GridLayer';
-import NoteLayer from './NoteLayer';
-import VelocityLayer from './VelocityLayer';
-import TransportLayer from './TransportLayer';
-import SeekerLineLayer from './SeekerLineLayer';
-import PianoKeyLayer from './PianoKeyLayer';
-import ScrollbarLayer from './ScrollbarLayer';
-import ContextMenuLayer from './ContextMenuLayer';
-import BackgroundLayer from './BackgroundLayer';
+import SelectionManager from '../common/SelectionManager';
+import KeyboardStateManager from '../common/KeyboardStateManager';
+import MouseStateManager from '../common/MouseStateManager';
+import CanvasElementCache from '../common/CanvasElementCache';
+import PianoRollClipboard from './PianoRollClipboard';
+import StageScrollManager from '../common/StageScrollManager';
+import PianoRollGrid from './PianoRollGrid';
+import PianoRollNotes from './PianoRollNotes'
+import VelocityArea from './VelocityArea';
+import PianoRollTransport from './PianoRollTransport';
+import PianoRollSeekerLine from './PianoRollSeekerLine';
+import PianoKeys from './PianoKeys';
+import PianoRollScrollbars from './PianoRollScrollbars';
+import ContextMenus from './ContextMenus';
+import StageBackground from '../common/StageBackground';
 import { 
     DragModes,
     Tools,
@@ -26,7 +25,8 @@ import {
     StaticMeasurements,
     SerializedState,
     KonvaEvent,
-    PianoRollOptions
+    PianoRollOptions,
+    WindowChild
 } from '../Constants';
 import {
     easingFns
@@ -59,7 +59,7 @@ enum EasingModes {
     easeInOut = 'easeInOut'
 }
 
-export default class PianoRoll {
+export default class PianoRoll implements WindowChild {
 
     private dragMode: DragModes;
     private activeTool: Tools;
@@ -71,22 +71,22 @@ export default class PianoRoll {
     private velocityMarkerCache: CanvasElementCache;
     private keyboardStateManager: KeyboardStateManager;
     private mouseStateManager: MouseStateManager;
-    private conversionManager: ConversionManager;
+    private conversionManager: PianoRollConversionManager;
     private audioReconciler: AudioReconciler;
-    private noteSelection: NoteSelection;
-    private clipboard: Clipboard;
+    private noteSelection: SelectionManager;
+    private clipboard: PianoRollClipboard;
     private primaryBackingLayer: Konva.Layer;
     private secondaryBackingLayer: Konva.Layer;
-    private gridLayer: GridLayer;
-    private noteLayer: NoteLayer;
-    private velocityLayer: VelocityLayer;
-    private transportLayer: TransportLayer;
-    private seekerLineLayer: SeekerLineLayer;
-    private pianoKeyLayer: PianoKeyLayer;
-    private contextMenuLayer: ContextMenuLayer;
-    private scrollManager: ScrollManager;
-    private scrollbarLayer: ScrollbarLayer;
-    private backgroundLayer: BackgroundLayer;
+    private gridLayer: PianoRollGrid;
+    private noteLayer: PianoRollNotes;
+    private velocityLayer: VelocityArea;
+    private transportLayer: PianoRollTransport;
+    private seekerLineLayer: PianoRollSeekerLine;
+    private pianoKeyLayer: PianoKeys;
+    private contextMenuLayer: ContextMenus;
+    private scrollManager: StageScrollManager;
+    private scrollbarLayer: PianoRollScrollbars;
+    private backgroundLayer: StageBackground;
     private eventEmitter: EventEmitter;
     private unsubscribeFns: Function[] = [];
     private section: Section;
@@ -149,7 +149,7 @@ export default class PianoRoll {
         this.velocityMarkerCache = new CanvasElementCache();
         this.keyboardStateManager = new KeyboardStateManager(this.stage.container());
         this.mouseStateManager = new MouseStateManager();
-        this.conversionManager = new ConversionManager(
+        this.conversionManager = new PianoRollConversionManager(
             initialWidth, 
             initialHeight,
             this.eventEmitter,
@@ -158,35 +158,38 @@ export default class PianoRoll {
             numBars
         );
         this.audioReconciler = new AudioReconciler(this.conversionManager, this.section);
-        this.noteSelection = new NoteSelection();
-        this.clipboard = new Clipboard(this.conversionManager);
+        this.noteSelection = new SelectionManager();
+        this.clipboard = new PianoRollClipboard(this.conversionManager);
         // Instantiate canvas layer related classes
         this.primaryBackingLayer = new Konva.Layer();
         this.secondaryBackingLayer = new Konva.Layer();
-        this.backgroundLayer = new BackgroundLayer(this.conversionManager, this.primaryBackingLayer);
-        this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer, this.eventEmitter);
-        this.noteLayer = new NoteLayer(this.conversionManager, this.primaryBackingLayer);
-        this.velocityLayer = new VelocityLayer(this.conversionManager, this.primaryBackingLayer);
-        this.transportLayer = new TransportLayer(this.conversionManager, this.primaryBackingLayer);
-        this.seekerLineLayer = new SeekerLineLayer(this.conversionManager, this.section);
-        this.pianoKeyLayer = new PianoKeyLayer(
+        this.backgroundLayer = new StageBackground(this.conversionManager, this.primaryBackingLayer);
+        this.gridLayer = new PianoRollGrid(this.conversionManager, this.primaryBackingLayer, this.eventEmitter);
+        this.noteLayer = new PianoRollNotes(this.conversionManager, this.primaryBackingLayer);
+        this.velocityLayer = new VelocityArea(this.conversionManager, this.primaryBackingLayer);
+        this.transportLayer = new PianoRollTransport(this.conversionManager, this.primaryBackingLayer);
+        this.seekerLineLayer = new PianoRollSeekerLine(
+            this.conversionManager,
+            StaticMeasurements.pianoKeyWidth, 
+            this.section
+        );
+        this.pianoKeyLayer = new PianoKeys(
             this.conversionManager, 
             this.secondaryBackingLayer,
             livePlayInstrument
         );
-        this.contextMenuLayer = new ContextMenuLayer(this.conversionManager, this.secondaryBackingLayer);
-        this.scrollManager = new ScrollManager(
-            this.gridLayer,
-            this.noteLayer,
-            this.velocityLayer,
-            this.pianoKeyLayer,
-            this.transportLayer,
-            this.seekerLineLayer
+        this.contextMenuLayer = new ContextMenus(this.conversionManager, this.secondaryBackingLayer);
+        this.scrollManager = new StageScrollManager(
+            [ this.gridLayer, this.noteLayer, this.velocityLayer, this.transportLayer, this.seekerLineLayer ],
+            [ this.gridLayer, this.noteLayer, this.pianoKeyLayer ],
+            StaticMeasurements.pianoKeyWidth,
+            this.conversionManager.seekerAreaHeight
         );
-        this.scrollbarLayer = new ScrollbarLayer(
+        this.scrollbarLayer = new PianoRollScrollbars(
             this.scrollManager,
             this.conversionManager,
-            this.secondaryBackingLayer
+            this.secondaryBackingLayer,
+            StaticMeasurements.pianoKeyWidth
         );
     }
 
@@ -313,8 +316,8 @@ export default class PianoRoll {
             }
         }
         this.backgroundLayer.redrawOnResize();
-        this.velocityLayer.redrawOnVerticalResize();
-        this.pianoKeyLayer.redrawOnVerticalResize();
+        this.velocityLayer.redrawOnResize();
+        this.pianoKeyLayer.redrawOnResize();
         this.scrollbarLayer.redrawOnResize();
         this.primaryBackingLayer.draw();
         this.secondaryBackingLayer.draw();
@@ -444,7 +447,7 @@ export default class PianoRoll {
      */
     private addNewNote(x: number, y: number, width?: number) : Konva.Rect {
         const id = genId();
-        const newNote = this.noteLayer.addNewNote(x, y, id, width);
+        const newNote = this.noteLayer.addNew(x, y, id, width);
         const newVelocityMarker = this.velocityLayer.addNewVelocityMarker(x, id);
         this.noteCache.add(newNote);
         this.velocityMarkerCache.add(newVelocityMarker);
@@ -464,7 +467,7 @@ export default class PianoRoll {
         }
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
         const selectedVelocityMarkerElements = this.velocityMarkerCache.retrieve(selectedNoteIds);
-        this.noteLayer.deleteNotes(selectedNoteElements);
+        this.noteLayer.delete(selectedNoteElements);
         this.velocityLayer.deleteVelocityMarkers(selectedVelocityMarkerElements);
         this.noteSelection.clear();
         selectedNoteElements.forEach(el => this.noteCache.remove(el));
@@ -552,7 +555,7 @@ export default class PianoRoll {
         }
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
         if (canShiftUp(selectedNoteElements, shiftAmount)) {
-            this.noteLayer.shiftNotesUp(selectedNoteElements, shiftAmount);
+            this.noteLayer.shiftUp(selectedNoteElements, shiftAmount);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
             this.addToHistory();
         }
@@ -575,7 +578,7 @@ export default class PianoRoll {
         }
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
         if (canShiftDown(selectedNoteElements, this.conversionManager.gridHeight, shiftAmount)) {
-            this.noteLayer.shiftNotesDown(selectedNoteElements, shiftAmount);
+            this.noteLayer.shiftDown(selectedNoteElements, shiftAmount);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
             this.addToHistory();
         }
@@ -597,7 +600,7 @@ export default class PianoRoll {
             selectedNoteIds
         );
         if (canShiftLeft(selectedNoteElements)) {
-            this.noteLayer.shiftNotesLeft(selectedNoteElements);
+            this.noteLayer.shiftLeft(selectedNoteElements);
             this.velocityLayer.shiftVelocityMarkersLeft(selectedVelocityMarkerElements);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
             this.addToHistory()
@@ -620,7 +623,7 @@ export default class PianoRoll {
             selectedNoteIds
         );
         if (canShiftRight(selectedNoteElements, this.conversionManager.gridWidth, this.conversionManager.colWidth)) {
-            this.noteLayer.shiftNotesRight(selectedNoteElements);
+            this.noteLayer.shiftRight(selectedNoteElements);
             this.velocityLayer.shiftVelocityMarkersRight(selectedVelocityMarkerElements);
             selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
             this.addToHistory();
@@ -675,7 +678,7 @@ export default class PianoRoll {
 
         noteElementToUpdate.y(newY);
         this.primaryBackingLayer.batchDraw();
-        this.noteLayer.updateNotesAttributeCaches([ noteElementToUpdate ]);
+        this.noteLayer.updateAttributeCaches([ noteElementToUpdate ]);
         this.addNoteToAudioEngine(noteElementToUpdate.id());
         this.addToHistory();
     }
@@ -728,7 +731,7 @@ export default class PianoRoll {
 
         noteElementToUpdate.y(newY);
         this.primaryBackingLayer.batchDraw();
-        this.noteLayer.updateNotesAttributeCaches([ noteElementToUpdate ]);
+        this.noteLayer.updateAttributeCaches([ noteElementToUpdate ]);
         this.addNoteToAudioEngine(noteElementToUpdate.id());
         this.addToHistory();
     }
@@ -830,14 +833,14 @@ export default class PianoRoll {
         }
         this.clearSelection();
         newNoteData.forEach(noteObject => {
-            const noteElement = this.noteLayer.createNoteElement(
+            const noteElement = this.noteLayer.produce(
                 this.conversionManager.convertTicksToPx(noteObject.time),
                 this.conversionManager.deriveYFromPitch(noteObject.note),
                 this.conversionManager.convertTicksToPx(noteObject.duration),
                 noteObject.id,
                 true
             );
-            this.noteLayer.moveNoteToNotesContainer(noteElement);
+            this.noteLayer.moveToContainer(noteElement);
             this.noteCache.add(noteElement);
             const velocityMarkerHeight = noteObject.velocity * (this.conversionManager.velocityAreaHeight - 10);
             const velocityMarkerElement = this.velocityLayer.createVelocityMarker(
@@ -1095,7 +1098,7 @@ export default class PianoRoll {
             if (isVelocityAreaClick) {
                 this.handleVelocityAreaCursorInteraction(roundedX, target);
             } else {
-                const targetIsNote = Boolean(target.getAttr('isNoteRect'));
+                const targetIsNote = target.name() === 'STAGE_ENTITY';
                 if (targetIsNote) {
                     this.handleNoteInteractionStart(target, xWithScroll);
                 }
@@ -1296,7 +1299,7 @@ export default class PianoRoll {
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
         const xDelta = xWithScroll - this.mouseStateManager.x;
         if (xDelta <= this.interactionXDeltaMax) {
-            this.noteLayer.updateNoteDurations(
+            this.noteLayer.updateWidths(
                 this.mouseStateManager.x, 
                 xWithScroll, 
                 selectedNoteElements
@@ -1329,7 +1332,7 @@ export default class PianoRoll {
             this.interactionYDeltaMin,
             this.interactionYDeltaMax
         );
-        this.noteLayer.repositionNotes(safeXDelta, safeYDelta, selectedNoteElements);
+        this.noteLayer.updatePositions(safeXDelta, safeYDelta, selectedNoteElements);
         this.velocityLayer.repositionVelocityMarkers(safeXDelta, selectedVelocityMarkerElements);
     }
 
@@ -1399,7 +1402,7 @@ export default class PianoRoll {
         const selectedNoteIds = this.noteSelection.retrieveAll();
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
         const selectedVelocityMarkerElements = this.velocityMarkerCache.retrieve(selectedNoteIds);
-        this.noteLayer.updateNotesAttributeCaches(selectedNoteElements);
+        this.noteLayer.updateAttributeCaches(selectedNoteElements);
         this.velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
         selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
         this.addToHistory();
@@ -1427,7 +1430,7 @@ export default class PianoRoll {
         const selectedNoteIds = this.noteSelection.retrieveAll();
         const selectedNoteElements = this.noteCache.retrieve(selectedNoteIds);
         const selectedVelocityMarkerElements = this.velocityMarkerCache.retrieve(selectedNoteIds);
-        this.noteLayer.updateNotesAttributeCaches(selectedNoteElements);
+        this.noteLayer.updateAttributeCaches(selectedNoteElements);
         this.velocityLayer.updateVelocityMarkersAttributeCaches(selectedVelocityMarkerElements);
         selectedNoteIds.forEach(id => this.addNoteToAudioEngine(id));
         if (this.mouseStateManager.hasTravelled) {
