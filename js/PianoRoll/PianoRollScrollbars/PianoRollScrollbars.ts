@@ -2,11 +2,12 @@ import Konva from 'konva';
 import StageScrollbars from '../../common/StageScrollbars';
 import { StaticMeasurements } from '../../Constants';
 import StageScrollManager from '../../common/StageScrollManager';
+import PianoRollConversionManager from '../PianoRollConversionManager';
 
 export default class PianoRollScrollbars extends StageScrollbars {
     constructor(
         scrollManager: StageScrollManager,
-        conversionManager: any,
+        conversionManager: PianoRollConversionManager,
         layerRef: Konva.Layer,
         leftPanelWidth: number,
     ) {

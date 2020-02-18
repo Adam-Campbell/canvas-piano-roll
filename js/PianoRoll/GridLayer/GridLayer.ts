@@ -11,13 +11,13 @@ import {
     Colours,
     Events 
 } from '../../Constants';
-import ConversionManager from '../ConversionManager';
+import PianoRollConversionManager from '../PianoRollConversionManager';
 
 const isSameNote = (noteA, noteB) => note(noteA).chroma === note(noteB).chroma;
 
 export default class GridLayer {
     
-    private conversionManager: ConversionManager;
+    private conversionManager: PianoRollConversionManager;
     private layer: Konva.Layer;
     private gridContainer: Konva.Group;
     private scaleHighlightsSubContainer: Konva.Group;
@@ -26,7 +26,7 @@ export default class GridLayer {
     private eventEmitter: EventEmitter;
     shouldDisplayScaleHighlighting: boolean;
 
-    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer, eventEmitter: EventEmitter) {
+    constructor(conversionManager: PianoRollConversionManager, layerRef: Konva.Layer, eventEmitter: EventEmitter) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
         this.gridContainer = new Konva.Group({ x: 120, y: 30 });

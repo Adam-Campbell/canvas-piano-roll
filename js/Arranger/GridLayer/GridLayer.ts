@@ -3,16 +3,16 @@ import {
     getHorizontalLinesData, 
     getVerticalLinesData 
 } from './gridLayerUtils';
-import ConversionManager from '../ConversionManager';
+import ArrangerConversionManager from '../ArrangerConversionManager';
 import { StaticMeasurements } from '../../Constants';
 
 export default class GridLayer {
 
     private layer: Konva.Layer;
-    private conversionManager: ConversionManager;
+    private conversionManager: ArrangerConversionManager;
     private gridContainer: Konva.Group;
 
-    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
+    constructor(conversionManager: ArrangerConversionManager, layerRef: Konva.Layer) {
         this.layer = layerRef;
         this.conversionManager = conversionManager;
         this.gridContainer = new Konva.Group({

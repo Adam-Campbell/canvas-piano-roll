@@ -1,7 +1,7 @@
 import Tone from 'tone';
 import Konva from 'konva';
 import GridLayer from './GridLayer';
-import ConversionManager from './ConversionManager';
+import ArrangerConversionManager from './ArrangerConversionManager';
 import ArrangerSections from './ArrangerSections';
 import CanvasElementCache from '../common/CanvasElementCache';
 import MouseStateManager from '../common/MouseStateManager';
@@ -61,7 +61,7 @@ export default class Arranger implements WindowChild {
     private dragMode: ArrangerDragModes;
     private activeTool: Tools;
     private stage: Konva.Stage;
-    private conversionManager: ConversionManager;
+    private conversionManager: ArrangerConversionManager;
     private primaryBackingLayer: Konva.Layer;
     private secondaryBackingLayer: Konva.Layer;
     private gridLayer: GridLayer;
@@ -127,7 +127,7 @@ export default class Arranger implements WindowChild {
             height: initialHeight
         });
         this.audioEngine = audioEngine;
-        this.conversionManager = new ConversionManager({
+        this.conversionManager = new ArrangerConversionManager({
             stageWidth: initialWidth,
             stageHeight: initialHeight,
             barWidth: 48,

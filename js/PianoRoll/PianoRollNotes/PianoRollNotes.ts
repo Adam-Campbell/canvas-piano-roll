@@ -3,10 +3,11 @@ import Tone from 'tone';
 import AbstractGridEntities from '../../common/AbstractGridEntities';
 import { StaticMeasurements, NoteBBS } from '../../Constants';
 import { SerializedSectionState } from '../../AudioEngine/AudioEngineConstants';
+import PianoRollConversionManager from '../PianoRollConversionManager';
 
 export default class PianoRollNotes extends AbstractGridEntities {
 
-    constructor(conversionManager: any, layerRef: Konva.Layer) {
+    constructor(conversionManager: PianoRollConversionManager, layerRef: Konva.Layer) {
         super(conversionManager, layerRef, StaticMeasurements.pianoKeyWidth);
     }
 

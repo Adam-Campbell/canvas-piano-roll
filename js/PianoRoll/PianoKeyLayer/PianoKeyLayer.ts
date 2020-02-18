@@ -7,18 +7,18 @@ import {
     sortByColor
 } from './pianoKeyUtils';
 import { Colours, StaticMeasurements } from '../../Constants';
-import ConversionManager from '../ConversionManager';
+import PianoRollConversionManager from '../PianoRollConversionManager';
 
 export default class PianoKeyLayer {
 
-    private conversionManager: ConversionManager;
+    private conversionManager: PianoRollConversionManager;
     private layer: Konva.Layer;
     private layerGroup: Konva.Group;
     private pianoKeyGroup: Konva.Group;
     private background: Konva.Rect;
     private instrument;
 
-    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer, instrument: any) {
+    constructor(conversionManager: PianoRollConversionManager, layerRef: Konva.Layer, instrument: any) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
         this.layerGroup = new Konva.Group();

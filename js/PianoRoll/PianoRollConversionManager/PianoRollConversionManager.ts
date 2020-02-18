@@ -1,7 +1,8 @@
 import EventEmitter from '../../EventEmitter';
 import {
     StaticMeasurements,
-    Events
+    Events,
+    ConversionManager
 } from '../../Constants';
 import { pitchesArray } from '../../pitches';
 
@@ -19,7 +20,7 @@ const noteDurationsMappedToTicks = {
     '1m': 768
 };
 
-export default class ConversionManager {
+export default class PianoRollConversionManager implements ConversionManager {
 
     private _stageWidth: number;
     private _stageHeight: number;

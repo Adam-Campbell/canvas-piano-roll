@@ -2,18 +2,19 @@ import Konva from 'konva';
 import Tone from 'tone';
 import { 
     Colours,
-    StaticMeasurements 
+    StaticMeasurements,
+    ConversionManager
 } from '../../Constants';
 
 export default abstract class AbstractSeekerLine {
     
-    protected conversionManager: any;
+    protected conversionManager: ConversionManager;
     layer: Konva.Layer;
     protected seekerLine: Konva.Line;
     protected isPlaying: boolean;
     protected animationFrameId: number;
 
-    constructor(conversionManager: any, leftPanelWidth: number) {
+    constructor(conversionManager: ConversionManager, leftPanelWidth: number) {
         this.conversionManager = conversionManager;
         this.layer = new Konva.Layer({
             x: leftPanelWidth

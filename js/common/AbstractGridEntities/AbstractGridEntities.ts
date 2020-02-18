@@ -1,13 +1,13 @@
 import Konva from 'konva';
-import { Colours } from '../../Constants';
+import { Colours, ConversionManager } from '../../Constants';
 
 export default abstract class AbstractGridEntities {
 
-    protected conversionManager: any;
+    protected conversionManager: ConversionManager;
     protected layer: Konva.Layer;
     protected entitiesContainer: Konva.Group;
 
-    constructor(conversionManager: any, layerRef: Konva.Layer, leftPanelWidth: number) {
+    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer, leftPanelWidth: number) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
         this.entitiesContainer = new Konva.Group({ 

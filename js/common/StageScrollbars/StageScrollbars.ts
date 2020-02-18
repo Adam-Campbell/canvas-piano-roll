@@ -1,14 +1,15 @@
 import Konva from 'konva';
 import { 
     Colours,
-    StaticMeasurements
+    StaticMeasurements,
+    ConversionManager
 } from '../../Constants';
 import { clamp } from '../../utils';
 import StageScrollManager from '../StageScrollManager';
 
 export default class StageScrollbars {
 
-    protected conversionManager: any;
+    protected conversionManager: ConversionManager;
     private scrollManager: StageScrollManager;
     private leftPanelWidth: number;
     private layer: Konva.Layer;
@@ -20,7 +21,7 @@ export default class StageScrollbars {
 
     constructor(
         scrollManager: StageScrollManager,
-        conversionManager: any,
+        conversionManager: ConversionManager,
         layerRef: Konva.Layer,
         leftPanelWidth: number
     ) {

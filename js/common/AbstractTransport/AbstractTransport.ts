@@ -1,12 +1,13 @@
 import Konva from 'konva';
 import { 
-    Colours
+    Colours,
+    ConversionManager
 } from '../../Constants';
 
 
 export default abstract class AbstractTransport {
 
-    protected conversionManager: any;
+    protected conversionManager: ConversionManager;
     protected layer: Konva.Layer;
     protected layerGroup: Konva.Group;
     protected background: Konva.Rect;
@@ -14,7 +15,7 @@ export default abstract class AbstractTransport {
     protected numberMarkersArray: Konva.Text[];
     protected playbackMarker: Konva.RegularPolygon;
 
-    constructor(conversionManager: any, layerRef: Konva.Layer, leftPanelOffset: number) {
+    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer, leftPanelOffset: number) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
         this.layerGroup = new Konva.Group({

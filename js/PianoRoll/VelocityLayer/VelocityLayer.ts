@@ -5,13 +5,13 @@ import {
     SerializedState,
     StaticMeasurements
 } from '../../Constants';
-import ConversionManager from '../ConversionManager';
+import PianoRollConversionManager from '../PianoRollConversionManager';
 import { SerializedSectionState } from '../../AudioEngine/AudioEngineConstants'; 
 import { NoteBBS } from '../../Constants'; 
 
 export default class VelocityLayer {
 
-    private conversionManager: ConversionManager;
+    private conversionManager: PianoRollConversionManager;
     private layer: Konva.Layer;
     private layerGroup: Konva.Group;
     private background: Konva.Rect;
@@ -19,7 +19,7 @@ export default class VelocityLayer {
     private unselectedGroup: Konva.Group;
     private selectedGroup: Konva.Group;
     
-    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
+    constructor(conversionManager: PianoRollConversionManager, layerRef: Konva.Layer) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
         this.layerGroup = new Konva.Group({ x: 120 });

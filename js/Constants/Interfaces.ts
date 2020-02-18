@@ -104,3 +104,24 @@ export interface WindowChild {
     cleanup() : void,
     handleResize(width: number, height: number) : void
 }
+
+export interface ConversionManager {
+    stageWidth: number,
+    stageHeight: number, 
+    colWidth: number,
+    rowHeight: number,
+    gridWidth: number,
+    gridHeight: number,
+    tickToPxRatio: number,
+    seekerAreaHeight?: number,
+    numBars?: number,
+    barWidth?: number,
+    round(total: number, divisor: number) : number,
+    roundToGridRow(y: number) : number,
+    roundToGridCol(x: number) : number,
+    roundDown(total: number, divisor: number) : number,
+    roundDownToGridRow(y: number) : number,
+    roundDownToGridCol(x: number) : number,
+    convertTicksToPx(ticks: number) : number,
+    convertPxToTicks(px: number) : number
+}

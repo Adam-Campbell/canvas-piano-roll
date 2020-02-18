@@ -1,5 +1,5 @@
 import Tone from 'tone';
-import ConversionManager from '../ConversionManager';
+import PianoRollConversionManager from '../PianoRollConversionManager';
 import Konva from 'konva';
 import { Note, NoteBBS } from '../../Constants';
 import Section from '../../AudioEngine/Section';
@@ -7,13 +7,13 @@ import Section from '../../AudioEngine/Section';
 
 export default class AudioReconciler {
 
-    private conversionManager: ConversionManager;
+    private conversionManager: PianoRollConversionManager;
     private cache = {};
     private instrument;
     private part;
     private section;
 
-    constructor(conversionManager: ConversionManager, section: Section) {
+    constructor(conversionManager: PianoRollConversionManager, section: Section) {
         this.conversionManager = conversionManager;
         this.section = section;
         // this.instrument = new Tone.PolySynth(12, Tone.Synth).toMaster();

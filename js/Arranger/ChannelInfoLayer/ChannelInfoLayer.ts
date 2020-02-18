@@ -1,5 +1,5 @@
 import Konva from 'konva';
-import ConversionManager from '../ConversionManager';
+import ArrangerConversionManager from '../ArrangerConversionManager';
 import Channel from '../../AudioEngine/Channel';
 import { 
     Colours,
@@ -12,13 +12,13 @@ import {
 
 export default class ChannelInfoLayer {
 
-    private conversionManager: ConversionManager;
+    private conversionManager: ArrangerConversionManager;
     private background: Konva.Rect;
     private layer: Konva.Layer;
     private layerGroup: Konva.Group;
     private channelInfoPodsGroup: Konva.Group;
 
-    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
+    constructor(conversionManager: ArrangerConversionManager, layerRef: Konva.Layer) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
         this.background = this.constructBackground();

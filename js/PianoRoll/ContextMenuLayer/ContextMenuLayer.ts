@@ -1,5 +1,5 @@
 import Konva from 'konva';
-import ConversionManager from '../ConversionManager';
+import PianoRollConversionManager from '../PianoRollConversionManager';
 import { Colours, KonvaEvent } from '../../Constants';
 
 interface MenuItem {
@@ -16,10 +16,10 @@ interface ContextMenuOptions {
 
 export default class ContextMenuLayer {
 
-    private conversionManager: ConversionManager;
+    private conversionManager: PianoRollConversionManager;
     private layer: Konva.Layer;
 
-    constructor(conversionManager: ConversionManager, layerRef: Konva.Layer) {
+    constructor(conversionManager: PianoRollConversionManager, layerRef: Konva.Layer) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
     }

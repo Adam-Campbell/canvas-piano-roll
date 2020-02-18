@@ -1,10 +1,11 @@
 import Konva from 'konva';
 import AbstractTransport from '../../common/AbstractTransport';
 import { StaticMeasurements } from '../../Constants';
+import PianoRollConversionManager from '../PianoRollConversionManager';
 
 export default class PianoRollTransport extends AbstractTransport {
 
-    constructor(conversionManager: any, layerRef: Konva.Layer) {
+    constructor(conversionManager: PianoRollConversionManager, layerRef: Konva.Layer) {
         super(conversionManager, layerRef, StaticMeasurements.pianoKeyWidth);
     }
 

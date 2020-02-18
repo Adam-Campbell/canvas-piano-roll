@@ -1,14 +1,14 @@
 import { genId } from '../../genId';
 import Konva from 'konva';
-import ConversionManager from '../ConversionManager';
+import PianoRollConversionManager from '../PianoRollConversionManager';
 import { Note, Clipboard } from '../../Constants';
 
 export default class PianoRollClipboard implements Clipboard<Note> {
 
-    private conversionManager: ConversionManager;
+    private conversionManager: PianoRollConversionManager;
     private notesData: Note[] = [];
 
-    constructor(conversionManager: ConversionManager) {
+    constructor(conversionManager: PianoRollConversionManager) {
         this.conversionManager = conversionManager;
     }
 

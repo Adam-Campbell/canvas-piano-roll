@@ -1,6 +1,6 @@
 import { genId } from '../../genId';
 import Konva from 'konva';
-import ConversionManager from '../ConversionManager';
+import ArrangerConversionManager from '../ArrangerConversionManager';
 import AudioEngine from '../../AudioEngine';
 import { SerializedSectionState } from '../../AudioEngine/AudioEngineConstants';
 import { getBarNumFromBBSString } from '../arrangerUtils';
@@ -9,11 +9,11 @@ import { Clipboard } from '../../Constants';
 
 export default class ArrangerClipboard implements Clipboard<SerializedSectionState> {
 
-    private conversionManager: ConversionManager;
+    private conversionManager: ArrangerConversionManager;
     private audioEngine: AudioEngine;
     private serializedEntities: SerializedSectionState[] = [];
 
-    constructor(conversionManager: ConversionManager, audioEngine: AudioEngine) {
+    constructor(conversionManager: ArrangerConversionManager, audioEngine: AudioEngine) {
         this.conversionManager = conversionManager;
         this.audioEngine = audioEngine;
     }

@@ -1,7 +1,7 @@
 import Tone from 'tone';
 import Konva from 'konva';
 import EventEmitter from '../EventEmitter';
-import ConversionManager from './ConversionManager';
+import PianoRollConversionManager from './PianoRollConversionManager';
 import AudioReconciler from './AudioReconciler';
 import SelectionManager from '../common/SelectionManager';
 import KeyboardStateManager from '../common/KeyboardStateManager';
@@ -71,7 +71,7 @@ export default class PianoRoll implements WindowChild {
     private velocityMarkerCache: CanvasElementCache;
     private keyboardStateManager: KeyboardStateManager;
     private mouseStateManager: MouseStateManager;
-    private conversionManager: ConversionManager;
+    private conversionManager: PianoRollConversionManager;
     private audioReconciler: AudioReconciler;
     private noteSelection: SelectionManager;
     private clipboard: PianoRollClipboard;
@@ -149,7 +149,7 @@ export default class PianoRoll implements WindowChild {
         this.velocityMarkerCache = new CanvasElementCache();
         this.keyboardStateManager = new KeyboardStateManager(this.stage.container());
         this.mouseStateManager = new MouseStateManager();
-        this.conversionManager = new ConversionManager(
+        this.conversionManager = new PianoRollConversionManager(
             initialWidth, 
             initialHeight,
             this.eventEmitter,

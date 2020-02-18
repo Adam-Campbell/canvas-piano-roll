@@ -1,15 +1,15 @@
 import Konva from 'konva';
-import ConversionManager from '../ConversionManager';
+import ArrangerConversionManager from '../ArrangerConversionManager';
 import AudioEngine from '../../AudioEngine';
 import { SerializedSectionState, NoteCache } from '../../AudioEngine/AudioEngineConstants';
 
 
 export default class AudioReconciler {
 
-    private conversionManager: ConversionManager;
+    private conversionManager: ArrangerConversionManager;
     private audioEngine: AudioEngine;
 
-    constructor(conversionManager: ConversionManager, audioEngine: AudioEngine) {
+    constructor(conversionManager: ArrangerConversionManager, audioEngine: AudioEngine) {
         this.conversionManager = conversionManager;
         this.audioEngine = audioEngine; 
     }

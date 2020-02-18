@@ -1,9 +1,10 @@
 import {
     StaticMeasurements,
-    ArrangerConversionManagerOptions
+    ArrangerConversionManagerOptions,
+    ConversionManager
 } from '../../Constants';
 
-export default class ConversionManager {
+export default class ArrangerConversionManager implements ConversionManager {
 
     private _stageWidth: number;
     private _stageHeight: number;

@@ -1,12 +1,13 @@
 import Tone from 'tone';
 import AbstractSeekerLine from '../../common/AbstractSeekerLine';
 import Section from '../../AudioEngine/Section';
+import PianoRollConversionManager from '../PianoRollConversionManager';
 
 export default class PianoRollSeekerLine extends AbstractSeekerLine {
 
     section: Section;
 
-    constructor(conversionManager: any, leftPanelWidth: number, section: Section) {
+    constructor(conversionManager: PianoRollConversionManager, leftPanelWidth: number, section: Section) {
         super(conversionManager, leftPanelWidth);
         this.section = section;
     }

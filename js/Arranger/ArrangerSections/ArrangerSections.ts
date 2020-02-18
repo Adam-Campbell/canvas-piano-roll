@@ -1,5 +1,6 @@
 import Konva from 'konva';
 import AbstractGridEntities from '../../common/AbstractGridEntities';
+import ArrangerConversionManager from '../ArrangerConversionManager';
 import { StaticMeasurements } from '../../Constants';
 import { 
     SerializedAudioEngineState,
@@ -10,7 +11,7 @@ import { getBarNumFromBBSString } from '../arrangerUtils';
 
 export default class ArrangerSections extends AbstractGridEntities {
 
-    constructor(conversionManager: any, layerRef: Konva.Layer) {
+    constructor(conversionManager: ArrangerConversionManager, layerRef: Konva.Layer) {
         super(conversionManager, layerRef, StaticMeasurements.channelInfoColWidth);
     }
 
