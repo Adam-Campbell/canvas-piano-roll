@@ -114,8 +114,10 @@ export interface ConversionManager {
     gridHeight: number,
     tickToPxRatio: number,
     seekerAreaHeight?: number,
+    velocityAreaHeight?: number
     numBars?: number,
     barWidth?: number,
+    noteWidth?: number,
     round(total: number, divisor: number) : number,
     roundToGridRow(y: number) : number,
     roundToGridCol(x: number) : number,
@@ -123,5 +125,8 @@ export interface ConversionManager {
     roundDownToGridRow(y: number) : number,
     roundDownToGridCol(x: number) : number,
     convertTicksToPx(ticks: number) : number,
-    convertPxToTicks(px: number) : number
+    convertPxToTicks(px: number) : number,
+    convertDurationToPx?(duration: string) : number,
+    derivePitchFromY?(y: number) : string,
+    deriveYFromPitch?(pitch: string) : number
 }

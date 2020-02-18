@@ -12,6 +12,10 @@ export default class PianoRollClipboard implements Clipboard<Note> {
         this.conversionManager = conversionManager;
     }
 
+    /**
+     * Adds note data to the clipboard derived from the given note elements and velocity marker elements. 
+     * This is destructive and will replace whatever was there previously. 
+     */
     add(noteElements: Konva.Rect[], velocityMarkerElements: Konva.Rect[]) : void {
         // use noteElements in conjunction with velocityMarkerElements to produce plain data
         // describing the copied notes, in the same vein as the note objects used by the audio
@@ -19,7 +23,7 @@ export default class PianoRollClipboard implements Clipboard<Note> {
 
         // { note, time, duration, velocity, id }
 
-        // Store this data in this._noteData
+        // Store this data in this.notesData
         const newNotesData = noteElements.map(noteElement => {
             const velocityMarkerElement = velocityMarkerElements.find(el => { 
                 return el.getAttr('id') === noteElement.getAttr('id');
@@ -41,6 +45,11 @@ export default class PianoRollClipboard implements Clipboard<Note> {
         this.notesData = newNotesData;
     }
 
+    /**
+     * Produce and return new notes data based on the previously copied data and the roundedStartTime 
+     * (the new notes will maintain the same positions relative to each other, but as a group
+     * they will be positioned relative to roundedStartTime).
+     */
     produceCopy(roundedStartTime: number) : Note[] {
         // Iterate over the notes data to get the earliest time value found in any of the notes. The delta
         // between this earliest time value and the time value for a given note will be combined with the
@@ -63,4 +72,3 @@ export default class PianoRollClipboard implements Clipboard<Note> {
     }
 
 }
-

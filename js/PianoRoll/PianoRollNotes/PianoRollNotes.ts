@@ -11,6 +11,10 @@ export default class PianoRollNotes extends AbstractGridEntities {
         super(conversionManager, layerRef, StaticMeasurements.pianoKeyWidth);
     }
 
+    /**
+     * Adds a new entity/note via the produce method configured with specific arguments, then adds
+     * the new entity/note to the layer, redraws the layer and returns the note/entity. 
+     */
     addNew(x: number, y: number, id: string, width?: number) : Konva.Rect {
         const newEntity = this.produce(
             x,
@@ -24,11 +28,17 @@ export default class PianoRollNotes extends AbstractGridEntities {
         return newEntity;
     }
 
+    /**
+     * Moves an entity/note to the entitiesContainer and redraws the layer.
+     */
     moveToContainer(entity: Konva.Rect) : void {
         entity.moveTo(this.entitiesContainer);
         this.layer.batchDraw();
     }
 
+    /**
+     * Shifts the given entities/notes up by the amount specified by shiftAmount. 
+     */
     shiftUp(entitiesArray: Konva.Rect[], shiftAmount: number) : void {
         entitiesArray.forEach(entity => {
             entity.y(
@@ -39,6 +49,9 @@ export default class PianoRollNotes extends AbstractGridEntities {
         this.updateAttributeCaches(entitiesArray);
     }
 
+    /**
+     * Shifts the given entities/notes down by the amount specified by shiftAmount. 
+     */
     shiftDown(entitiesArray: Konva.Rect[], shiftAmount: number) : void {
         entitiesArray.forEach(entity => {
             entity.y(
@@ -49,6 +62,9 @@ export default class PianoRollNotes extends AbstractGridEntities {
         this.updateAttributeCaches(entitiesArray);
     }
 
+    /**
+     * Shifts the given entities/notes left by one column of the grid.
+     */
     shiftLeft(entitiesArray: Konva.Rect[]) : void {
         entitiesArray.forEach(entity => {
             entity.x(
@@ -59,6 +75,9 @@ export default class PianoRollNotes extends AbstractGridEntities {
         this.updateAttributeCaches(entitiesArray);
     }
 
+    /**
+     * Shifts the given entities/notes right by one column of the grid. 
+     */
     shiftRight(entitiesArray: Konva.Rect[]) : void {
         entitiesArray.forEach(entity => {
             entity.x(
@@ -69,6 +88,10 @@ export default class PianoRollNotes extends AbstractGridEntities {
         this.updateAttributeCaches(entitiesArray);
     }
 
+    /**
+     * Updates the entities/notes to match the given state, then returns all current
+     * entities/notes. 
+     */
     forceToState(state: SerializedSectionState) : Konva.Rect[] {
         // delete all note elements currently on the layer
         this.entitiesContainer.destroyChildren();
@@ -102,7 +125,5 @@ export default class PianoRollNotes extends AbstractGridEntities {
         this.layer.batchDraw();
         return entities;
     }
-
-
 
 }

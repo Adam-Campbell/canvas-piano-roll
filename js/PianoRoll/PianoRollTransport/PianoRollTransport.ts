@@ -9,6 +9,10 @@ export default class PianoRollTransport extends AbstractTransport {
         super(conversionManager, layerRef, StaticMeasurements.pianoKeyWidth);
     }
 
+    /**
+     * Calculates and returns the correct spacing for the numeric markers, based on the current
+     * bar width.
+     */
     get numberMarkerSpacing() : number {
         return this.conversionManager.barWidth;
     }

@@ -1,6 +1,6 @@
 import Tone from 'tone';
 import Konva from 'konva';
-import GridLayer from './GridLayer';
+import ArrangerGrid from './ArrangerGrid';
 import ArrangerConversionManager from './ArrangerConversionManager';
 import ArrangerSections from './ArrangerSections';
 import CanvasElementCache from '../common/CanvasElementCache';
@@ -14,7 +14,7 @@ import AudioReconciler from './AudioReconciler';
 import AudioEngine from '../AudioEngine';
 import StageScrollManager from '../common/StageScrollManager';
 import StageScrollbars from '../common/StageScrollbars';
-import ChannelInfoLayer from './ChannelInfoLayer';
+import ChannelInfoColumn from './ChannelInfoColumn';
 import StageBackground from '../common/StageBackground';
 import {
     ArrangerDragModes,
@@ -47,7 +47,7 @@ export default class Arranger implements WindowChild {
     private conversionManager: ArrangerConversionManager;
     private primaryBackingLayer: Konva.Layer;
     private secondaryBackingLayer: Konva.Layer;
-    private gridLayer: GridLayer;
+    private gridLayer: ArrangerGrid;
     private sectionLayer: ArrangerSections;
     private sectionCache: CanvasElementCache;
     private mouseStateManager: MouseStateManager;
@@ -61,7 +61,7 @@ export default class Arranger implements WindowChild {
     private seekerLineLayer: ArrangerSeekerLine;
     private scrollManager: StageScrollManager;
     private scrollbarLayer: StageScrollbars;
-    private channelInfoLayer: ChannelInfoLayer;
+    private channelInfoLayer: ChannelInfoColumn;
     private backgroundLayer: StageBackground;
     private playbackFromTicks: number;
     private interactionXDeltaMax: number;
@@ -133,14 +133,14 @@ export default class Arranger implements WindowChild {
         this.primaryBackingLayer = new Konva.Layer();
         this.secondaryBackingLayer = new Konva.Layer();
         this.backgroundLayer = new StageBackground(this.conversionManager, this.primaryBackingLayer);
-        this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer);
+        this.gridLayer = new ArrangerGrid(this.conversionManager, this.primaryBackingLayer);
         this.sectionLayer = new ArrangerSections(this.conversionManager, this.primaryBackingLayer);
         this.transportLayer = new ArrangerTransport(this.conversionManager, this.primaryBackingLayer);
         this.seekerLineLayer = new ArrangerSeekerLine(
             this.conversionManager, 
             StaticMeasurements.channelInfoColWidth
         );
-        this.channelInfoLayer = new ChannelInfoLayer(
+        this.channelInfoLayer = new ChannelInfoColumn(
             this.conversionManager,
             this.secondaryBackingLayer
         );

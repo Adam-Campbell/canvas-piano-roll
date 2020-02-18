@@ -14,7 +14,7 @@ interface ContextMenuOptions {
     menuItems: MenuItem[]
 }
 
-export default class ContextMenuLayer {
+export default class ContextMenus {
 
     private conversionManager: PianoRollConversionManager;
     private layer: Konva.Layer;
@@ -24,6 +24,10 @@ export default class ContextMenuLayer {
         this.layer = layerRef;
     }
 
+    /**
+     * Creates a context menu from the options supplied, adds it the layer and redraws the
+     * layer.
+     */
     addContextMenu({ rawX, rawY, menuWidth = 150, menuItems }: ContextMenuOptions) : void {
         this.removeContextMenu();
 
@@ -101,6 +105,9 @@ export default class ContextMenuLayer {
         this.layer.batchDraw();
     }
 
+    /**
+     * Removes the context menu from the layer, if the context menu exists, and redraws the layer. 
+     */
     removeContextMenu() : void {
         const contextMenu = this.layer.findOne('#CONTEXT_MENU_GROUP');
         if (contextMenu) {

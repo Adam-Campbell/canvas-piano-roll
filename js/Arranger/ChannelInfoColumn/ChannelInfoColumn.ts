@@ -10,7 +10,7 @@ import {
     SerializedChannelState 
 } from '../../AudioEngine/AudioEngineConstants';
 
-export default class ChannelInfoLayer {
+export default class ChannelInfoColumn {
 
     private conversionManager: ArrangerConversionManager;
     private background: Konva.Rect;

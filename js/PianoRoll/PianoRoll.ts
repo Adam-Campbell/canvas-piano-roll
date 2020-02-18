@@ -9,14 +9,14 @@ import MouseStateManager from '../common/MouseStateManager';
 import CanvasElementCache from '../common/CanvasElementCache';
 import PianoRollClipboard from './PianoRollClipboard';
 import StageScrollManager from '../common/StageScrollManager';
-import GridLayer from './GridLayer';
+import PianoRollGrid from './PianoRollGrid';
 import PianoRollNotes from './PianoRollNotes'
-import VelocityLayer from './VelocityLayer';
+import VelocityArea from './VelocityArea';
 import PianoRollTransport from './PianoRollTransport';
 import PianoRollSeekerLine from './PianoRollSeekerLine';
-import PianoKeyLayer from './PianoKeyLayer';
+import PianoKeys from './PianoKeys';
 import PianoRollScrollbars from './PianoRollScrollbars';
-import ContextMenuLayer from './ContextMenuLayer';
+import ContextMenus from './ContextMenus';
 import StageBackground from '../common/StageBackground';
 import { 
     DragModes,
@@ -77,13 +77,13 @@ export default class PianoRoll implements WindowChild {
     private clipboard: PianoRollClipboard;
     private primaryBackingLayer: Konva.Layer;
     private secondaryBackingLayer: Konva.Layer;
-    private gridLayer: GridLayer;
+    private gridLayer: PianoRollGrid;
     private noteLayer: PianoRollNotes;
-    private velocityLayer: VelocityLayer;
+    private velocityLayer: VelocityArea;
     private transportLayer: PianoRollTransport;
     private seekerLineLayer: PianoRollSeekerLine;
-    private pianoKeyLayer: PianoKeyLayer;
-    private contextMenuLayer: ContextMenuLayer;
+    private pianoKeyLayer: PianoKeys;
+    private contextMenuLayer: ContextMenus;
     private scrollManager: StageScrollManager;
     private scrollbarLayer: PianoRollScrollbars;
     private backgroundLayer: StageBackground;
@@ -164,21 +164,21 @@ export default class PianoRoll implements WindowChild {
         this.primaryBackingLayer = new Konva.Layer();
         this.secondaryBackingLayer = new Konva.Layer();
         this.backgroundLayer = new StageBackground(this.conversionManager, this.primaryBackingLayer);
-        this.gridLayer = new GridLayer(this.conversionManager, this.primaryBackingLayer, this.eventEmitter);
+        this.gridLayer = new PianoRollGrid(this.conversionManager, this.primaryBackingLayer, this.eventEmitter);
         this.noteLayer = new PianoRollNotes(this.conversionManager, this.primaryBackingLayer);
-        this.velocityLayer = new VelocityLayer(this.conversionManager, this.primaryBackingLayer);
+        this.velocityLayer = new VelocityArea(this.conversionManager, this.primaryBackingLayer);
         this.transportLayer = new PianoRollTransport(this.conversionManager, this.primaryBackingLayer);
         this.seekerLineLayer = new PianoRollSeekerLine(
             this.conversionManager,
             StaticMeasurements.pianoKeyWidth, 
             this.section
         );
-        this.pianoKeyLayer = new PianoKeyLayer(
+        this.pianoKeyLayer = new PianoKeys(
             this.conversionManager, 
             this.secondaryBackingLayer,
             livePlayInstrument
         );
-        this.contextMenuLayer = new ContextMenuLayer(this.conversionManager, this.secondaryBackingLayer);
+        this.contextMenuLayer = new ContextMenus(this.conversionManager, this.secondaryBackingLayer);
         this.scrollManager = new StageScrollManager(
             [ this.gridLayer, this.noteLayer, this.velocityLayer, this.transportLayer, this.seekerLineLayer ],
             [ this.gridLayer, this.noteLayer, this.pianoKeyLayer ],
@@ -316,8 +316,8 @@ export default class PianoRoll implements WindowChild {
             }
         }
         this.backgroundLayer.redrawOnResize();
-        this.velocityLayer.redrawOnVerticalResize();
-        this.pianoKeyLayer.redrawOnVerticalResize();
+        this.velocityLayer.redrawOnResize();
+        this.pianoKeyLayer.redrawOnResize();
         this.scrollbarLayer.redrawOnResize();
         this.primaryBackingLayer.draw();
         this.secondaryBackingLayer.draw();

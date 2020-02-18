@@ -12,6 +12,10 @@ export default class PianoRollSeekerLine extends AbstractSeekerLine {
         this.section = section;
     }
 
+    /**
+     * Calculates the x position for the seeker line based upon the current track progress and the
+     * start time for the section associated with this PianoRoll instance. 
+     */
     calculateSeekerLineXPos() {
         const sectionStartAsTicks = Tone.Ticks(this.section.start).toTicks();
         const relativePositionAsPx = this.conversionManager.convertTicksToPx(

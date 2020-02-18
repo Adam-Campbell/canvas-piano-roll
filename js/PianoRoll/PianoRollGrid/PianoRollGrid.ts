@@ -9,13 +9,14 @@ import { scale } from '@tonaljs/scale';
 import { note } from '@tonaljs/tonal';
 import { 
     Colours,
-    Events 
+    Events,
+    StaticMeasurements
 } from '../../Constants';
 import PianoRollConversionManager from '../PianoRollConversionManager';
 
 const isSameNote = (noteA, noteB) => note(noteA).chroma === note(noteB).chroma;
 
-export default class GridLayer {
+export default class PianoRollGrid {
     
     private conversionManager: PianoRollConversionManager;
     private layer: Konva.Layer;
@@ -26,15 +27,25 @@ export default class GridLayer {
     private eventEmitter: EventEmitter;
     shouldDisplayScaleHighlighting: boolean;
 
-    constructor(conversionManager: PianoRollConversionManager, layerRef: Konva.Layer, eventEmitter: EventEmitter) {
+    constructor(
+        conversionManager: PianoRollConversionManager, 
+        layerRef: Konva.Layer, 
+        eventEmitter: EventEmitter
+    ) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
-        this.gridContainer = new Konva.Group({ x: 120, y: 30 });
+        this.gridContainer = new Konva.Group({ 
+            x: StaticMeasurements.pianoKeyWidth, 
+            y: this.conversionManager.seekerAreaHeight 
+        });
         this.scaleType = 'C major';
         this.shouldDisplayScaleHighlighting = false;
         this.eventEmitter = eventEmitter;
     }
 
+    /**
+     * Initializes the grid and sets up the necessary subscriptions. 
+     */
     init() : void {
         this.layer.add(this.gridContainer);
         this.drawGrid();
@@ -42,13 +53,15 @@ export default class GridLayer {
         this.registerGlobalEventSubscriptions();
     }
 
+    /**
+     * Sets up the necessary subscriptions with the global event emitter. 
+     */
     private registerGlobalEventSubscriptions() : void {
         this.eventEmitter.subscribe(Events.quantizeValueUpdate, qVal => {
             this.drawGrid();
         });
         this.eventEmitter.subscribe(Events.scaleTypeUpdate, scaleType => {
             this.scaleType = scaleType;
-            console.log(scaleType);
             this.drawScaleHighlights();
         });
         this.eventEmitter.subscribe(Events.displayScaleUpdate, shouldDisplay => {
@@ -57,21 +70,33 @@ export default class GridLayer {
         });
     }
 
+    /**
+     * Adjusts the grids position along the x axis according to the x value supplied.
+     */
     updateX(x) {
         this.gridContainer.x(x);
         this.layer.batchDraw();
     }
 
+    /**
+     * Adjusts the grids position along the y axis according to the y value supplied. 
+     */
     updateY(y) {
         this.gridContainer.y(y);
         this.layer.batchDraw();
     }
 
+    /**
+     * Toggles whether scale highlights are visible or not.
+     */
     toggleScaleHighlights() {
         this.shouldDisplayScaleHighlighting = !this.shouldDisplayScaleHighlighting;
         this.drawScaleHighlights();
     }
 
+    /**
+     * Draws scale highlights to match the current scale related state.
+     */
     private drawScaleHighlights() {
         this.scaleHighlightsSubContainer.destroyChildren();
         if (this.shouldDisplayScaleHighlighting) {
@@ -95,6 +120,9 @@ export default class GridLayer {
         this.layer.batchDraw();
     }
 
+    /**
+     * Draws the grid lines based upon the current state.
+     */
     private drawGridLines() {
         const horizontalLinesData = getHorizontalLinesData(this.conversionManager.gridWidth);
         const verticalLinesData = getVerticalLinesData(
@@ -111,6 +139,9 @@ export default class GridLayer {
         this.layer.batchDraw();
     }
 
+    /**
+     * Draws the entire grid including the grid lines and scale highlights where appropriate. 
+     */
     private drawGrid() {
         this.gridContainer.destroyChildren();
         this.scaleHighlightsSubContainer = new Konva.Group();
@@ -124,10 +155,11 @@ export default class GridLayer {
         this.layer.batchDraw();
     }
 
+    /**
+     * Redraws the grid when the zoom level of the parent stage updates. 
+     */
     redrawOnZoomAdjustment() {
         this.drawGrid();
     }
-
-    
 
 }

@@ -6,7 +6,7 @@ import {
 import ArrangerConversionManager from '../ArrangerConversionManager';
 import { StaticMeasurements } from '../../Constants';
 
-export default class GridLayer {
+export default class ArrangerGrid {
 
     private layer: Konva.Layer;
     private conversionManager: ArrangerConversionManager;

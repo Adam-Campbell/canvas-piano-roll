@@ -9,7 +9,7 @@ import PianoRollConversionManager from '../PianoRollConversionManager';
 import { SerializedSectionState } from '../../AudioEngine/AudioEngineConstants'; 
 import { NoteBBS } from '../../Constants'; 
 
-export default class VelocityLayer {
+export default class VelocityArea {
 
     private conversionManager: PianoRollConversionManager;
     private layer: Konva.Layer;
@@ -19,7 +19,10 @@ export default class VelocityLayer {
     private unselectedGroup: Konva.Group;
     private selectedGroup: Konva.Group;
     
-    constructor(conversionManager: PianoRollConversionManager, layerRef: Konva.Layer) {
+    constructor(
+        conversionManager: PianoRollConversionManager, 
+        layerRef: Konva.Layer
+    ) {
         this.conversionManager = conversionManager;
         this.layer = layerRef;
         this.layerGroup = new Konva.Group({ x: 120 });
@@ -29,6 +32,9 @@ export default class VelocityLayer {
         this.selectedGroup = new Konva.Group();
     }
 
+    /**
+     * Initializes the velocity area and redraws the layer.
+     */
     init() : void {
         this.background.moveTo(this.layerGroup);
         this.border.moveTo(this.layerGroup);
@@ -38,11 +44,17 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
+    /**
+     * Adjusts the position of the velocity area along the x axis according to the given x value. 
+     */
     updateX(x) : void {
         this.layerGroup.x(x);
         this.layer.batchDraw();
     }
 
+    /**
+     * Redraws the layer when the zoom level of the parent stage updates. 
+     */
     redrawOnZoomAdjustment(isZoomingIn: boolean) : void {
         const multiplier = isZoomingIn ? 2 : 0.5;
         this.background.width(this.background.width() * multiplier);
@@ -54,7 +66,10 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
-    redrawOnVerticalResize() : void {
+    /**
+     * Redraws the velocity area when the size of the parent stage updates.
+     */
+    redrawOnResize() : void {
         const delta = this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth - this.conversionManager.velocityAreaHeight - this.background.attrs.y;
         const allRects = this.layerGroup.find('Rect');
         allRects.forEach(rect => {
@@ -65,6 +80,10 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
+    /**
+     * Redraws the velocity area when the height of the velocity area itself has updated as
+     * a result of user interaction.
+     */
     redrawOnHeightChange(height: number) : void {
         this.background.height(height);
         this.background.y(
@@ -84,6 +103,9 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
+    /**
+     * Constructs and returns the background for the velocity area. 
+     */
     private constructBackground() : Konva.Rect {
         const background = new Konva.Rect({
             width: this.conversionManager.gridWidth,
@@ -96,6 +118,9 @@ export default class VelocityLayer {
         return background;
     }
 
+    /**
+     * Constructs and returns the border for the velocity area. 
+     */
     private constructBorder() : Konva.Rect {
         const border = new Konva.Rect({
             width: this.conversionManager.gridWidth,
@@ -108,6 +133,10 @@ export default class VelocityLayer {
         return border;
     }
 
+    /**
+     * Constructs a velocity marker from the arguments provided and adds it to the layer, then returns
+     * the velocity marker element, however does not trigger a redraw of the layer. 
+     */
     createVelocityMarker(
         x: number, 
         y: number, 
@@ -136,6 +165,10 @@ export default class VelocityLayer {
         return velocityMarker;
     }
 
+    /**
+     * Adds a new velocity marker to the layer, redraws the layer and then returns the newly 
+     * created velocity marker.
+     */
     addNewVelocityMarker(x: number, id: string) : Konva.Rect {
         const velocityMarker = this.createVelocityMarker(
             x,
@@ -149,6 +182,9 @@ export default class VelocityLayer {
         return velocityMarker;
     }
 
+    /**
+     * Deletes the given velocity layers and then redraws the layer.
+     */
     deleteVelocityMarkers(velocityRectsArray: Konva.Rect[]) : void {
         velocityRectsArray.forEach(velocityRect => {
             velocityRect.destroy();
@@ -156,12 +192,19 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
+    /**
+     * Updates the `cached` namespaced attributes for the given velocity markers to match their
+     * counterparts.
+     */
     updateVelocityMarkersAttributeCaches(velocityRectsArray: Konva.Rect[]) : void {
         velocityRectsArray.forEach(velocityRect => {
             velocityRect.setAttr('cachedX', velocityRect.attrs.x);
         });
     }
 
+    /**
+     * Reposition the given velocity markers based on the x delta supplied. 
+     */
     repositionVelocityMarkers(xDelta: number, velocityRectsArray: Konva.Rect[]) : void {
         velocityRectsArray.forEach(velocityRect => {
             const { cachedX } = velocityRect.attrs;
@@ -174,6 +217,9 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
+    /**
+     * Shift the given velocity markers to the left by the grids current column width.
+     */
     shiftVelocityMarkersLeft(velocityRectsArray: Konva.Rect[]) : void {
         velocityRectsArray.forEach(velocityRect => {
             velocityRect.x(
@@ -183,6 +229,9 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
+    /**
+     * Shift the given velocity markers to the right by the grids current column width. 
+     */
     shiftVelocityMarkersRight(velocityRectsArray: Konva.Rect[]) : void {
         velocityRectsArray.forEach(velocityRect => {
             velocityRect.x(
@@ -192,18 +241,28 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
+    /**
+     * Add the selected appearance to the given velocity marker. 
+     */
     addSelectedAppearance(velocityRect: Konva.Rect) : void {
         velocityRect.fill(Colours.grayscale[6]);
         velocityRect.moveTo(this.selectedGroup);
         this.layer.batchDraw();
     }
 
+    /**
+     * Removes the selected appearance from the given velocity marker. 
+     */
     removeSelectedAppearance(velocityRect: Konva.Rect) : void {
         velocityRect.fill(Colours.primary.darkened);
         velocityRect.moveTo(this.unselectedGroup);
         this.layer.batchDraw();
     }
 
+    /**
+     * Updates the selection marquee based on the coordinates given. If a marquee doesn't
+     * already exist in the velocity area then it creates one.
+     */
     updateSelectionMarquee(x1: number, y1: number, x2: number, y2: number) : void {
         const marquee = this.layer.findOne('#MARQUEE');
         if (!marquee) {
@@ -226,6 +285,9 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
+    /**
+     * Removes the marquee from the velocity area, if one exists.
+     */
     clearSelectionMarquee() : void {
         const marquee = this.layer.findOne('#MARQUEE');
         if (marquee) {
@@ -234,6 +296,9 @@ export default class VelocityLayer {
         }
     }
 
+    /**
+     * Updates the height of the given velocity markers based on the given velocityValue. 
+     */
     updateVelocityMarkersHeight(velocityRectsArray: Konva.Rect[], velocityValue: number) : void {
         const newHeight = velocityValue * (this.conversionManager.velocityAreaHeight - 10);
         const newY = this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth - newHeight;
@@ -245,6 +310,10 @@ export default class VelocityLayer {
         this.layer.batchDraw();
     }
 
+    /**
+     * Updates the velocity markers to match the serialized state provided, then returns the
+     * velocity markers. 
+     */
     forceToState(state: SerializedSectionState) : Konva.Rect[] {
         // delete all velocity markers from the layer.
         const existingVelocityElements = this.layer.find('.VELOCITY_MARKER');
@@ -270,34 +339,6 @@ export default class VelocityLayer {
         });
         this.layer.batchDraw();
         return velocityMarkerElements;
-
-
-
-
-
-        // const newVelocityMarkerElements = state.notes.map(note => {
-        //     // calculate x, y, height, id, isSelected
-        //     const x = this.conversionManager.convertTicksToPx(note.time);
-        //     const height = note.velocity * (this.conversionManager.velocityAreaHeight - 10);
-        //     const y = this.conversionManager.stageHeight - StaticMeasurements.scrollbarWidth - height;
-        //     const isSelected = state.selectedNoteIds.includes(note.id);
-        //     const velocityMarkerElement = this.createVelocityMarker(
-        //         x,
-        //         y,
-        //         height,
-        //         note.id,
-        //         isSelected,
-        //         note.velocity
-        //     );
-        //     return velocityMarkerElement;
-        // });
-        // this.layer.batchDraw();
-        // return newVelocityMarkerElements;
-
-        // map over the notes and use the addNewVelocityMarker method to create a 
-        // velocity marker element for each note. Same as with note layer, return this
-        // from the map function so the end result is an array of the velocity marker
-        // elements, that the PianoRoll class can use to updated velocityMarkerCache. 
 
     }
 
