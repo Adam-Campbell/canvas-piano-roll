@@ -18,7 +18,11 @@ export default class ArrangerClipboard implements Clipboard<SerializedSectionSta
         this.audioEngine = audioEngine;
     }
 
-    add(sectionElements) {
+    /**
+     * Adds data to the clipboard derived from the given sectionElements. This is destructive and 
+     * will replace whatever was there previously. 
+     */
+    add(sectionElements: Konva.Rect[]) {
         // iterate through the section elements
         // for each, find the corresponding section in audioEngine, and grab its serialized state
         // store this serialized data in sectionsData along with the channelIdx for each section, 
@@ -34,6 +38,11 @@ export default class ArrangerClipboard implements Clipboard<SerializedSectionSta
         });
     }
 
+    /**
+     * Produce and return new section data based on the previously copied data and the currentBar 
+     * (the new sections will maintain the same positions relative to each other, but as a group
+     * they will be positioned relative to currentBar).
+     */
     produceCopy(currentBar: number) : SerializedSectionState[] {
         // Iterate over the sections data to get the earliest time value found in any of the sections. The delta
         // between this earliest time value and the time value for a given section will be combined with the

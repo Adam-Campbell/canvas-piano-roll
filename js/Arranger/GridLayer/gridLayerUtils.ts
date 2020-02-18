@@ -3,6 +3,10 @@ import {
     Colours 
 } from '../../Constants';
 
+/**
+ * Constructs and returns an array containing the data that can be used to create the Konva.Line elements 
+ * for the horizontal grid lines. 
+ */
 export const getHorizontalLinesData = (numChannels: number, channelHeight: number, gridWidth: number) : KonvaLineData[] => {
     let lineDataArr = [];
     for (let i = 0; i <= numChannels; i++) {
@@ -15,6 +19,10 @@ export const getHorizontalLinesData = (numChannels: number, channelHeight: numbe
     return lineDataArr;
 };
 
+/**
+ * Constructs and returns an array containing the data that can be used to create the Konva.Line elements
+ * for the vertical grid lines. 
+ */
 export const getVerticalLinesData = (numBars: number, barWidth: number, gridHeight: number) : KonvaLineData[] => {
     let lineDataArr = [];
     for (let i = 0; i <= numBars; i++) {

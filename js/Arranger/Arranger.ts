@@ -39,23 +39,6 @@ import EventEmitter from '../EventEmitter';
 import { getBarNumFromBBSString } from './arrangerUtils';
 import { SerializedAudioEngineState } from '../AudioEngine/AudioEngineConstants';
 
-
-/*
-
-Should be able to reuse these amongs between PianoRoll and Arranger:
-
-CanvasElementCache
-KeyboardStateManager
-MouseStateManager
-NoteSelection (but give it a more general name such as SelectionManager)
-
-Additionally I think NoteLayer and its equivalent, SectionLayer, can be built using the same class, I just
-need to make sure the naming is more generic ie use the term rect instead of the terms note or section. 
-
-*/
-
-
-
 export default class Arranger implements WindowChild {
 
     private dragMode: ArrangerDragModes;
@@ -92,10 +75,12 @@ export default class Arranger implements WindowChild {
         this.activeTool = Tools.cursor;
         this.eventEmitter = eventEmitter;
         this.playbackFromTicks = 0;
-        window.toneRef = Tone;
-        window.arranger = this;
     }
 
+    /**
+     * Initializes the Arranger including all child classes and sets up all of the necessary 
+     * subscriptions.
+     */
     init(arrangerOptions: ArrangerOptions) {
         this.instantiateChildClasses(arrangerOptions);
         this.stage.add(this.primaryBackingLayer);
@@ -115,6 +100,9 @@ export default class Arranger implements WindowChild {
         this.forceToState(initialState);
     }
 
+    /**
+     * Instantiates all of the child classes owned by the Arranger.
+     */
     instantiateChildClasses({
         container, 
         initialWidth,
@@ -170,6 +158,9 @@ export default class Arranger implements WindowChild {
         );
     }
 
+    /**
+     * Sets up subscriptions to events fired by the stage that Arranger owns.
+     */
     private registerStageSubscriptions() {
         this.stage.on('mousedown', (e: KonvaEvent) => this.handleInteractionStart(e));
         this.stage.on('touchstart', (e: KonvaEvent) => this.handleInteractionStart(e));
@@ -180,6 +171,10 @@ export default class Arranger implements WindowChild {
         this.stage.on('dblclick', (e: KonvaEvent) => this.handleDoubleClick(e));
     }
 
+    /**
+     * Sets up the necessary keyboard subscriptions - the keyboard events are captured by
+     * the stages container and so these subscriptions will only fire when the stage is focused.
+     */
     private registerKeyboardSubscriptions() : void {
         this.keyboardStateManager.addKeyListener('1', () => {
             if (this.keyboardStateManager.altKey) {
@@ -215,6 +210,9 @@ export default class Arranger implements WindowChild {
         this.keyboardStateManager.addKeyListener(' ', () => this.handleTogglePlayback());
     }
 
+    /**
+     * Sets up the necessary subscriptions with the global event emitter.
+     */
     private registerGlobalEventSubscriptions() : void {
         this.eventEmitter.subscribe(Events.activeToolUpdate, tool => {
             this.activeTool = tool;
@@ -225,7 +223,10 @@ export default class Arranger implements WindowChild {
         });
     }
 
-    cleanup() {
+    /**
+     * Performs the necessary cleanup for the Arranger to be safely removed/deleted.
+     */
+    cleanup() : void {
         this.stage.destroy();
     }
 
@@ -863,6 +864,9 @@ export default class Arranger implements WindowChild {
         this.sectionLayer.clearSelectionMarquee();
     }
 
+    /**
+     * Updates the Arranger and its child classes to match a given state. 
+     */
     forceToState(state: SerializedAudioEngineState) : void {
         // renders the section rects to match the state given
         const sectionElements = this.sectionLayer.forceToState(state);

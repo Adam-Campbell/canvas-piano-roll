@@ -26,6 +26,10 @@ export default class ChannelInfoLayer {
         this.channelInfoPodsGroup = new Konva.Group({ y: this.conversionManager.seekerAreaHeight });
     }
 
+    /**
+     * Adds everything to the layer and updates the channel info pods to match the initial
+     * state given.
+     */
     init(initialState: SerializedAudioEngineState) {
         // add the layerGroup to the backing layer provided
         this.layer.add(this.layerGroup);
@@ -37,11 +41,17 @@ export default class ChannelInfoLayer {
         this.forceToState(initialState);
     }
 
+    /**
+     * Adjusts the position of the channel info pods along the y axis based on the y value given.
+     */
     updateY(y: number) {
         this.channelInfoPodsGroup.y(y);
         this.layer.batchDraw();
     }
 
+    /**
+     * Constructs and returns the background that sits behind the channel info pods. 
+     */
     private constructBackground() : Konva.Rect  {
         return new Konva.Rect({
             x: 0,
@@ -52,6 +62,9 @@ export default class ChannelInfoLayer {
         });
     }
 
+    /**
+     * Clears any existing channel info pods and then constructs new ones using the given state.
+     */
     private drawChannelInfoPods(channels: SerializedChannelState[]) {
         this.channelInfoPodsGroup.destroyChildren();
         const heightOfPod = this.conversionManager.rowHeight;
@@ -78,12 +91,19 @@ export default class ChannelInfoLayer {
         });
     }
 
+    /**
+     * Redraws the layer. This method is called by the parent stage whenever its size updates. 
+     */
     redrawOnResize() {
         this.background.height(
             this.conversionManager.stageHeight
         );
     }
 
+    /**
+     * Clears the existing channel info pods, constructs new ones based on the given state and then
+     * redraws the layer.
+     */
     forceToState(state: SerializedAudioEngineState) : void {
         this.drawChannelInfoPods(state.channels);
         this.layer.batchDraw();

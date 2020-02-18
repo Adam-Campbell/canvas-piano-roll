@@ -9,6 +9,10 @@ export default class ArrangerTransport extends AbstractTransport {
         super(conversionManager, layerRef, StaticMeasurements.channelInfoColWidth);
     }
 
+    /**
+     * Calculates and returns the correct spacing for the numeric markers, based on the current
+     * width of the grids columns. 
+     */
     get numberMarkerSpacing() : number {
         return this.conversionManager.colWidth;
     }

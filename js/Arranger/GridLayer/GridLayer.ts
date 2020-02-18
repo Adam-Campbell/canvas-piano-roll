@@ -26,16 +26,26 @@ export default class GridLayer {
         this.drawGrid();
     }
 
+    /**
+     * Adjusts the position of the grid along the x axis based on the given x value.
+     */
     updateX(x) : void {
         this.gridContainer.x(x);
         this.layer.batchDraw();
     }
 
+    /**
+     * Adjusts the position of the grid along the y axis based on the given y value. 
+     */
     updateY(y) : void {
         this.gridContainer.y(y);
         this.layer.batchDraw();
     }
 
+    /**
+     * Removes the existing grid if there is one, and then constructs a new grid before redrawing
+     * the layer. 
+     */
     private drawGrid() : void {
         this.gridContainer.destroyChildren();
         const horizontalLinesData = getHorizontalLinesData(
@@ -56,6 +66,10 @@ export default class GridLayer {
         this.layer.batchDraw();
     }
 
+    /**
+     * Performs the necessary recalculations when the zoom level of the parent stage changes, and 
+     * then redraws the layer.
+     */
     redrawOnZoomAdjustment() : void {
         this.drawGrid();
     }
