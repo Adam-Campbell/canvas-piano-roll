@@ -28,11 +28,7 @@ export default class Section implements AudioEngineComponent {
         this.part.start(start);
         this.part.loop = false;
         this.part.callback = instrumentCallback;
-        //console.log(notes)
-        Object.values(notes).forEach(noteObject => {
-            console.log(noteObject)
-            this.addNote(noteObject);
-        });
+        Object.values(notes).forEach(noteObject => this.addNote(noteObject));
     }
 
     private addNoteToPart(noteObject: NoteBBS) : void {
@@ -43,6 +39,10 @@ export default class Section implements AudioEngineComponent {
         this.part.remove(noteObject);
     }
 
+    /**
+     * Adds a note to this section. If a note with that id already exists then it removes the old 
+     * note before adding the new one.
+     */
     addNote(newNoteObject: NoteBBS) : void {
         if (this.noteCache[newNoteObject.id]) {
             this.removeNoteFromPart(this.noteCache[newNoteObject.id]);
@@ -51,6 +51,9 @@ export default class Section implements AudioEngineComponent {
         this.addNoteToPart(newNoteObject);
     }
 
+    /**
+     * Removes from this section the notes matching the ids given to it, if they exist.
+     */
     removeNotes(noteIds: string[]) : void {
         noteIds.forEach(id => {
             if (this.noteCache[id]) {
@@ -60,16 +63,27 @@ export default class Section implements AudioEngineComponent {
         });
     }
 
+    /**
+     * Removes all notes from this section.
+     */
     removeAllNotes() : void {
         Object.values(this.noteCache).forEach(this.removeNoteFromPart);
         this.noteCache = {};
     }
 
+    /**
+     * Performs the necessary cleanup on this section before it can be safely deleted.
+     */
     cleanup() : void {
         this.part.dispose();
     }
 
-    private serializeNoteCache(noteCache) {
+    /**
+     * Clones the note cache allowing it to be safely passed around to other parts of the program
+     * without this section being affected by any mutations that may be performed on the note cache
+     * clone.
+     */
+    private cloneNoteCache(noteCache) : NoteCache {
         let copiedNoteCache = {};
         for (let key in noteCache) {
             copiedNoteCache[key] = {
@@ -79,18 +93,21 @@ export default class Section implements AudioEngineComponent {
         return copiedNoteCache;
     }
 
-    // serializes state for this particular section and returns it
+    /**
+     * Serializes this section.
+     */
     serializeState() : SerializedSectionState {
         return {
-            //notes: this.noteCache,
-            notes: this.serializeNoteCache(this.noteCache),
+            notes: this.cloneNoteCache(this.noteCache),
             id: this.id,
             start: this.start,
             numBars: this.numBars
         }
     }
 
-    // forces this section to a given state
+    /**
+     * Updates this section to match a given state.
+     */
     forceToState(state: SerializedSectionState) : void {
         // First reconcile the start and numBars to match state.
         if (state.start !== this.start) {
