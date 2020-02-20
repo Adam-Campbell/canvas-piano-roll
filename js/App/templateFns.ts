@@ -176,6 +176,51 @@ const chordTypeSelectData = {
     ]
 };
 
+const toggleScaleHighlightingCheckboxData = {
+    id: 'display-scale-toggle',
+    label: 'Show Scale Highlighting'
+};
+
+const transportButtonsData = [
+    { label: 'Play' },
+    { label: 'Pause' },
+    { label: 'Stop' }
+];
+
+const historyButtonsData = [
+    { label: 'Undo' },
+    { label: 'Redo' }
+];
+
+const activeToolRadioGroupData = {
+	name: 'active-tool-radio-group',
+	options: [
+		{
+			id: 'cursor',
+			label: 'Cursor',
+			value: 'cursor'
+		},
+		{
+			id: 'pencil',
+			label: 'Pencil',
+			value: 'pencil'
+		},
+		{
+			id: 'marquee',
+			label: 'Marquee',
+			value: 'marquee'
+		}
+	]
+}
+
+interface CheckboxData {
+    id: string,
+    label: string
+}
+
+interface ButtonData {
+    label: string
+}
 
 interface SelectOptionData {
     value: string,
@@ -192,6 +237,17 @@ interface SelectData {
     label: string,
     options?: SelectOptionData[],
     optionGroups?: SelectOptionGroup[]
+}
+
+interface RadioButtonData {
+	id: string,
+	label: string,
+	value: string
+}
+
+interface RadioGroupData {
+	name: string,
+	options: RadioButtonData[]
 }
 
 const generateSelectOptions = (options: SelectOptionData[]) => html`
@@ -229,6 +285,40 @@ const generateSelectMarkup = (data: SelectData) => html`
     </div>
 `;
 
+const generateCheckboxMarkup = (data: CheckboxData) => html`
+    <div class="checkbox__container">
+        <label class="checkbox__label" for=${data.id}>${data.label}</label>
+        <input class="checkbox" type="checkbox" id=${data.id} />
+    </div>
+`;
+
+const generateButtonMarkup = (data: ButtonData) => html`
+    <button class="button">${data.label}</button>
+`;
+
+const generateRadioGroupMarkup = (data: RadioGroupData) => html`
+    <div class="radio-group">
+		${repeat(
+			data.options,
+			option => option.id,
+			option => html`
+				<input
+					class="radio-group__button" 
+					id=${option.id}
+					type="radio"
+					name=${data.name}
+					value=${option.value}
+				/>
+				<label
+					class="radio-group__label" 
+					for=${option.id}
+				>${option.label}</label>
+			`
+		)}
+    </div>
+`;
+
+
 export const generateMenubarMarkup = (addWindowCb: Function) => html`
     <div class="menubar">
         <div class="menubar__content-container">
@@ -239,13 +329,53 @@ export const generateMenubarMarkup = (addWindowCb: Function) => html`
             <div class="menubar__controls-group">
                 ${generateSelectMarkup(scaleKeySelectData)}
                 ${generateSelectMarkup(scaleTypeSelectData)}
+                ${generateCheckboxMarkup(toggleScaleHighlightingCheckboxData)}
             </div>
             <div class="menubar__controls-group">
                 ${generateSelectMarkup(chordTypeSelectData)}
+			</div>
+		</div>
+		<div class="menubar__content-container">
+			<div class="menubar__controls-group">
+                ${repeat(
+                    transportButtonsData,
+                    buttonData => buttonData.label,
+                    buttonData => generateButtonMarkup(buttonData)
+                )}
+			</div>
+			<div class="menubar__controls-group">
+                ${repeat(
+                    historyButtonsData,
+                    buttonData => buttonData.label,
+                    buttonData => generateButtonMarkup(buttonData)
+                )}
             </div>
+            ${generateRadioGroupMarkup(activeToolRadioGroupData)}
         </div>
     </div>
 `;
+
+/*
+
+
+<div class="menubar__controls-group">
+                ${repeat(
+                    transportButtonsData,
+                    buttonData => buttonData.label,
+                    buttonData => generateButtonMarkup(buttonData)
+                )}
+            </div>
+            <div class="menubar__controls-group">
+                ${repeat(
+                    historyButtonsData,
+                    buttonData => buttonData.label,
+                    buttonData => generateButtonMarkup(buttonData)
+                )}
+            </div>
+
+
+
+*/
 
 export const generateTaskbarMarkup = (activeWindows: Window[]) => html`
     <div class="taskbar">
