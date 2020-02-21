@@ -250,21 +250,28 @@ interface RadioGroupData {
 	options: RadioButtonData[]
 }
 
-const generateSelectOptions = (options: SelectOptionData[]) => html`
+const generateSelectOptions = (options: SelectOptionData[], currentValue: string) => html`
     ${repeat(
         options,
         option => option.value,
-        option => html`<option value=${option.value}>${option.label}</option>`
+        option => html`
+            <option 
+                value=${option.value}
+                ?selected=${currentValue === option.value}
+            >
+                ${option.label}
+            </option>
+            `
     )}
 `;
 
-const generateSelectOptionGroups = (optionGroups: SelectOptionGroup[]) => html`
+const generateSelectOptionGroups = (optionGroups: SelectOptionGroup[], currentValue: string) => html`
     ${repeat(
         optionGroups,
         optionGroup => optionGroup.label,
         optionGroup => html`
             <optgroup label=${optionGroup.label}>
-                ${generateSelectOptions(optionGroup.options)}
+                ${generateSelectOptions(optionGroup.options, currentValue)}
             </optgroup>
         `
     )}
@@ -273,13 +280,13 @@ const generateSelectOptionGroups = (optionGroups: SelectOptionGroup[]) => html`
 
 
 
-const generateSelectMarkup = (data: SelectData) => html`
+const generateSelectMarkup = (data: SelectData, currentValue: string, onChangeCb: Function) => html`
     <div class="select__container">
         <label class="select__label" for=${data.id}>${data.label}</label>
-        <select class="select" id=${data.id}>
+        <select class="select" id=${data.id} @change=${onChangeCb}>
             ${data.optionGroups ?
-                generateSelectOptionGroups(data.optionGroups) :
-                generateSelectOptions(data.options)
+                generateSelectOptionGroups(data.optionGroups, currentValue) :
+                generateSelectOptions(data.options, currentValue)
             }
         </select>
     </div>
@@ -319,20 +326,31 @@ const generateRadioGroupMarkup = (data: RadioGroupData) => html`
 `;
 
 
-export const generateMenubarMarkup = (addWindowCb: Function) => html`
+export const generateMenubarMarkup = ({
+    quantizeValue,
+    setQuantizeValue,
+    noteDurationValue,
+    setNoteDurationValue,
+    scaleKey,
+    setScaleKey,
+    scaleType,
+    setScaleType,
+    chordType,
+    setChordType
+}) => html`
     <div class="menubar">
         <div class="menubar__content-container">
             <div class="menubar__controls-group">
-                ${generateSelectMarkup(quantizeSelectData)}
-                ${generateSelectMarkup(noteDurationSelectData)}
+                ${generateSelectMarkup(quantizeSelectData, quantizeValue, setQuantizeValue)}
+                ${generateSelectMarkup(noteDurationSelectData, noteDurationValue, setNoteDurationValue)}
             </div>
             <div class="menubar__controls-group">
-                ${generateSelectMarkup(scaleKeySelectData)}
-                ${generateSelectMarkup(scaleTypeSelectData)}
+                ${generateSelectMarkup(scaleKeySelectData, scaleKey, setScaleKey)}
+                ${generateSelectMarkup(scaleTypeSelectData, scaleType, setScaleType)}
                 ${generateCheckboxMarkup(toggleScaleHighlightingCheckboxData)}
             </div>
             <div class="menubar__controls-group">
-                ${generateSelectMarkup(chordTypeSelectData)}
+                ${generateSelectMarkup(chordTypeSelectData, chordType, setChordType)}
 			</div>
 		</div>
 		<div class="menubar__content-container">
@@ -355,27 +373,6 @@ export const generateMenubarMarkup = (addWindowCb: Function) => html`
     </div>
 `;
 
-/*
-
-
-<div class="menubar__controls-group">
-                ${repeat(
-                    transportButtonsData,
-                    buttonData => buttonData.label,
-                    buttonData => generateButtonMarkup(buttonData)
-                )}
-            </div>
-            <div class="menubar__controls-group">
-                ${repeat(
-                    historyButtonsData,
-                    buttonData => buttonData.label,
-                    buttonData => generateButtonMarkup(buttonData)
-                )}
-            </div>
-
-
-
-*/
 
 export const generateTaskbarMarkup = (activeWindows: Window[]) => html`
     <div class="taskbar">

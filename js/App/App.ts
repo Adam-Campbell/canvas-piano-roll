@@ -22,6 +22,11 @@ export default class App {
     audioEngine: AudioEngine;
     eventEmitter: EventEmitter;
     private historyStack: HistoryStack;
+    quantizeValue = '16n';
+    noteDurationValue = '16n';
+    scaleKey = 'C';
+    scaleType = 'major';
+    chordType = 'major';
 
     constructor() {
         this.eventEmitter = new EventEmitter();
@@ -38,11 +43,43 @@ export default class App {
         this.eventEmitter.subscribe(Events.redoAction, this.redoActionAndPushState);
         window.audioEngine = this.audioEngine;
         window.historyStack = this.historyStack;
+        window.app = this;
     }
 
     init() : void {
         this.renderApp();
         this.addArrangerWindow();
+    }
+
+    setQuantizeValue = (e) => {
+        const newQuantizeValue = e.target.value;
+        console.log(`changed to ${newQuantizeValue}`);
+        this.quantizeValue = newQuantizeValue;
+        this.renderApp();
+    }
+
+    setNoteDurationValue = (e) => {
+        const newValue = e.target.value;
+        this.noteDurationValue = newValue;
+        this.renderApp();
+    }
+
+    setScaleKey = (e) => {
+        const newValue = e.target.value;
+        this.scaleKey = newValue;
+        this.renderApp();
+    }
+
+    setScaleType = (e) => {
+        const newValue = e.target.value;
+        this.scaleType = newValue;
+        this.renderApp();
+    }
+
+    setChordType = (e) => {
+        const newValue = e.target.value;
+        this.chordType = newValue;
+        this.renderApp();
     }
 
     /**
@@ -167,7 +204,18 @@ export default class App {
     renderApp = () : void => {
         render(
             html`
-                ${generateMenubarMarkup(this.addWindow)}
+                ${generateMenubarMarkup({
+                    quantizeValue: this.quantizeValue,
+                    setQuantizeValue: this.setQuantizeValue,
+                    noteDurationValue: this.noteDurationValue,
+                    setNoteDurationValue: this.setNoteDurationValue,
+                    scaleKey: this.scaleKey,
+                    setScaleKey: this.setScaleKey,
+                    scaleType: this.scaleType,
+                    setScaleType: this.setScaleType,
+                    chordType: this.chordType,
+                    setChordType: this.setChordType
+                })}
                 ${generateTaskbarMarkup(this.activeWindows)}
                 ${generateWindowsMarkup(this.activeWindows)}
             `,
