@@ -117,6 +117,7 @@ body {
         border-radius: 3px;
         background: #ddd;
         padding: 8px;
+        display: inline-flex;
         .radio-group__button:hover + & {
             background: #ccc;
         }

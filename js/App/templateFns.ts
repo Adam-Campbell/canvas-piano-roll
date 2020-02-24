@@ -197,17 +197,17 @@ const activeToolRadioGroupData = {
 	options: [
 		{
 			id: 'cursor',
-			label: 'Cursor',
+			icon: 'mouse',
 			value: 'cursor'
 		},
 		{
 			id: 'pencil',
-			label: 'Pencil',
+			icon: 'create',
 			value: 'pencil'
 		},
 		{
 			id: 'marquee',
-			label: 'Marquee',
+			icon: 'select_all',
 			value: 'marquee'
 		}
 	]
@@ -241,7 +241,7 @@ interface SelectData {
 
 interface RadioButtonData {
 	id: string,
-	label: string,
+	icon: string,
 	value: string
 }
 
@@ -299,8 +299,10 @@ const generateCheckboxMarkup = (data: CheckboxData) => html`
     </div>
 `;
 
-const generateButtonMarkup = (label: string, handleClick: Function) => html`
-    <button class="button" @click=${handleClick}>${label}</button>
+const generateButtonMarkup = (icon: string, handleClick: Function) => html`
+    <button class="button" @click=${handleClick}>
+        <i class="material-icons">${icon}</i>
+    </button>
 `;
 
 const generateRadioGroupMarkup = (data: RadioGroupData, currentValue, handleChange) => html`
@@ -321,7 +323,9 @@ const generateRadioGroupMarkup = (data: RadioGroupData, currentValue, handleChan
 				<label
 					class="radio-group__label" 
 					for=${option.id}
-				>${option.label}</label>
+                >
+                    <i class="material-icons">${option.icon}</i>
+                </label>
 			`
 		)}
     </div>
@@ -383,13 +387,13 @@ export const generateMenubarMarkup = ({
 		</div>
 		<div class="menubar__content-container">
 			<div class="menubar__controls-group">
-                ${generateButtonMarkup('Play', playTrack)}
-                ${generateButtonMarkup('Pause', pauseTrack)}
-                ${generateButtonMarkup('Stop', stopTrack)}
+                ${generateButtonMarkup('play_arrow', playTrack)}
+                ${generateButtonMarkup('pause', pauseTrack)}
+                ${generateButtonMarkup('stop', stopTrack)}
 			</div>
 			<div class="menubar__controls-group">
-                ${generateButtonMarkup('Undo', undoAction)}
-                ${generateButtonMarkup('Redo', redoAction)}
+                ${generateButtonMarkup('undo', undoAction)}
+                ${generateButtonMarkup('redo', redoAction)}
             </div>
             ${generateRadioGroupMarkup(activeToolRadioGroupData, activeTool, setActiveTool)}
         </div>
