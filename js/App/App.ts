@@ -1,3 +1,4 @@
+import Tone from 'tone';
 import { render, html } from 'lit-html';
 import Window from '../Window';
 import EventEmitter from '../EventEmitter';
@@ -9,7 +10,8 @@ import {
 import { 
     Events,
     WindowTypes,
-    WindowChild
+    WindowChild,
+    Tools
 } from '../Constants';
 import PianoRoll from '../PianoRoll';
 import AudioEngine from '../AudioEngine';
@@ -27,6 +29,8 @@ export default class App {
     scaleKey = 'C';
     scaleType = 'major';
     chordType = 'major';
+    activeTool = Tools.cursor;
+    bpm = 120;
 
     constructor() {
         this.eventEmitter = new EventEmitter();
@@ -79,6 +83,35 @@ export default class App {
     setChordType = (e) => {
         const newValue = e.target.value;
         this.chordType = newValue;
+        this.renderApp();
+    }
+
+    playTrack = () => Tone.Transport.start();
+
+    pauseTrack = () => Tone.Transport.pause();
+
+    stopTrack = () => Tone.Transport.stop();
+
+    undoAction = () => {
+        this.eventEmitter.emit(Events.undoAction);
+    }
+
+    redoAction = () => {
+        this.eventEmitter.emit(Events.redoAction);
+    }
+
+    setActiveTool = (e) => {
+        const newValue = e.target.value;
+        this.activeTool = newValue;
+        this.eventEmitter.emit(Events.activeToolUpdate, newValue);
+        this.renderApp();
+    }
+
+    setBpm = (e) => {
+        console.log(e.target.value);
+        const newValue = parseInt(e.target.value);
+        this.bpm = newValue;
+        Tone.Transport.bpm.value = newValue;
         this.renderApp();
     }
 
@@ -214,7 +247,16 @@ export default class App {
                     scaleType: this.scaleType,
                     setScaleType: this.setScaleType,
                     chordType: this.chordType,
-                    setChordType: this.setChordType
+                    setChordType: this.setChordType,
+                    playTrack: this.playTrack,
+                    pauseTrack: this.pauseTrack,
+                    stopTrack: this.stopTrack,
+                    undoAction: this.undoAction,
+                    redoAction: this.redoAction,
+                    activeTool: this.activeTool,
+                    setActiveTool: this.setActiveTool,
+                    bpm: this.bpm,
+                    setBpm: this.setBpm
                 })}
                 ${generateTaskbarMarkup(this.activeWindows)}
                 ${generateWindowsMarkup(this.activeWindows)}

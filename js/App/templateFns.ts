@@ -281,9 +281,9 @@ const generateSelectOptionGroups = (optionGroups: SelectOptionGroup[], currentVa
 
 
 const generateSelectMarkup = (data: SelectData, currentValue: string, onChangeCb: Function) => html`
-    <div class="select__container">
-        <label class="select__label" for=${data.id}>${data.label}</label>
-        <select class="select" id=${data.id} @change=${onChangeCb}>
+    <div class="control__container">
+        <label class="control__label" for=${data.id}>${data.label}</label>
+        <select class="control" id=${data.id} @change=${onChangeCb}>
             ${data.optionGroups ?
                 generateSelectOptionGroups(data.optionGroups, currentValue) :
                 generateSelectOptions(data.options, currentValue)
@@ -299,11 +299,11 @@ const generateCheckboxMarkup = (data: CheckboxData) => html`
     </div>
 `;
 
-const generateButtonMarkup = (data: ButtonData) => html`
-    <button class="button">${data.label}</button>
+const generateButtonMarkup = (label: string, handleClick: Function) => html`
+    <button class="button" @click=${handleClick}>${label}</button>
 `;
 
-const generateRadioGroupMarkup = (data: RadioGroupData) => html`
+const generateRadioGroupMarkup = (data: RadioGroupData, currentValue, handleChange) => html`
     <div class="radio-group">
 		${repeat(
 			data.options,
@@ -314,7 +314,9 @@ const generateRadioGroupMarkup = (data: RadioGroupData) => html`
 					id=${option.id}
 					type="radio"
 					name=${data.name}
-					value=${option.value}
+                    value=${option.value}
+                    ?checked=${option.value === currentValue}
+                    @change=${handleChange}
 				/>
 				<label
 					class="radio-group__label" 
@@ -325,6 +327,20 @@ const generateRadioGroupMarkup = (data: RadioGroupData) => html`
     </div>
 `;
 
+const generateBpmControlMarkup = (currentValue, handleChange) => html`
+    <div class="control__container">
+        <label for="bpm-control" class="control__label">BPM</label>
+        <input
+            id="bpm-control"
+            class="control"
+            type="number"
+            min="40"
+            max="320"
+            value=${currentValue}
+            @change=${handleChange}
+        />
+    </div>
+`;
 
 export const generateMenubarMarkup = ({
     quantizeValue,
@@ -336,7 +352,16 @@ export const generateMenubarMarkup = ({
     scaleType,
     setScaleType,
     chordType,
-    setChordType
+    setChordType,
+    playTrack,
+    pauseTrack,
+    stopTrack,
+    undoAction,
+    redoAction,
+    activeTool,
+    setActiveTool,
+    bpm,
+    setBpm
 }) => html`
     <div class="menubar">
         <div class="menubar__content-container">
@@ -351,28 +376,39 @@ export const generateMenubarMarkup = ({
             </div>
             <div class="menubar__controls-group">
                 ${generateSelectMarkup(chordTypeSelectData, chordType, setChordType)}
-			</div>
+            </div>
+            <div class="menubar__controls-group">
+                ${generateBpmControlMarkup(bpm, setBpm)}
+            </div>
 		</div>
 		<div class="menubar__content-container">
 			<div class="menubar__controls-group">
-                ${repeat(
-                    transportButtonsData,
-                    buttonData => buttonData.label,
-                    buttonData => generateButtonMarkup(buttonData)
-                )}
+                ${generateButtonMarkup('Play', playTrack)}
+                ${generateButtonMarkup('Pause', pauseTrack)}
+                ${generateButtonMarkup('Stop', stopTrack)}
 			</div>
 			<div class="menubar__controls-group">
+                ${generateButtonMarkup('Undo', undoAction)}
+                ${generateButtonMarkup('Redo', redoAction)}
+            </div>
+            ${generateRadioGroupMarkup(activeToolRadioGroupData, activeTool, setActiveTool)}
+        </div>
+    </div>
+`;
+
+
+/*
+
+<div class="menubar__controls-group">
                 ${repeat(
                     historyButtonsData,
                     buttonData => buttonData.label,
                     buttonData => generateButtonMarkup(buttonData)
                 )}
             </div>
-            ${generateRadioGroupMarkup(activeToolRadioGroupData)}
-        </div>
-    </div>
-`;
 
+
+*/
 
 export const generateTaskbarMarkup = (activeWindows: Window[]) => html`
     <div class="taskbar">
