@@ -1,5 +1,6 @@
 import Konva from 'konva';
 import EventEmitter from '../../EventEmitter'; 
+import SettingsManager from '../../SettingsManager';
 import {  
     getHorizontalLinesData,
     getVerticalLinesData,
@@ -19,27 +20,26 @@ const isSameNote = (noteA, noteB) => note(noteA).chroma === note(noteB).chroma;
 export default class PianoRollGrid {
     
     private conversionManager: PianoRollConversionManager;
+    private settingsManager: SettingsManager;
     private layer: Konva.Layer;
     private gridContainer: Konva.Group;
     private scaleHighlightsSubContainer: Konva.Group;
     private gridLinesSubContainer: Konva.Group;
-    private scaleType: string;
     private eventEmitter: EventEmitter;
-    shouldDisplayScaleHighlighting: boolean;
 
     constructor(
-        conversionManager: PianoRollConversionManager, 
+        conversionManager: PianoRollConversionManager,
+        settingsManager: SettingsManager,
         layerRef: Konva.Layer, 
         eventEmitter: EventEmitter
     ) {
         this.conversionManager = conversionManager;
+        this.settingsManager = settingsManager;
         this.layer = layerRef;
         this.gridContainer = new Konva.Group({ 
             x: StaticMeasurements.pianoKeyWidth, 
             y: this.conversionManager.seekerAreaHeight 
         });
-        this.scaleType = 'C major';
-        this.shouldDisplayScaleHighlighting = false;
         this.eventEmitter = eventEmitter;
     }
 
@@ -60,12 +60,10 @@ export default class PianoRollGrid {
         this.eventEmitter.subscribe(Events.quantizeValueUpdate, qVal => {
             this.drawGrid();
         });
-        this.eventEmitter.subscribe(Events.scaleTypeUpdate, scaleType => {
-            this.scaleType = scaleType;
+        this.eventEmitter.subscribe(Events.scaleTypeUpdate, () => {
             this.drawScaleHighlights();
         });
-        this.eventEmitter.subscribe(Events.displayScaleUpdate, shouldDisplay => {
-            this.shouldDisplayScaleHighlighting = shouldDisplay;
+        this.eventEmitter.subscribe(Events.displayScaleUpdate, () => {
             this.drawScaleHighlights();
         });
     }
@@ -90,7 +88,7 @@ export default class PianoRollGrid {
      * Toggles whether scale highlights are visible or not.
      */
     toggleScaleHighlights() {
-        this.shouldDisplayScaleHighlighting = !this.shouldDisplayScaleHighlighting;
+        this.eventEmitter.emit(Events.displayScaleUpdate, !this.settingsManager.shouldShowScaleHighlights);
         this.drawScaleHighlights();
     }
 
@@ -99,8 +97,9 @@ export default class PianoRollGrid {
      */
     private drawScaleHighlights() {
         this.scaleHighlightsSubContainer.destroyChildren();
-        if (this.shouldDisplayScaleHighlighting) {
-            const scaleObject = scale(this.scaleType);
+        if (this.settingsManager.shouldShowScaleHighlights) {
+            const fullScaleName = `${this.settingsManager.scaleKey} ${this.settingsManager.scaleType}`;
+            const scaleObject = scale(fullScaleName);
             console.log(scaleObject);
             const { notes, tonic } = scaleObject;
             pitchesArray.forEach((noteObj, idx) => {
@@ -146,7 +145,7 @@ export default class PianoRollGrid {
         this.gridContainer.destroyChildren();
         this.scaleHighlightsSubContainer = new Konva.Group();
         this.scaleHighlightsSubContainer.moveTo(this.gridContainer);
-        if (this.shouldDisplayScaleHighlighting) {
+        if (this.settingsManager.shouldShowScaleHighlights) {
             this.drawScaleHighlights();
         }
         this.gridLinesSubContainer = new Konva.Group();

@@ -292,10 +292,16 @@ const generateSelectMarkup = (data: SelectData, currentValue: string, onChangeCb
     </div>
 `;
 
-const generateCheckboxMarkup = (data: CheckboxData) => html`
+const generateCheckboxMarkup = (data: CheckboxData, isChecked: boolean, handleChange: Function) => html`
     <div class="checkbox__container">
         <label class="checkbox__label" for=${data.id}>${data.label}</label>
-        <input class="checkbox" type="checkbox" id=${data.id} />
+        <input 
+            class="checkbox" 
+            ?checked=${isChecked} 
+            type="checkbox" 
+            id=${data.id}
+            @change=${handleChange} 
+        />
     </div>
 `;
 
@@ -355,6 +361,8 @@ export const generateMenubarMarkup = ({
     setScaleKey,
     scaleType,
     setScaleType,
+    shouldShowScaleHighlights,
+    toggleScaleHighlightsVisibility,
     chordType,
     setChordType,
     playTrack,
@@ -376,7 +384,11 @@ export const generateMenubarMarkup = ({
             <div class="menubar__controls-group">
                 ${generateSelectMarkup(scaleKeySelectData, scaleKey, setScaleKey)}
                 ${generateSelectMarkup(scaleTypeSelectData, scaleType, setScaleType)}
-                ${generateCheckboxMarkup(toggleScaleHighlightingCheckboxData)}
+                ${generateCheckboxMarkup(
+                    toggleScaleHighlightingCheckboxData, 
+                    shouldShowScaleHighlights, 
+                    toggleScaleHighlightsVisibility
+                )}
             </div>
             <div class="menubar__controls-group">
                 ${generateSelectMarkup(chordTypeSelectData, chordType, setChordType)}

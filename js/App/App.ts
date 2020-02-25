@@ -51,6 +51,10 @@ export default class App {
         this.eventEmitter.subscribe(Events.redoAction, this.redoActionAndPushState);
         this.eventEmitter.subscribe(Events.activeToolUpdate, () => this.renderApp());
         this.eventEmitter.subscribe(Events.chordTypeUpdate, () => this.renderApp());
+        this.eventEmitter.subscribe(Events.displayScaleUpdate, (bool) => {
+            console.log(`display scale highlights? ${bool}`)
+            this.renderApp();
+        });
         window.audioEngine = this.audioEngine;
         window.historyStack = this.historyStack;
         window.app = this;
@@ -78,6 +82,11 @@ export default class App {
 
     setScaleType = (e) => {
         this.eventEmitter.emit(Events.scaleTypeUpdate, e.target.value);
+        this.renderApp();
+    }
+
+    toggleScaleHighlightsVisibility = () => {
+        this.eventEmitter.emit(Events.displayScaleUpdate, !this.settingsManager.shouldShowScaleHighlights);
         this.renderApp();
     }
 
@@ -244,6 +253,8 @@ export default class App {
                     setScaleKey: this.setScaleKey,
                     scaleType: this.settingsManager.scaleType,
                     setScaleType: this.setScaleType,
+                    shouldShowScaleHighlights: this.settingsManager.shouldShowScaleHighlights,
+                    toggleScaleHighlightsVisibility: this.toggleScaleHighlightsVisibility,
                     chordType: this.settingsManager.chordType,
                     setChordType: this.setChordType,
                     playTrack: this.playTrack,

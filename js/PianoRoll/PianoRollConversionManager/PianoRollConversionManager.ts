@@ -1,4 +1,5 @@
 import EventEmitter from '../../EventEmitter';
+import SettingsManager from '../../SettingsManager';
 import {
     StaticMeasurements,
     Events,
@@ -25,34 +26,25 @@ export default class PianoRollConversionManager implements ConversionManager {
     private _stageWidth: number;
     private _stageHeight: number;
     private _velocityAreaHeight: number;
-    private _quantize: string;
-    private _noteDuration: string;
     private _tickToPxRatio: number;
     private _numBars: number;
     private eventEmitter: EventEmitter;
+    private settingsManager: SettingsManager;
     
     constructor(
         stageWidth: number, 
         stageHeight: number,
         eventEmitter: EventEmitter,
-        initialQuantize = '16n', 
-        initialNoteDuration = '16n', 
+        settingsManager: SettingsManager,
         numBars = 4
     ) {
+        this.settingsManager = settingsManager;
         this._stageWidth = stageWidth;
         this._stageHeight = stageHeight;
         this._velocityAreaHeight = StaticMeasurements.velocityLayerHeight;
-        this._quantize = initialQuantize;
-        this._noteDuration = initialNoteDuration;
         this._tickToPxRatio = 0.25;
         this._numBars = numBars;
         this.eventEmitter = eventEmitter;
-        this.eventEmitter.subscribe(Events.quantizeValueUpdate, qVal => {
-            this._quantize = qVal;
-        });
-        this.eventEmitter.subscribe(Events.noteDurationUpdate, nVal => {
-            this._noteDuration = nVal;
-        });
     }
 
     roundDown(total: number, divisor: number) : number {
@@ -85,11 +77,11 @@ export default class PianoRollConversionManager implements ConversionManager {
     }
 
     get colWidth() : number {
-        return this.convertDurationToPx(this._quantize);
+        return this.convertDurationToPx(this.settingsManager.quantize);
     }
 
     get noteWidth() : number {
-        return this.convertDurationToPx(this._noteDuration);
+        return this.convertDurationToPx(this.settingsManager.noteDuration);
     }
 
     get barWidth() : number {
