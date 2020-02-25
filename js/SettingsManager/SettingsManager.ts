@@ -22,9 +22,15 @@ export default class SettingsManager {
     }
 
     init() {
-        this.emitter.subscribe(Events.quantizeValueUpdate, (quantize) => this._quantize = quantize);
-        this.emitter.subscribe(Events.noteDurationUpdate, (duration) => this._noteDuration = duration);
-        
+        this.emitter.subscribe(Events.quantizeValueUpdate, (quantize: string) => this._quantize = quantize);
+        this.emitter.subscribe(Events.noteDurationUpdate, (duration: string) => this._noteDuration = duration);
+        this.emitter.subscribe(Events.scaleKeyUpdate, (scaleKey: string) => this._scaleKey = scaleKey);
+        this.emitter.subscribe(Events.scaleTypeUpdate, (scaleType: string) => this._scaleType = scaleType);
+        this.emitter.subscribe(Events.displayScaleUpdate, (shouldShow: boolean) => {
+            this._shouldShowScaleHighlights = shouldShow;
+        });
+        this.emitter.subscribe(Events.chordTypeUpdate, (chordType: string) => this._chordType = chordType);
+        this.emitter.subscribe(Events.activeToolUpdate, (activeTool: Tools) => this._activeTool = activeTool);
     }
 
     get quantize() : string {

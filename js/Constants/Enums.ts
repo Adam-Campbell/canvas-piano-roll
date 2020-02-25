@@ -2,6 +2,7 @@ export enum Events {
     // Piano roll related events
     quantizeValueUpdate = 'quantizeValueUpdate',
     noteDurationUpdate = 'noteDurationUpdate',
+    scaleKeyUpdate = 'scaleKeyUpdate',
     scaleTypeUpdate = 'scaleTypeUpdate',
     displayScaleUpdate = 'displayScaleUpdate',
     chordTypeUpdate = 'chordTypeUpdate',

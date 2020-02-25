@@ -1,7 +1,7 @@
 import { render, html, nothing } from 'lit-html';
 import { repeat } from 'lit-html/directives/repeat';
 import Window from '../Window';
-import { WindowDisplayModes } from '../Constants';
+import { WindowDisplayModes, Tools } from '../Constants';
 
 const quantizeSelectData = {
     id: 'quantize-select',
@@ -198,17 +198,17 @@ const activeToolRadioGroupData = {
 		{
 			id: 'cursor',
 			icon: 'mouse',
-			value: 'cursor'
+			value: Tools.cursor
 		},
 		{
 			id: 'pencil',
 			icon: 'create',
-			value: 'pencil'
+			value: Tools.pencil
 		},
 		{
 			id: 'marquee',
 			icon: 'select_all',
-			value: 'marquee'
+			value: Tools.marquee
 		}
 	]
 }

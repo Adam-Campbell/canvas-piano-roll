@@ -17,6 +17,7 @@ import PianoRoll from '../PianoRoll';
 import AudioEngine from '../AudioEngine';
 import Arranger from '../Arranger';
 import HistoryStack from '../HistoryStack';
+import SettingsManager from '../SettingsManager';
 
 export default class App {
     
@@ -24,6 +25,7 @@ export default class App {
     audioEngine: AudioEngine;
     eventEmitter: EventEmitter;
     private historyStack: HistoryStack;
+    settingsManager: SettingsManager;
     quantizeValue = '16n';
     noteDurationValue = '16n';
     scaleKey = 'C';
@@ -34,6 +36,8 @@ export default class App {
 
     constructor() {
         this.eventEmitter = new EventEmitter();
+        this.settingsManager = new SettingsManager(this.eventEmitter);
+        this.settingsManager.init();
         this.audioEngine = new AudioEngine(this.eventEmitter);
         this.audioEngine.init();
         const initialHistoryStackEntry = this.audioEngine.serializeState();
@@ -45,6 +49,8 @@ export default class App {
         this.eventEmitter.subscribe(Events.addStateToStack, this.serializeStateAndAddToStack);
         this.eventEmitter.subscribe(Events.undoAction, this.undoActionAndPushState);
         this.eventEmitter.subscribe(Events.redoAction, this.redoActionAndPushState);
+        this.eventEmitter.subscribe(Events.activeToolUpdate, () => this.renderApp());
+        this.eventEmitter.subscribe(Events.chordTypeUpdate, () => this.renderApp());
         window.audioEngine = this.audioEngine;
         window.historyStack = this.historyStack;
         window.app = this;
@@ -56,41 +62,29 @@ export default class App {
     }
 
     setQuantizeValue = (e) => {
-        const newQuantizeValue = e.target.value;
-        console.log(`changed to ${newQuantizeValue}`);
-        this.quantizeValue = newQuantizeValue;
+        this.eventEmitter.emit(Events.quantizeValueUpdate, e.target.value);
         this.renderApp();
     }
 
     setNoteDurationValue = (e) => {
-        const newValue = e.target.value;
-        this.noteDurationValue = newValue;
+        this.eventEmitter.emit(Events.noteDurationUpdate, e.target.value);
         this.renderApp();
     }
 
     setScaleKey = (e) => {
-        const newValue = e.target.value;
-        this.scaleKey = newValue;
+        this.eventEmitter.emit(Events.scaleKeyUpdate, e.target.value);
         this.renderApp();
     }
 
     setScaleType = (e) => {
-        const newValue = e.target.value;
-        this.scaleType = newValue;
+        this.eventEmitter.emit(Events.scaleTypeUpdate, e.target.value);
         this.renderApp();
     }
 
     setChordType = (e) => {
-        const newValue = e.target.value;
-        this.chordType = newValue;
+        this.eventEmitter.emit(Events.chordTypeUpdate, e.target.value);
         this.renderApp();
     }
-
-    playTrack = () => Tone.Transport.start();
-
-    pauseTrack = () => Tone.Transport.pause();
-
-    stopTrack = () => Tone.Transport.stop();
 
     undoAction = () => {
         this.eventEmitter.emit(Events.undoAction);
@@ -101,14 +95,17 @@ export default class App {
     }
 
     setActiveTool = (e) => {
-        const newValue = e.target.value;
-        this.activeTool = newValue;
-        this.eventEmitter.emit(Events.activeToolUpdate, newValue);
+        this.eventEmitter.emit(Events.activeToolUpdate, e.target.value);
         this.renderApp();
     }
 
+    playTrack = () => Tone.Transport.start();
+
+    pauseTrack = () => Tone.Transport.pause();
+
+    stopTrack = () => Tone.Transport.stop();
+
     setBpm = (e) => {
-        console.log(e.target.value);
         const newValue = parseInt(e.target.value);
         this.bpm = newValue;
         Tone.Transport.bpm.value = newValue;
@@ -154,6 +151,7 @@ export default class App {
             id,
             title,
             eventEmitter: this.eventEmitter,
+            settingsManager: this.settingsManager,
             initialZIndex: this.activeWindows.length,
             childClass,
             childContext,
@@ -238,22 +236,22 @@ export default class App {
         render(
             html`
                 ${generateMenubarMarkup({
-                    quantizeValue: this.quantizeValue,
+                    quantizeValue: this.settingsManager.quantize,
                     setQuantizeValue: this.setQuantizeValue,
-                    noteDurationValue: this.noteDurationValue,
+                    noteDurationValue: this.settingsManager.noteDuration,
                     setNoteDurationValue: this.setNoteDurationValue,
-                    scaleKey: this.scaleKey,
+                    scaleKey: this.settingsManager.scaleKey,
                     setScaleKey: this.setScaleKey,
-                    scaleType: this.scaleType,
+                    scaleType: this.settingsManager.scaleType,
                     setScaleType: this.setScaleType,
-                    chordType: this.chordType,
+                    chordType: this.settingsManager.chordType,
                     setChordType: this.setChordType,
                     playTrack: this.playTrack,
                     pauseTrack: this.pauseTrack,
                     stopTrack: this.stopTrack,
                     undoAction: this.undoAction,
                     redoAction: this.redoAction,
-                    activeTool: this.activeTool,
+                    activeTool: this.settingsManager.activeTool,
                     setActiveTool: this.setActiveTool,
                     bpm: this.bpm,
                     setBpm: this.setBpm

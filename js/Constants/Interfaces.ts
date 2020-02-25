@@ -2,6 +2,7 @@ import Konva from 'konva';
 import EventEmitter from '../EventEmitter';
 import Section from '../AudioEngine/Section';
 import AudioEngine from '../AudioEngine';
+import SettingsManager from '../SettingsManager';
 
 export interface KonvaEvent {
     evt: any,
@@ -55,6 +56,7 @@ export interface WindowOptions {
     id: string,
     title: string,
     eventEmitter: EventEmitter,
+    settingsManager: SettingsManager,
     initialZIndex: number,
     childClass: any,
     childContext: any,
