@@ -7,7 +7,7 @@ import {
 
 export default class SettingsManager {
 
-    private emitter: EventEmitter;
+    private eventEmitter: EventEmitter;
     private _quantize = '16n';
     private _noteDuration = '16n';
     private _scaleKey = 'C';
@@ -18,19 +18,19 @@ export default class SettingsManager {
 
 
     constructor(eventEmitter: EventEmitter) {
-        this.emitter = eventEmitter;
+        this.eventEmitter = eventEmitter;
     }
 
     init() {
-        this.emitter.subscribe(Events.quantizeValueUpdate, (quantize: string) => this._quantize = quantize);
-        this.emitter.subscribe(Events.noteDurationUpdate, (duration: string) => this._noteDuration = duration);
-        this.emitter.subscribe(Events.scaleKeyUpdate, (scaleKey: string) => this._scaleKey = scaleKey);
-        this.emitter.subscribe(Events.scaleTypeUpdate, (scaleType: string) => this._scaleType = scaleType);
-        this.emitter.subscribe(Events.displayScaleUpdate, (shouldShow: boolean) => {
+        this.eventEmitter.subscribe(Events.quantizeValueUpdate, (quantize: string) => this._quantize = quantize);
+        this.eventEmitter.subscribe(Events.noteDurationUpdate, (duration: string) => this._noteDuration = duration);
+        this.eventEmitter.subscribe(Events.scaleKeyUpdate, (scaleKey: string) => this._scaleKey = scaleKey);
+        this.eventEmitter.subscribe(Events.scaleTypeUpdate, (scaleType: string) => this._scaleType = scaleType);
+        this.eventEmitter.subscribe(Events.displayScaleUpdate, (shouldShow: boolean) => {
             this._shouldShowScaleHighlights = shouldShow;
         });
-        this.emitter.subscribe(Events.chordTypeUpdate, (chordType: string) => this._chordType = chordType);
-        this.emitter.subscribe(Events.activeToolUpdate, (activeTool: Tools) => this._activeTool = activeTool);
+        this.eventEmitter.subscribe(Events.chordTypeUpdate, (chordType: string) => this._chordType = chordType);
+        this.eventEmitter.subscribe(Events.activeToolUpdate, (activeTool: Tools) => this._activeTool = activeTool);
     }
 
     get quantize() : string {

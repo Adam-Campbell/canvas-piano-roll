@@ -297,7 +297,7 @@ const generateCheckboxMarkup = (data: CheckboxData, isChecked: boolean, handleCh
         <label class="checkbox__label" for=${data.id}>${data.label}</label>
         <input 
             class="checkbox" 
-            ?checked=${isChecked} 
+            .checked=${isChecked} 
             type="checkbox" 
             id=${data.id}
             @change=${handleChange} 
@@ -323,7 +323,7 @@ const generateRadioGroupMarkup = (data: RadioGroupData, currentValue, handleChan
 					type="radio"
 					name=${data.name}
                     value=${option.value}
-                    ?checked=${option.value === currentValue}
+                    .checked=${option.value === currentValue}
                     @change=${handleChange}
 				/>
 				<label

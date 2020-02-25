@@ -26,12 +26,6 @@ export default class App {
     eventEmitter: EventEmitter;
     private historyStack: HistoryStack;
     settingsManager: SettingsManager;
-    quantizeValue = '16n';
-    noteDurationValue = '16n';
-    scaleKey = 'C';
-    scaleType = 'major';
-    chordType = 'major';
-    activeTool = Tools.cursor;
     bpm = 120;
 
     constructor() {
@@ -55,6 +49,7 @@ export default class App {
             console.log(`display scale highlights? ${bool}`)
             this.renderApp();
         });
+        this.eventEmitter.subscribe(Events.triggerUIRender, () => this.renderApp());
         window.audioEngine = this.audioEngine;
         window.historyStack = this.historyStack;
         window.app = this;

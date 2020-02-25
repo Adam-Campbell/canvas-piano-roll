@@ -21,7 +21,8 @@ export enum Events {
     resizeWindow = 'resizeWindow',
     openPianoRollWindow = 'openPianoRollWindow',
     historyTravelled = 'historyTravelled',
-    addStateToStack = 'addStateToStack'
+    addStateToStack = 'addStateToStack',
+    triggerUIRender = 'triggerUIRender'
 }
 
 export enum DragModes {
