@@ -2,6 +2,7 @@ export enum Events {
     // Piano roll related events
     quantizeValueUpdate = 'quantizeValueUpdate',
     noteDurationUpdate = 'noteDurationUpdate',
+    scaleKeyUpdate = 'scaleKeyUpdate',
     scaleTypeUpdate = 'scaleTypeUpdate',
     displayScaleUpdate = 'displayScaleUpdate',
     chordTypeUpdate = 'chordTypeUpdate',
@@ -20,7 +21,8 @@ export enum Events {
     resizeWindow = 'resizeWindow',
     openPianoRollWindow = 'openPianoRollWindow',
     historyTravelled = 'historyTravelled',
-    addStateToStack = 'addStateToStack'
+    addStateToStack = 'addStateToStack',
+    triggerUIRender = 'triggerUIRender'
 }
 
 export enum DragModes {

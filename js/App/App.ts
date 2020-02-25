@@ -1,3 +1,4 @@
+import Tone from 'tone';
 import { render, html } from 'lit-html';
 import Window from '../Window';
 import EventEmitter from '../EventEmitter';
@@ -9,12 +10,14 @@ import {
 import { 
     Events,
     WindowTypes,
-    WindowChild
+    WindowChild,
+    Tools
 } from '../Constants';
 import PianoRoll from '../PianoRoll';
 import AudioEngine from '../AudioEngine';
 import Arranger from '../Arranger';
 import HistoryStack from '../HistoryStack';
+import SettingsManager from '../SettingsManager';
 
 export default class App {
     
@@ -22,9 +25,13 @@ export default class App {
     audioEngine: AudioEngine;
     eventEmitter: EventEmitter;
     private historyStack: HistoryStack;
+    settingsManager: SettingsManager;
+    bpm = 120;
 
     constructor() {
         this.eventEmitter = new EventEmitter();
+        this.settingsManager = new SettingsManager(this.eventEmitter);
+        this.settingsManager.init();
         this.audioEngine = new AudioEngine(this.eventEmitter);
         this.audioEngine.init();
         const initialHistoryStackEntry = this.audioEngine.serializeState();
@@ -36,13 +43,77 @@ export default class App {
         this.eventEmitter.subscribe(Events.addStateToStack, this.serializeStateAndAddToStack);
         this.eventEmitter.subscribe(Events.undoAction, this.undoActionAndPushState);
         this.eventEmitter.subscribe(Events.redoAction, this.redoActionAndPushState);
+        this.eventEmitter.subscribe(Events.activeToolUpdate, () => this.renderApp());
+        this.eventEmitter.subscribe(Events.chordTypeUpdate, () => this.renderApp());
+        this.eventEmitter.subscribe(Events.displayScaleUpdate, (bool) => {
+            console.log(`display scale highlights? ${bool}`)
+            this.renderApp();
+        });
+        this.eventEmitter.subscribe(Events.triggerUIRender, () => this.renderApp());
         window.audioEngine = this.audioEngine;
         window.historyStack = this.historyStack;
+        window.app = this;
     }
 
     init() : void {
         this.renderApp();
         this.addArrangerWindow();
+    }
+
+    setQuantizeValue = (e) => {
+        this.eventEmitter.emit(Events.quantizeValueUpdate, e.target.value);
+        this.renderApp();
+    }
+
+    setNoteDurationValue = (e) => {
+        this.eventEmitter.emit(Events.noteDurationUpdate, e.target.value);
+        this.renderApp();
+    }
+
+    setScaleKey = (e) => {
+        this.eventEmitter.emit(Events.scaleKeyUpdate, e.target.value);
+        this.renderApp();
+    }
+
+    setScaleType = (e) => {
+        this.eventEmitter.emit(Events.scaleTypeUpdate, e.target.value);
+        this.renderApp();
+    }
+
+    toggleScaleHighlightsVisibility = () => {
+        this.eventEmitter.emit(Events.displayScaleUpdate, !this.settingsManager.shouldShowScaleHighlights);
+        this.renderApp();
+    }
+
+    setChordType = (e) => {
+        this.eventEmitter.emit(Events.chordTypeUpdate, e.target.value);
+        this.renderApp();
+    }
+
+    undoAction = () => {
+        this.eventEmitter.emit(Events.undoAction);
+    }
+
+    redoAction = () => {
+        this.eventEmitter.emit(Events.redoAction);
+    }
+
+    setActiveTool = (e) => {
+        this.eventEmitter.emit(Events.activeToolUpdate, e.target.value);
+        this.renderApp();
+    }
+
+    playTrack = () => Tone.Transport.start();
+
+    pauseTrack = () => Tone.Transport.pause();
+
+    stopTrack = () => Tone.Transport.stop();
+
+    setBpm = (e) => {
+        const newValue = parseInt(e.target.value);
+        this.bpm = newValue;
+        Tone.Transport.bpm.value = newValue;
+        this.renderApp();
     }
 
     /**
@@ -84,6 +155,7 @@ export default class App {
             id,
             title,
             eventEmitter: this.eventEmitter,
+            settingsManager: this.settingsManager,
             initialZIndex: this.activeWindows.length,
             childClass,
             childContext,
@@ -167,7 +239,29 @@ export default class App {
     renderApp = () : void => {
         render(
             html`
-                ${generateMenubarMarkup(this.addWindow)}
+                ${generateMenubarMarkup({
+                    quantizeValue: this.settingsManager.quantize,
+                    setQuantizeValue: this.setQuantizeValue,
+                    noteDurationValue: this.settingsManager.noteDuration,
+                    setNoteDurationValue: this.setNoteDurationValue,
+                    scaleKey: this.settingsManager.scaleKey,
+                    setScaleKey: this.setScaleKey,
+                    scaleType: this.settingsManager.scaleType,
+                    setScaleType: this.setScaleType,
+                    shouldShowScaleHighlights: this.settingsManager.shouldShowScaleHighlights,
+                    toggleScaleHighlightsVisibility: this.toggleScaleHighlightsVisibility,
+                    chordType: this.settingsManager.chordType,
+                    setChordType: this.setChordType,
+                    playTrack: this.playTrack,
+                    pauseTrack: this.pauseTrack,
+                    stopTrack: this.stopTrack,
+                    undoAction: this.undoAction,
+                    redoAction: this.redoAction,
+                    activeTool: this.settingsManager.activeTool,
+                    setActiveTool: this.setActiveTool,
+                    bpm: this.bpm,
+                    setBpm: this.setBpm
+                })}
                 ${generateTaskbarMarkup(this.activeWindows)}
                 ${generateWindowsMarkup(this.activeWindows)}
             `,

@@ -43,7 +43,8 @@ export default class Window {
     constructor({
         id, 
         title, 
-        eventEmitter, 
+        eventEmitter,
+        settingsManager, 
         initialZIndex, 
         childClass,
         childContext,
@@ -58,7 +59,7 @@ export default class Window {
         this.currentY = 80;
         this.eventEmitter = eventEmitter;
         this.zIndex = initialZIndex;
-        this.child = new childClass(this.eventEmitter);
+        this.child = new childClass(this.eventEmitter, settingsManager);
         this.childContext = childContext;
     }
 

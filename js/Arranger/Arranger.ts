@@ -16,6 +16,7 @@ import StageScrollManager from '../common/StageScrollManager';
 import StageScrollbars from '../common/StageScrollbars';
 import ChannelInfoColumn from './ChannelInfoColumn';
 import StageBackground from '../common/StageBackground';
+import SettingsManager from '../SettingsManager';
 import {
     ArrangerDragModes,
     Tools,
@@ -42,9 +43,9 @@ import { SerializedAudioEngineState } from '../AudioEngine/AudioEngineConstants'
 export default class Arranger implements WindowChild {
 
     private dragMode: ArrangerDragModes;
-    private activeTool: Tools;
     private stage: Konva.Stage;
     private conversionManager: ArrangerConversionManager;
+    private settingsManager: SettingsManager;
     private primaryBackingLayer: Konva.Layer;
     private secondaryBackingLayer: Konva.Layer;
     private gridLayer: ArrangerGrid;
@@ -70,10 +71,10 @@ export default class Arranger implements WindowChild {
     private interactionYDeltaMin: number;
     
 
-    constructor(eventEmitter: EventEmitter) {
+    constructor(eventEmitter: EventEmitter, settingsManager: SettingsManager) {
         this.dragMode = null;
-        this.activeTool = Tools.cursor;
         this.eventEmitter = eventEmitter;
+        this.settingsManager = settingsManager;
         this.playbackFromTicks = 0;
     }
 
@@ -178,17 +179,17 @@ export default class Arranger implements WindowChild {
     private registerKeyboardSubscriptions() : void {
         this.keyboardStateManager.addKeyListener('1', () => {
             if (this.keyboardStateManager.altKey) {
-                this.eventEmitter.emit(Events.activeToolUpdate, 'cursor');
+                this.eventEmitter.emit(Events.activeToolUpdate, Tools.cursor);
             }
         });
         this.keyboardStateManager.addKeyListener('2', () => {
             if (this.keyboardStateManager.altKey) {
-                this.eventEmitter.emit(Events.activeToolUpdate, 'pencil');
+                this.eventEmitter.emit(Events.activeToolUpdate, Tools.pencil);
             }
         });
         this.keyboardStateManager.addKeyListener('3', () => {
             if (this.keyboardStateManager.altKey) {
-                this.eventEmitter.emit(Events.activeToolUpdate, 'marquee');
+                this.eventEmitter.emit(Events.activeToolUpdate, Tools.marquee);
             }
         });
         this.keyboardStateManager.addKeyListener('ArrowUp', () => this.shiftSelectionUp());
@@ -215,8 +216,7 @@ export default class Arranger implements WindowChild {
      */
     private registerGlobalEventSubscriptions() : void {
         this.eventEmitter.subscribe(Events.activeToolUpdate, tool => {
-            this.activeTool = tool;
-            console.log(this.activeTool);
+            console.log(tool);
         });
         this.eventEmitter.subscribe(Events.historyTravelled, state => {
             this.forceToState(state);
@@ -658,7 +658,7 @@ export default class Arranger implements WindowChild {
             const positionAsTicks = this.conversionManager.convertPxToTicks(roundedX);
             this.playbackFromTicks = positionAsTicks;
             this.transportLayer.repositionPlaybackMarker(positionAsTicks);
-        } else if (isSectionInteraction && this.activeTool === Tools.cursor) {
+        } else if (isSectionInteraction && this.settingsManager.activeTool === Tools.cursor) {
             this.eventEmitter.emit(Events.openPianoRollWindow, target.id());
         }
     }
@@ -689,10 +689,10 @@ export default class Arranger implements WindowChild {
             return;
         }
 
-        if (this.activeTool === Tools.marquee) {
+        if (this.settingsManager.activeTool === Tools.marquee) {
             this.dragMode = ArrangerDragModes.adjustSelection;
 
-        } else if (this.activeTool === Tools.pencil) {
+        } else if (this.settingsManager.activeTool === Tools.pencil) {
             if (isBelowGrid) {
                 return;
             }
@@ -701,7 +701,7 @@ export default class Arranger implements WindowChild {
             this.addNewSection(roundedX, roundedY, genId());
             this.calculateDeltaBoundaries();
 
-        } else if (this.activeTool === Tools.cursor) {
+        } else if (this.settingsManager.activeTool === Tools.cursor) {
             const targetIsSection = target.name() === 'STAGE_ENTITY';
             if (targetIsSection) {
                 this.handleSectionInteractionStart(target, xWithScroll); 

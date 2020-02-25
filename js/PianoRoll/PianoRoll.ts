@@ -18,6 +18,7 @@ import PianoKeys from './PianoKeys';
 import PianoRollScrollbars from './PianoRollScrollbars';
 import ContextMenus from './ContextMenus';
 import StageBackground from '../common/StageBackground';
+import SettingsManager from '../SettingsManager';
 import { 
     DragModes,
     Tools,
@@ -62,9 +63,7 @@ enum EasingModes {
 export default class PianoRoll implements WindowChild {
 
     private dragMode: DragModes;
-    private activeTool: Tools;
     private previousBumpTimestamp: number;
-    private chordType: string;
     private playbackFromTicks: number;
     private stage: Konva.Stage;
     private noteCache: CanvasElementCache;
@@ -72,6 +71,7 @@ export default class PianoRoll implements WindowChild {
     private keyboardStateManager: KeyboardStateManager;
     private mouseStateManager: MouseStateManager;
     private conversionManager: PianoRollConversionManager;
+    private settingsManager: SettingsManager;
     private audioReconciler: AudioReconciler;
     private noteSelection: SelectionManager;
     private clipboard: PianoRollClipboard;
@@ -95,15 +95,14 @@ export default class PianoRoll implements WindowChild {
     private interactionYDeltaMax: number;
     private interactionYDeltaMin: number;
 
-    constructor(eventEmitter: EventEmitter) {
+    constructor(eventEmitter: EventEmitter, settingsManager: SettingsManager) {
         // Initialize class properties
         window.pianoRoll = this;
         this.dragMode = null;
-        this.activeTool = Tools.cursor;
         this.previousBumpTimestamp = null;
-        this.chordType = 'major';
         this.playbackFromTicks = 0;
         this.eventEmitter = eventEmitter;
+        this.settingsManager = settingsManager;
     }
 
     init(pianoRollOptions: PianoRollOptions) : void {
@@ -153,8 +152,7 @@ export default class PianoRoll implements WindowChild {
             initialWidth, 
             initialHeight,
             this.eventEmitter,
-            initialQuantize,
-            initialNoteDuration,
+            this.settingsManager,
             numBars
         );
         this.audioReconciler = new AudioReconciler(this.conversionManager, this.section);
@@ -164,7 +162,12 @@ export default class PianoRoll implements WindowChild {
         this.primaryBackingLayer = new Konva.Layer();
         this.secondaryBackingLayer = new Konva.Layer();
         this.backgroundLayer = new StageBackground(this.conversionManager, this.primaryBackingLayer);
-        this.gridLayer = new PianoRollGrid(this.conversionManager, this.primaryBackingLayer, this.eventEmitter);
+        this.gridLayer = new PianoRollGrid(
+            this.conversionManager, 
+            this.settingsManager,
+            this.primaryBackingLayer, 
+            this.eventEmitter
+        );
         this.noteLayer = new PianoRollNotes(this.conversionManager, this.primaryBackingLayer);
         this.velocityLayer = new VelocityArea(this.conversionManager, this.primaryBackingLayer);
         this.transportLayer = new PianoRollTransport(this.conversionManager, this.primaryBackingLayer);
@@ -208,17 +211,17 @@ export default class PianoRoll implements WindowChild {
         this.keyboardStateManager.addKeyListener('Delete', () => this.deleteSelectedNotes());
         this.keyboardStateManager.addKeyListener('1', () => {
             if (this.keyboardStateManager.altKey) {
-                this.eventEmitter.emit(Events.activeToolUpdate, 'cursor');
+                this.eventEmitter.emit(Events.activeToolUpdate, Tools.cursor);
             }
         });
         this.keyboardStateManager.addKeyListener('2', () => {
             if (this.keyboardStateManager.altKey) {
-                this.eventEmitter.emit(Events.activeToolUpdate, 'pencil');
+                this.eventEmitter.emit(Events.activeToolUpdate, Tools.pencil);
             }
         });
         this.keyboardStateManager.addKeyListener('3', () => {
             if (this.keyboardStateManager.altKey) {
-                this.eventEmitter.emit(Events.activeToolUpdate, 'marquee');
+                this.eventEmitter.emit(Events.activeToolUpdate, Tools.marquee);
             }
         });
         this.keyboardStateManager.addKeyListener('ArrowUp', () => {
@@ -259,13 +262,6 @@ export default class PianoRoll implements WindowChild {
     }
 
     private registerGlobalEventSubscriptions() : void {
-        this.eventEmitter.subscribe(Events.activeToolUpdate, tool => {
-            this.activeTool = tool;
-            console.log(this.activeTool);
-        });
-        this.eventEmitter.subscribe(Events.chordTypeUpdate, chordType => {
-            this.chordType = chordType;
-        });
         this.eventEmitter.subscribe(Events.historyTravelled, (state: SerializedAudioEngineState) => {
             let serializedSection;
             for (const channel of state.channels) {
@@ -771,7 +767,7 @@ export default class PianoRoll implements WindowChild {
         if (selectedNotes.length === 0) {
             return;
         }
-        const { chroma } = chordType(this.chordType);
+        const { chroma } = chordType(this.settingsManager.chordType);
         let relativePositions = [];
         chroma.split('').forEach((binary, idx) => {
             if (parseInt(binary) && idx > 0) {
@@ -1078,14 +1074,14 @@ export default class PianoRoll implements WindowChild {
             return;
         }
 
-        if (this.activeTool === Tools.marquee) {
+        if (this.settingsManager.activeTool === Tools.marquee) {
             if (isVelocityAreaClick) {
                 this.mouseStateManager.addMouseDownEvent(xWithScroll, rawY);
                 this.dragMode = DragModes.adjustSelectionFromVelocityArea;
             } else {
                 this.dragMode = DragModes.adjustSelection;
             }
-        } else if (this.activeTool === Tools.pencil) {
+        } else if (this.settingsManager.activeTool === Tools.pencil) {
             if (isVelocityAreaClick) {
                 this.handleVelocityAreaPencilInteraction(roundedX, rawY);
             } else {
@@ -1094,7 +1090,7 @@ export default class PianoRoll implements WindowChild {
                 this.addNewNote(roundedX, roundedY); 
                 this.calculateDeltaBoundaries();
             }
-        } else if (this.activeTool === Tools.cursor) {
+        } else if (this.settingsManager.activeTool === Tools.cursor) {
             if (isVelocityAreaClick) {
                 this.handleVelocityAreaCursorInteraction(roundedX, target);
             } else {
