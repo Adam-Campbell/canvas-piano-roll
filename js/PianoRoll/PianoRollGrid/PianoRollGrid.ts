@@ -63,6 +63,9 @@ export default class PianoRollGrid {
         this.eventEmitter.subscribe(Events.scaleTypeUpdate, () => {
             this.drawScaleHighlights();
         });
+        this.eventEmitter.subscribe(Events.scaleKeyUpdate, () => {
+            this.drawScaleHighlights();
+        })
         this.eventEmitter.subscribe(Events.displayScaleUpdate, () => {
             this.drawScaleHighlights();
         });

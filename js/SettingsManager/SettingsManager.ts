@@ -22,15 +22,34 @@ export default class SettingsManager {
     }
 
     init() {
-        this.eventEmitter.subscribe(Events.quantizeValueUpdate, (quantize: string) => this._quantize = quantize);
-        this.eventEmitter.subscribe(Events.noteDurationUpdate, (duration: string) => this._noteDuration = duration);
-        this.eventEmitter.subscribe(Events.scaleKeyUpdate, (scaleKey: string) => this._scaleKey = scaleKey);
-        this.eventEmitter.subscribe(Events.scaleTypeUpdate, (scaleType: string) => this._scaleType = scaleType);
+        this.eventEmitter.subscribe(Events.quantizeValueUpdate, (quantize: string) => {
+            this._quantize = quantize;
+            this.triggerUIRender();
+        });
+        this.eventEmitter.subscribe(Events.noteDurationUpdate, (duration: string) => {
+            this._noteDuration = duration;
+            this.triggerUIRender();
+        });
+        this.eventEmitter.subscribe(Events.scaleKeyUpdate, (scaleKey: string) => {
+            this._scaleKey = scaleKey;
+            this.triggerUIRender();
+        });
+        this.eventEmitter.subscribe(Events.scaleTypeUpdate, (scaleType: string) => {
+            this._scaleType = scaleType;
+            this.triggerUIRender();
+        });
         this.eventEmitter.subscribe(Events.displayScaleUpdate, (shouldShow: boolean) => {
             this._shouldShowScaleHighlights = shouldShow;
+            this.triggerUIRender();
         });
-        this.eventEmitter.subscribe(Events.chordTypeUpdate, (chordType: string) => this._chordType = chordType);
-        this.eventEmitter.subscribe(Events.activeToolUpdate, (activeTool: Tools) => this._activeTool = activeTool);
+        this.eventEmitter.subscribe(Events.chordTypeUpdate, (chordType: string) => {
+            this._chordType = chordType;
+            this.triggerUIRender();
+        });
+        this.eventEmitter.subscribe(Events.activeToolUpdate, (activeTool: Tools) => {
+            this._activeTool = activeTool;
+            this.triggerUIRender();
+        });
     }
 
     get quantize() : string {
@@ -57,8 +76,12 @@ export default class SettingsManager {
         return this._chordType;
     }
 
-    get activeTool() : string {
+    get activeTool() : Tools {
         return this._activeTool;
+    }
+
+    private triggerUIRender = () => {
+        this.eventEmitter.emit(Events.triggerUIRender);
     }
 
 }

@@ -26,6 +26,7 @@ export default class EventEmitter {
      * to the emit method. 
      */
     emit = (event: Events, ...args: any[]) : void => {
+        console.log(`Event dispatched: ${event}`);
         this.subscriptions.forEach(subscription => {
             if (event === subscription.event) {
                 subscription.callback(...args);
