@@ -34,3 +34,14 @@ export const generateWindowsMarkup = (activeWindows: Window[]) => html`
         }
     )}
 `;
+
+export const generateModalMarkup = (modal) => html`
+    ${modal ? html`
+        <div class="modal__page-overlay">
+            <div class="modal">
+                <h1>Modal here</h1>
+            </div>
+        </div>
+    ` : nothing}
+    
+`;

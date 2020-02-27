@@ -5,6 +5,7 @@ import EventEmitter from '../EventEmitter';
 import {
     generateTaskbarMarkup,
     generateWindowsMarkup, 
+    generateModalMarkup
 } from './templateFns';
 import { 
     Events,
@@ -18,6 +19,7 @@ import Arranger from '../Arranger';
 import HistoryStack from '../HistoryStack';
 import SettingsManager from '../SettingsManager';
 import Menubar from '../Menubar';
+import ChannelSettings from '../ChannelSettings';
 
 export default class App {
     
@@ -41,6 +43,7 @@ export default class App {
         this.eventEmitter.subscribe(Events.renderApp, this.renderApp);
         this.eventEmitter.subscribe(Events.focusWindow, this.focusWindow);
         this.eventEmitter.subscribe(Events.openPianoRollWindow, this.addPianoRollWindow);
+        this.eventEmitter.subscribe(Events.openChannelSettingsWindow, this.addChannelSettingsWindow);
         this.eventEmitter.subscribe(Events.addStateToStack, this.serializeStateAndAddToStack);
         this.eventEmitter.subscribe(Events.undoAction, this.undoActionAndPushState);
         this.eventEmitter.subscribe(Events.redoAction, this.redoActionAndPushState);
@@ -135,6 +138,27 @@ export default class App {
         });
     }
 
+    addChannelSettingsWindow = (channelId: string) => {
+        const channel = this.audioEngine.channels.find(c => c.id === channelId);
+        if (channel) {
+            console.log('channel found, should open window')
+            const newWindow = new Window({
+                id: channel.id,
+                title: `${channel.name} Settings`,
+                eventEmitter: this.eventEmitter,
+                settingsManager: this.settingsManager,
+                initialZIndex: this.activeWindows.length,
+                childClass: ChannelSettings,
+                childContext: { channel },
+                defaultWidth: 400,
+                defaultHeight: 220
+            });
+            this.activeWindows.push(newWindow);
+            this.renderApp();
+            newWindow.init();
+        }
+    }
+
     /**
      * Remove a window with a specific id from the app and trigger a rerender.
      */
@@ -184,6 +208,10 @@ export default class App {
             `,
             document.getElementById('main-container')
         );
+        // render(
+        //     generateModalMarkup(true),
+        //     document.getElementById('modal-container')
+        // );
     }
 
 }

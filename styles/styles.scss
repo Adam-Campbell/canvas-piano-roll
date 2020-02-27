@@ -274,6 +274,7 @@ body {
         flex-grow: 1;
         background: #fff;
         overflow: hidden;
+        display: flex;
     }
 }
 
@@ -285,4 +286,35 @@ body {
     transform: translate(-50%, -50%);
     width: 750px;
     height: 600px;
+}
+
+.modal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 220px;
+    background: #ddd;
+    border-radius: 3px;
+    &__page-overlay {
+        background: rgba(0,0,0,0.8);
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+    }
+}
+
+.channel-settings {
+    padding: 10px;
+    background: #2f3131;
+    flex-grow: 1;
+    &__title {
+        font-family: sans-serif;
+        font-weight: 600;
+        color: #fff;
+        font-size: 24px;
+    }
 }

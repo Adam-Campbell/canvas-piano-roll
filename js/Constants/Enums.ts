@@ -23,7 +23,7 @@ export enum Events {
     historyTravelled = 'historyTravelled',
     addStateToStack = 'addStateToStack',
     triggerUIRender = 'triggerUIRender',
-    openChannelInstrumentModal = 'openChannelInstrumentModal'
+    openChannelSettingsWindow = 'openChannelSettingsWindow'
 }
 
 export enum DragModes {

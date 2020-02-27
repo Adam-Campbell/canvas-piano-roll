@@ -56,7 +56,7 @@ export default class Window {
         this.currentWidth = defaultWidth;
         this.currentHeight = defaultHeight;
         this.currentX = 8;
-        this.currentY = 80;
+        this.currentY = 120;
         this.eventEmitter = eventEmitter;
         this.zIndex = initialZIndex;
         this.child = new childClass(this.eventEmitter, settingsManager);

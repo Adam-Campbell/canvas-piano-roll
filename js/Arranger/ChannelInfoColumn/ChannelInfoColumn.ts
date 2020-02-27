@@ -112,7 +112,7 @@ export default class ChannelInfoColumn {
                 listening: false
             });
             button.on('mousedown', () => {
-                this.eventEmitter.emit(Events.openChannelInstrumentModal, channel.id);
+                this.eventEmitter.emit(Events.openChannelSettingsWindow, channel.id);
             });
             pod.moveTo(this.channelInfoPodsGroup);
             text.moveTo(this.channelInfoPodsGroup);
