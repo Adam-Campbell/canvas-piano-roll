@@ -2,13 +2,13 @@ import Channel from './Channel';
 import Section from './Section';
 import EventEmitter from '../EventEmitter';
 import { genId } from '../genId';
-import { Events } from '../Constants';
+import { 
+    Events,
+    InstrumentPresets 
+} from '../Constants';
 import { 
     SerializedAudioEngineState, 
-    AudioEngineComponent,
-    padInstrumentSettings,
-    bassInstrumentSettings,
-    leadInstrumentSettings
+    AudioEngineComponent
 } from './AudioEngineConstants';
 
 export default class AudioEngine implements AudioEngineComponent {
@@ -21,9 +21,9 @@ export default class AudioEngine implements AudioEngineComponent {
     }
 
     init() : void {
-        this.addChannel('Channel 1', padInstrumentSettings);
-        this.addChannel('Channel 2', bassInstrumentSettings);
-        this.addChannel('Channel 3', leadInstrumentSettings);
+        this.addChannel('Channel 1', InstrumentPresets.softSynth);
+        this.addChannel('Channel 2', InstrumentPresets.arps);
+        this.addChannel('Channel 3', InstrumentPresets.echoLead);
         this.addChannel('Channel 4');
         this.addChannel('Channel 5');
         this.addChannel('Channel 6');
@@ -32,10 +32,10 @@ export default class AudioEngine implements AudioEngineComponent {
         })
     }
 
-    addChannel(name: string, settings = padInstrumentSettings) {
+    addChannel(name: string, preset = InstrumentPresets.softSynth) {
         const id = genId();
         this.channels.push(
-            new Channel(name, id, settings)
+            new Channel(name, id, preset)
         );
     }
 

@@ -1,4 +1,4 @@
-import { NoteBBS } from '../../Constants';
+import { NoteBBS, InstrumentPresets } from '../../Constants';
 
 export interface NoteCache {
     [propName: string]: NoteBBS
@@ -20,7 +20,7 @@ export interface SerializedChannelState {
     sections: SerializedSectionCache,
     name: string,
     id: string,
-    instrumentSettings: any
+    instrumentPreset: InstrumentPresets
 }
 
 export interface SerializedAudioEngineState {

@@ -19,23 +19,16 @@ export default class Channel implements AudioEngineComponent {
     name: string;
     id: string;
     sectionCache: SectionCache = {};
-    instrumentSettings: any;
     instrument: any;
     livePlayInstrument: any;
     instrumentPreset: InstrumentPresets;
 
-    constructor(name: string, id: string, instrumentSettings: any) {
+    constructor(name: string, id: string, instrumentPreset = InstrumentPresets.softSynth) {
         this.name = name;
         this.id = id;
-        this.instrumentPreset = InstrumentPresets.softSynth;
-        this.instrumentSettings = instrumentSettings;
-        //this.instrument = new Tone.PolySynth(12, Tone.Synth).toMaster();
+        this.instrumentPreset = instrumentPreset;
         this.instrument = new Instrument(this.instrumentPreset);
-        this.livePlayInstrument = new Instrument(this.instrumentPreset);
-        //this.livePlayInstrument = new Tone.PolySynth(1, Tone.Synth).toMaster();
-        //this.instrument.set(instrumentSettings);
-        //this.livePlayInstrument.set(instrumentSettings);
-        
+        this.livePlayInstrument = new Instrument(this.instrumentPreset);  
     }
 
     /**
@@ -114,7 +107,7 @@ export default class Channel implements AudioEngineComponent {
             sections: serializedSectionCache,
             name: this.name,
             id: this.id,
-            instrumentSettings: this.instrumentSettings
+            instrumentPreset: this.instrumentPreset
         }
     }
 
@@ -127,6 +120,11 @@ export default class Channel implements AudioEngineComponent {
            this.name = state.name; 
         }
         // TODO: reconcile instrumentSettings.
+        if (state.instrumentPreset !== this.instrumentPreset) {
+            this.instrumentPreset = state.instrumentPreset;
+            this.instrument.updatePreset(state.instrumentPreset);
+            this.livePlayInstrument.updatePreset(state.instrumentPreset);
+        }
 
         // Iterate over sections in engine
         // If any are not in state, remove from engine.

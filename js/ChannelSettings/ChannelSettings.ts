@@ -111,9 +111,11 @@ export default class ChannelSettings implements WindowChild {
 
     }
 
+
     handleInstrumentUpdate = (e) => {
         console.log(`New instrument: ${e.target.value}`);
         this.channel.updateInstrument(e.target.value);
+        this.eventEmitter.emit(Events.addStateToStack);
         this.eventEmitter.emit(Events.triggerUIRender);
     }
 
