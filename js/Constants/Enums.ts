@@ -62,12 +62,12 @@ export enum WindowDisplayModes {
 }
 
 export enum InstrumentPresets {
-    softSynth = 'soft synth',
-    hardBass = 'hard bass',
+    softSynth = 'softSynth',
+    hardBass = 'hardBass',
     arps = 'arps',
-    sawPads = 'saw pads',
-    wubBass = 'wub bass',
-    etherealPads = 'ethereal pads',
-    echoLead = 'echo lead',
-    fatSquare = 'fat square'
+    sawPads = 'sawPads',
+    wubBass = 'wubBass',
+    etherealPads = 'etherealPads',
+    echoLead = 'echoLead',
+    fatSquare = 'fatSquare'
 }
