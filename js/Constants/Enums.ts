@@ -22,7 +22,8 @@ export enum Events {
     openPianoRollWindow = 'openPianoRollWindow',
     historyTravelled = 'historyTravelled',
     addStateToStack = 'addStateToStack',
-    triggerUIRender = 'triggerUIRender'
+    triggerUIRender = 'triggerUIRender',
+    openChannelInstrumentModal = 'openChannelInstrumentModal'
 }
 
 export enum DragModes {

@@ -143,6 +143,7 @@ export default class Arranger implements WindowChild {
         );
         this.channelInfoLayer = new ChannelInfoColumn(
             this.conversionManager,
+            this.eventEmitter,
             this.secondaryBackingLayer
         );
         this.scrollManager = new StageScrollManager(
