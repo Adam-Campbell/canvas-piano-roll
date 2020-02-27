@@ -2,7 +2,8 @@ import { render, html, nothing } from 'lit-html';
 import { repeat } from 'lit-html/directives/repeat';
 import { 
     WindowChild,
-    Events 
+    Events,
+    InstrumentPresets
 } from '../Constants';
 import EventEmitter from '../EventEmitter';
 import SettingsManager from '../SettingsManager';
@@ -25,13 +26,18 @@ interface SelectData {
     optionGroups?: SelectOptionGroup[]
 }
 
-const dummyData = {
+const instrumentPresetsData = {
     id: 'instrument-select',
     label: 'Instrument',
     options: [
-        { value: 'pad synth', label: 'Pad Synth' },
-        { value: 'hard bass', label: 'Hard Bass' },
-        { value: 'echo lead', label: 'Echo Lead' }
+        { value: InstrumentPresets.arps, label: 'Arps' },
+        { value: InstrumentPresets.echoLead, label: 'Echo Lead' },
+        { value: InstrumentPresets.etherealPads, label: 'Ethereal Pads' },
+        { value: InstrumentPresets.fatSquare, label: 'Fat Square' },
+        { value: InstrumentPresets.hardBass, label: 'Hard Bass' },
+        { value: InstrumentPresets.sawPads, label: 'Saw Pads' },
+        { value: InstrumentPresets.softSynth, label: 'Soft Synth' },
+        { value: InstrumentPresets.wubBass, label: 'Wub Bass' },
     ]
 };
 
@@ -81,7 +87,6 @@ export default class ChannelSettings implements WindowChild {
     private eventEmitter: EventEmitter;
     private settingsManager: SettingsManager;
     private channel: Channel;
-    currentValue = 'pad synth';
 
     constructor(eventEmitter: EventEmitter, settingsManager: SettingsManager) {
         this.eventEmitter = eventEmitter;
@@ -108,7 +113,7 @@ export default class ChannelSettings implements WindowChild {
 
     handleInstrumentUpdate = (e) => {
         console.log(`New instrument: ${e.target.value}`);
-        this.currentValue = e.target.value;
+        this.channel.updateInstrument(e.target.value);
         this.eventEmitter.emit(Events.triggerUIRender);
     }
 
@@ -118,7 +123,11 @@ export default class ChannelSettings implements WindowChild {
             html`
                 <div class="channel-settings">
                     <h1 class="channel-settings__title">${this.channel.name} Settings</h1>
-                    ${generateSelectMarkup(dummyData, this.currentValue, this.handleInstrumentUpdate)}
+                    ${generateSelectMarkup(
+                        instrumentPresetsData, 
+                        this.channel.instrumentPreset, 
+                        this.handleInstrumentUpdate
+                    )}
                 </div>
             `,
             this.containerNode

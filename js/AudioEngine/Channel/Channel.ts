@@ -7,6 +7,7 @@ import {
     NoteCache, 
     AudioEngineComponent 
 } from '../AudioEngineConstants';
+import { InstrumentPresets } from '../../Constants';
 
 interface SectionCache {
     [propName: string]: Section
@@ -20,6 +21,7 @@ export default class Channel implements AudioEngineComponent {
     instrumentSettings: any;
     instrument: any;
     livePlayInstrument: any;
+    instrumentPreset: InstrumentPresets;
 
     constructor(name: string, id: string, instrumentSettings: any) {
         this.name = name;
@@ -29,6 +31,7 @@ export default class Channel implements AudioEngineComponent {
         this.livePlayInstrument = new Tone.PolySynth(1, Tone.Synth).toMaster();
         this.instrument.set(instrumentSettings);
         this.livePlayInstrument.set(instrumentSettings);
+        this.instrumentPreset = InstrumentPresets.sawPads;
     }
 
     /**
@@ -79,6 +82,10 @@ export default class Channel implements AudioEngineComponent {
             return this.sectionCache[sectionId].serializeState();
         }
         return null;
+    }
+
+    updateInstrument(instrumentPreset: InstrumentPresets) : void {
+        this.instrumentPreset = instrumentPreset;
     }
 
     /**

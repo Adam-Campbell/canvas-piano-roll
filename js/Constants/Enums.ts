@@ -60,3 +60,14 @@ export enum WindowDisplayModes {
     maximized = 'maximized',
     normal = 'normal'
 }
+
+export enum InstrumentPresets {
+    softSynth = 'soft synth',
+    hardBass = 'hard bass',
+    arps = 'arps',
+    sawPads = 'saw pads',
+    wubBass = 'wub bass',
+    etherealPads = 'ethereal pads',
+    echoLead = 'echo lead',
+    fatSquare = 'fat square'
+}
